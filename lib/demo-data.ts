@@ -1,0 +1,210 @@
+import type { Receipt, Category, PaymentMethod, ReceiptType } from "./types";
+
+const SUPPLIERS_BY_CAT: Record<Category, string[]> = {
+  Wareneinkauf: ["Metro", "Lokaler Großhandel", "Würth"],
+  "Werkzeug & Material": ["Hornbach", "Bauhaus", "Obi", "Würth"],
+  Fahrtkosten: ["Shell", "Aral", "Total"],
+  Bewirtung: ["Rewe", "Restaurant Adler", "Metro"],
+  "Werbung & Marketing": ["Canva", "Meta Ads", "Google Ads"],
+  Bürobedarf: ["Amazon Business", "Rewe", "Obi"],
+  "Telefon & Internet": ["Telekom", "Vodafone"],
+  Software: ["Adobe", "Canva", "Microsoft 365"],
+  Miete: ["Vermietung Müller"],
+  Versicherungen: ["Allianz", "HDI"],
+  Sonstiges: ["Amazon Business", "Rewe"],
+};
+
+const RANGES: Record<Category, [number, number]> = {
+  Wareneinkauf: [180, 1800],
+  "Werkzeug & Material": [40, 650],
+  Fahrtkosten: [55, 140],
+  Bewirtung: [25, 180],
+  "Werbung & Marketing": [49, 350],
+  Bürobedarf: [8, 90],
+  "Telefon & Internet": [45, 95],
+  Software: [12, 79],
+  Miete: [1200, 1200],
+  Versicherungen: [120, 320],
+  Sonstiges: [15, 220],
+};
+
+const TYPES: ReceiptType[] = ["Quittung", "Rechnung", "Kassenbon", "Tankbeleg", "Bewirtungsbeleg"];
+const PAYMENTS: PaymentMethod[] = ["Bar", "Karte", "Überweisung", "Lastschrift"];
+
+// deterministischer Pseudo-Random
+function mulberry32(seed: number) {
+  return function () {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const rand = mulberry32(20260512);
+
+function pick<T>(arr: readonly T[]): T {
+  return arr[Math.floor(rand() * arr.length)];
+}
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+// Verteilung der Belege über 4 Monate: Feb–Mai 2026
+const MONTHS = [
+  { y: 2026, m: 1, count: 18 }, // Feb
+  { y: 2026, m: 2, count: 22 }, // Mar
+  { y: 2026, m: 3, count: 18 }, // Apr
+  { y: 2026, m: 4, count: 24 }, // Mai (aktuell, Fahrtkosten-Peak)
+];
+
+// Kategorie-Gewichtung je Monat
+const CAT_WEIGHTS: Record<number, [Category, number][]> = {
+  1: [
+    ["Wareneinkauf", 5],
+    ["Werkzeug & Material", 3],
+    ["Fahrtkosten", 2],
+    ["Bewirtung", 1],
+    ["Bürobedarf", 2],
+    ["Software", 1],
+    ["Telefon & Internet", 1],
+    ["Miete", 1],
+    ["Versicherungen", 1],
+    ["Werbung & Marketing", 1],
+  ],
+  2: [
+    ["Wareneinkauf", 6],
+    ["Werkzeug & Material", 4],
+    ["Fahrtkosten", 2],
+    ["Bewirtung", 1],
+    ["Bürobedarf", 2],
+    ["Software", 1],
+    ["Telefon & Internet", 1],
+    ["Miete", 1],
+    ["Versicherungen", 1],
+    ["Werbung & Marketing", 2],
+    ["Sonstiges", 1],
+  ],
+  3: [
+    ["Wareneinkauf", 5],
+    ["Werkzeug & Material", 3],
+    ["Fahrtkosten", 2],
+    ["Bewirtung", 2],
+    ["Bürobedarf", 1],
+    ["Software", 1],
+    ["Telefon & Internet", 1],
+    ["Miete", 1],
+    ["Werbung & Marketing", 1],
+    ["Sonstiges", 1],
+  ],
+  4: [
+    // Mai: Fahrtkosten-Peak
+    ["Wareneinkauf", 6],
+    ["Werkzeug & Material", 4],
+    ["Fahrtkosten", 7],
+    ["Bewirtung", 2],
+    ["Bürobedarf", 2],
+    ["Software", 1],
+    ["Telefon & Internet", 1],
+    ["Miete", 1],
+    ["Werbung & Marketing", 2],
+    ["Versicherungen", 1],
+    ["Sonstiges", 1],
+  ],
+};
+
+function weightedCat(month: number): Category {
+  const list = CAT_WEIGHTS[month];
+  const total = list.reduce((s, [, w]) => s + w, 0);
+  let r = rand() * total;
+  for (const [c, w] of list) {
+    if ((r -= w) < 0) return c;
+  }
+  return list[0][0];
+}
+
+function vatFor(cat: Category, gross: number): { net: number; vat: number; rate: number } {
+  // 7% für Bewirtung & Lebensmittel-Anteile, sonst 19%, Versicherungen 0%
+  let rate = 0.19;
+  if (cat === "Bewirtung") rate = 0.07;
+  if (cat === "Versicherungen") rate = 0;
+  if (cat === "Miete") rate = 0; // vereinfacht
+  const net = round2(gross / (1 + rate));
+  const vat = round2(gross - net);
+  return { net, vat, rate };
+}
+
+export const DEMO_USER_ID = "demo-user";
+
+export function generateDemoReceipts(): Receipt[] {
+  const receipts: Receipt[] = [];
+  let id = 1;
+  for (const { y, m, count } of MONTHS) {
+    for (let i = 0; i < count; i++) {
+      const day = 1 + Math.floor(rand() * 27);
+      const date = new Date(y, m, day);
+      const cat = weightedCat(m);
+      const [lo, hi] = RANGES[cat];
+      let gross = round2(lo + rand() * (hi - lo));
+      // gelegentlich große Einzelbelege
+      if (rand() < 0.06 && cat === "Wareneinkauf") gross = round2(gross * 1.8);
+      const { net, vat } = vatFor(cat, gross);
+      const supplier = pick(SUPPLIERS_BY_CAT[cat]);
+      // Confidence-Verteilung
+      let confidence = 0.92 + rand() * 0.07;
+      const warnings: string[] = [];
+      if (rand() < 0.09) {
+        confidence = 0.55 + rand() * 0.14; // unsicher
+        warnings.push("MwSt.-Wert nicht eindeutig erkennbar");
+        if (rand() < 0.5) warnings.push("Datum unscharf");
+      } else if (rand() < 0.15) {
+        confidence = 0.72 + rand() * 0.15;
+        warnings.push("Bitte Lieferant prüfen");
+      }
+      const status =
+        confidence < 0.7
+          ? "unsicher"
+          : confidence < 0.88
+            ? "ungeprueft"
+            : rand() < 0.55
+              ? "geprueft"
+              : "ungeprueft";
+
+      const receipt: Receipt = {
+        id: `r_${String(id).padStart(4, "0")}`,
+        user_id: DEMO_USER_ID,
+        file_url: null,
+        file_name: `beleg_${id}.pdf`,
+        supplier_name: supplier,
+        receipt_date: date.toISOString().slice(0, 10),
+        category: cat,
+        receipt_type: pick(TYPES),
+        payment_method: pick(PAYMENTS),
+        net_amount: net,
+        vat_amount: vat,
+        gross_amount: gross,
+        currency: "EUR",
+        confidence_score: round2(confidence),
+        status,
+        warnings,
+        notes: null,
+        project: rand() < 0.18 ? pick(["Projekt Schmidt", "Projekt Müller", "BV Hauptstraße 12"]) : null,
+        created_at: date.toISOString(),
+        updated_at: date.toISOString(),
+      };
+      receipts.push(receipt);
+      id++;
+    }
+  }
+  // sortiert nach Datum absteigend
+  receipts.sort((a, b) => b.receipt_date.localeCompare(a.receipt_date));
+  return receipts;
+}
+
+export const DEMO_COMPANY = {
+  company_name: "Musterbau GmbH",
+  owner_name: "Thomas Müller",
+  tax_advisor_email: "kanzlei@beispiel-steuerberater.de",
+  company_type: "GmbH",
+};
