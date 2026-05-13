@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { Save, RefreshCw, Trash2, Mail, Copy, CheckCircle2 } from "lucide-react";
+import { Save, RefreshCw, Trash2, Mail, Copy, CheckCircle2, Shield, KeyRound } from "lucide-react";
 import { resetToDemo, saveReceipts } from "@/lib/store";
 import { DEMO_COMPANY } from "@/lib/demo-data";
 import { Disclaimer } from "@/components/Disclaimer";
@@ -78,6 +78,8 @@ export default function SettingsPage() {
       </form>
 
       <EmailForwarding />
+
+      <SecuritySection />
 
       <div className="card p-6 space-y-3">
         <h2 className="font-semibold">Demo-Daten</h2>
@@ -183,6 +185,49 @@ function EmailForwarding() {
           verarbeitet und nur Belege des authentifizierten Senders akzeptiert (SPF/DKIM-Check).
         </p>
       </div>
+    </div>
+  );
+}
+
+function SecuritySection() {
+  const [twoFA, setTwoFA] = useState(false);
+  return (
+    <div className="card p-6 space-y-5">
+      <div className="flex items-center gap-2">
+        <Shield className="h-5 w-5 text-brand-600" />
+        <h2 className="font-semibold">Sicherheit &amp; Login</h2>
+      </div>
+
+      <div className="flex items-center justify-between border border-border rounded-lg p-4">
+        <div>
+          <p className="font-medium flex items-center gap-2">
+            <KeyRound className="h-4 w-4 text-slate-400" /> Passwort ändern
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">Per E-Mail-Reset-Link — sicher und unkompliziert.</p>
+        </div>
+        <a href="/forgot-password" className="btn-secondary">Link senden</a>
+      </div>
+
+      <div className="flex items-center justify-between border border-border rounded-lg p-4">
+        <div>
+          <p className="font-medium flex items-center gap-2">
+            <Shield className="h-4 w-4 text-slate-400" /> Zwei-Faktor-Authentifizierung (2FA)
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Code per E-Mail bei jedem Login — extra Sicherheit für sensible Beleg-Daten.
+          </p>
+        </div>
+        <button
+          onClick={() => setTwoFA((v) => !v)}
+          className={`pill ${twoFA ? "bg-accent-soft text-accent border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-200"}`}
+        >
+          {twoFA ? "Aktiv" : "Aktivieren"}
+        </button>
+      </div>
+
+      <p className="text-xs text-slate-500">
+        In Produktion via Supabase Auth MFA — TOTP (Authenticator App) und E-Mail-Code unterstützt.
+      </p>
     </div>
   );
 }

@@ -27,10 +27,13 @@ import {
 import { Disclaimer } from "@/components/Disclaimer";
 import { DemoVideo } from "@/components/DemoVideo";
 import { PartnersStrip, Testimonials } from "@/components/Partners";
-
+import { LiveChat } from "@/components/LiveChat";
+import { Onboarding } from "@/components/Onboarding";
 export default function LandingPage() {
   return (
     <div className="bg-white">
+      <Onboarding />
+      <LiveChat />
       {/* Top Nav */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-white/80 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 h-16 flex items-center justify-between">
@@ -288,46 +291,42 @@ export default function LandingPage() {
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Faire Preise. Klar verständlich.</h2>
             <p className="mt-3 text-slate-600">14 Tage testen. Jederzeit kündbar.</p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <PricingCard
-              name="Basic"
+              name="Starter"
               price="29"
-              features={["100 Belege / Monat", "KI-Auslesung", "Monatsübersicht", "PDF-Export"]}
+              tagline="Einzelmeister · 1 Nutzer"
+              features={["bis 100 Belege/Monat", "99 % KI-Auslesung", "Monatsreport (PDF)", "DATEV-CSV", "E-Mail-Support"]}
             />
             <PricingCard
-              name="Report"
+              name="Profi"
               price="79"
               featured
+              tagline="Bis 5 Mitarbeiter"
               features={[
-                "500 Belege / Monat",
-                "Automatischer Management-Report",
-                "Kostenvergleiche",
-                "Auffälligkeiten",
+                "bis 500 Belege/Monat",
+                "Skonto-Alarm + Preis-Wächter",
+                "SEPA-Sammelüberweisung",
+                "Abo-Falle",
                 "Steuerberater-Paket",
-                "Erinnerungen",
+                "GoBD-Audit-Log",
               ]}
             />
             <PricingCard
-              name="Premium"
+              name="Betrieb"
               price="149"
+              tagline="Bis 20 Mitarbeiter"
               features={[
-                "1.500 Belege / Monat",
-                "Mehrere Nutzer",
-                "Steuerberater-Zugang",
-                "Individuelle Kategorien",
+                "unbegrenzte Belege",
+                "Mehrere Nutzer + Rollen",
+                "Projekt-Kostenstellen",
+                "API-Zugang",
                 "Prioritäts-Support",
               ]}
             />
-            <PricingCard
-              name="Kanzlei"
-              price="ab 499"
-              features={[
-                "Mehrere Mandanten",
-                "Mandanten-Dashboard",
-                "Reports je Mandant",
-                "White-Label optional",
-              ]}
-            />
+          </div>
+          <div className="mt-8 text-center">
+            <Link href="/pricing" className="btn-secondary">Alle Details &amp; Stripe-Checkout <ArrowRight className="h-4 w-4" /></Link>
           </div>
         </div>
       </section>
@@ -501,9 +500,9 @@ export default function LandingPage() {
             </div>
             <div className="space-y-2">
               <p className="font-medium text-foreground">Rechtliches</p>
-              <span className="block">Impressum (TODO)</span>
-              <span className="block">Datenschutz (TODO)</span>
-              <span className="block">AGB (TODO)</span>
+              <Link href="/impressum" className="block hover:text-foreground">Impressum</Link>
+              <Link href="/datenschutz" className="block hover:text-foreground">Datenschutz</Link>
+              <Link href="/agb" className="block hover:text-foreground">AGB</Link>
             </div>
           </div>
         </div>
@@ -626,16 +625,18 @@ function PricingCard({
   name,
   price,
   features,
+  tagline,
   featured = false,
 }: {
   name: string;
   price: string;
   features: string[];
+  tagline?: string;
   featured?: boolean;
 }) {
   return (
     <div
-      className={`card-soft p-6 flex flex-col relative ${
+      className={`card p-6 flex flex-col relative ${
         featured ? "ring-2 ring-brand-600 shadow-lg" : ""
       }`}
     >
@@ -644,9 +645,10 @@ function PricingCard({
           Beliebt
         </span>
       ) : null}
-      <p className="font-semibold text-lg">{name}</p>
-      <p className="mt-3">
-        <span className="text-4xl font-extrabold">{price.startsWith("ab") ? price : `${price} €`}</span>
+      <p className="font-bold text-xl">{name}</p>
+      {tagline ? <p className="text-xs text-slate-500 mt-0.5">{tagline}</p> : null}
+      <p className="mt-4">
+        <span className="text-4xl font-extrabold">{price} €</span>
         <span className="text-slate-500 text-sm"> / Monat</span>
       </p>
       <ul className="mt-5 space-y-2 flex-1">
@@ -658,10 +660,10 @@ function PricingCard({
         ))}
       </ul>
       <Link
-        href="/register"
+        href="/pricing"
         className={`mt-6 ${featured ? "btn-primary" : "btn-secondary"} w-full justify-center`}
       >
-        Auswählen
+        14 Tage gratis starten
       </Link>
     </div>
   );

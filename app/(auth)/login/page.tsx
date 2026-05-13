@@ -75,6 +75,13 @@ export default function LoginPage() {
         </button>
       </form>
 
+      <div className="mt-4 flex items-center justify-between text-sm">
+        <Link href="/forgot-password" className="text-slate-600 hover:text-brand-600">
+          Passwort vergessen?
+        </Link>
+        <span className="text-xs text-slate-500">2FA via E-Mail unterstützt</span>
+      </div>
+
       <p className="mt-6 text-sm text-slate-600">
         Noch kein Konto?{" "}
         <Link href="/register" className="text-brand-600 font-medium hover:underline">

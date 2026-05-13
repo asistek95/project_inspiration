@@ -1,5 +1,11 @@
-﻿import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, ShieldCheck, ArrowRight } from "lucide-react";
+
+const STRIPE = {
+  starter: process.env.NEXT_PUBLIC_STRIPE_LINK_STARTER || "/register?plan=starter",
+  profi: process.env.NEXT_PUBLIC_STRIPE_LINK_PROFI || "/register?plan=profi",
+  betrieb: process.env.NEXT_PUBLIC_STRIPE_LINK_BETRIEB || "/register?plan=betrieb",
+};
 
 export default function PricingPage() {
   return (
@@ -15,52 +21,50 @@ export default function PricingPage() {
       </header>
       <main className="max-w-7xl mx-auto px-4 lg:px-8 py-16">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Preise</h1>
-          <p className="mt-3 text-slate-600">Faire Preise. Klar verständlich. 14 Tage testen.</p>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Preise für Handwerksbetriebe</h1>
+          <p className="mt-3 text-slate-600">14 Tage gratis. Keine Einrichtungsgebühr. Monatlich kündbar.</p>
+          <div className="mt-4 inline-flex items-center gap-2 text-xs text-slate-500">
+            <ShieldCheck className="h-4 w-4 text-accent" /> Zahlung sicher via Stripe · SEPA / Kreditkarte / Sofort
+          </div>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <Plan name="Basic" price="29" features={["100 Belege", "KI-Auslesung", "Monatsübersicht", "PDF-Export"]} />
-          <Plan
-            name="Report"
-            price="79"
-            featured
-            features={[
-              "500 Belege",
-              "Automatischer Management-Report",
-              "Kostenvergleiche",
-              "Auffälligkeiten",
-              "Steuerberater-Paket",
-              "Erinnerungen",
-            ]}
-          />
-          <Plan
-            name="Premium"
-            price="149"
-            features={["1.500 Belege", "Mehrere Nutzer", "Steuerberater-Zugang", "Individuelle Kategorien", "Prioritäts-Support"]}
-          />
-          <Plan
-            name="Kanzlei"
-            price="ab 499"
-            features={["Mehrere Mandanten", "Mandanten-Dashboard", "Reports je Mandant", "White-Label optional"]}
-          />
+
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <Plan name="Starter" price="29" tagline="Einzelmeister · 1 Nutzer"
+            features={["bis 100 Belege/Monat", "99 % KI-Auslesung", "Monatsreport (PDF)", "DATEV-CSV Export", "E-Mail-Support"]}
+            href={STRIPE.starter} />
+          <Plan name="Profi" price="79" featured tagline="Bis 5 Mitarbeiter"
+            features={["bis 500 Belege/Monat", "Skonto-Alarm + Preis-Wächter", "SEPA-Sammelüberweisung", "Abo-Falle Übersicht", "Steuerberater-Paket", "GoBD-Audit-Log"]}
+            href={STRIPE.profi} />
+          <Plan name="Betrieb" price="149" tagline="Bis 20 Mitarbeiter"
+            features={["unbegrenzte Belege", "Mehrere Nutzer + Rollen", "Projekt-Kostenstellen", "API-Zugang", "Prioritäts-Support", "Persönlicher Ansprechpartner"]}
+            href={STRIPE.betrieb} />
         </div>
+
+        <div className="mt-12 card-soft p-6 max-w-3xl mx-auto text-center">
+          <p className="font-semibold">Fragen vor dem Start?</p>
+          <p className="text-sm text-slate-600 mt-1">15-Minuten-Telefonat — wir zeigen dir, wie Klarblick in deinem Betrieb läuft.</p>
+          <Link href="/#kontakt" className="btn-secondary mt-4 inline-flex">Beratung anfordern <ArrowRight className="h-4 w-4" /></Link>
+        </div>
+
         <p className="mt-10 text-center text-xs text-muted-foreground max-w-2xl mx-auto">
-          Klarblick ist keine Steuerberatung. Die App hilft bei Ordnung, Auswertung und Vorbereitung.
+          Klarblick ist keine Steuerberatung. Alle Preise zzgl. 19 % MwSt.
         </p>
       </main>
     </div>
   );
 }
 
-function Plan({ name, price, features, featured = false }: { name: string; price: string; features: string[]; featured?: boolean }) {
+function Plan({ name, price, features, tagline, href, featured = false }:
+  { name: string; price: string; features: string[]; tagline: string; href: string; featured?: boolean }) {
+  const external = href.startsWith("http");
+  const btnClass = `mt-6 ${featured ? "btn-primary" : "btn-secondary"} w-full justify-center`;
   return (
-    <div className={`card-soft p-6 flex flex-col relative ${featured ? "ring-2 ring-brand-600" : ""}`}>
-      {featured ? (
-        <span className="absolute -top-3 left-6 pill bg-brand-600 text-white border-brand-600">Beliebt</span>
-      ) : null}
-      <p className="font-semibold text-lg">{name}</p>
-      <p className="mt-3">
-        <span className="text-4xl font-extrabold">{price.startsWith("ab") ? price : `${price} €`}</span>
+    <div className={`card p-6 flex flex-col relative ${featured ? "ring-2 ring-brand-600 shadow-lg" : ""}`}>
+      {featured ? <span className="absolute -top-3 left-6 pill bg-brand-600 text-white border-brand-600">Beliebt</span> : null}
+      <p className="font-bold text-xl">{name}</p>
+      <p className="text-xs text-slate-500 mt-0.5">{tagline}</p>
+      <p className="mt-4">
+        <span className="text-4xl font-extrabold">{price} €</span>
         <span className="text-slate-500 text-sm"> / Monat</span>
       </p>
       <ul className="mt-5 space-y-2 flex-1">
@@ -71,9 +75,9 @@ function Plan({ name, price, features, featured = false }: { name: string; price
           </li>
         ))}
       </ul>
-      <Link href="/register" className={`mt-6 ${featured ? "btn-primary" : "btn-secondary"} w-full justify-center`}>
-        Auswählen
-      </Link>
+      {external
+        ? <a href={href} className={btnClass}>14 Tage gratis starten</a>
+        : <Link href={href} className={btnClass}>14 Tage gratis starten</Link>}
     </div>
   );
 }
