@@ -10,20 +10,20 @@ const STEPS = [
   {
     Icon: Sparkles,
     title: "Willkommen bei Klarblick",
-    text: "In 60 Sekunden zeigen wir dir, wie aus deinem Schuhkarton ein DATEV-fertiger Monatsreport wird.",
+    text: "In 60 Sekunden zeigen wir dir, wie aus Zettelchaos ein verständlicher Management-Report für deinen Betrieb wird.",
     cta: "Los geht's",
   },
   {
     Icon: Camera,
-    title: "Beleg fotografieren oder hochladen",
-    text: "Foto vom Materialschein, Tankquittung oder PDF-Rechnung — Klarblick erkennt automatisch Lieferant, Datum, Beträge und MwSt zu 99 %.",
+    title: "Daten kommen automatisch rein",
+    text: "Foto, PDF oder weitergeleitete Mail — Klarblick erfasst Lieferant, Beträge und MwSt. Du musst nichts sortieren.",
     cta: "Weiter",
   },
   {
     Icon: FileBarChart2,
-    title: "Report &amp; Export",
-    text: "Du bekommst sofort einen Management-Report, kannst Skonto-Verluste sehen und mit einem Klick eine DATEV-CSV exportieren.",
-    cta: "Demo öffnen",
+    title: "Dein Monatsreport",
+    text: "Auf einer Seite siehst du, was steigt, was sinkt, wo du Geld verlierst — und kannst alles als PDF oder DATEV-CSV exportieren.",
+    cta: "Report ansehen",
   },
 ];
 

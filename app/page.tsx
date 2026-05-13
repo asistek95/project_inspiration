@@ -64,18 +64,19 @@ export default function LandingPage() {
               <Sparkles className="h-3.5 w-3.5" /> Für Handwerksbetriebe · Made in Germany
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-foreground">
-              Schluss mit{" "}
+              Endlich verstehen, wohin{" "}
               <span className="bg-gradient-to-r from-brand-600 to-accent bg-clip-text text-transparent">
-                Belegchaos am Sonntagabend.
+                dein Geld geht.
               </span>
             </h1>
             <p className="mt-5 text-lg text-slate-600 max-w-xl leading-relaxed">
-              Klarblick spart deinem Handwerksbetrieb <strong className="text-foreground">5 Stunden pro Woche</strong> und holt im Schnitt <strong className="text-foreground">über 1.200 € verlorenes Skonto</strong> pro Jahr zurück.
-              Foto vom Beleg → DATEV-fertig. Punkt.
+              Klarblick ist dein <strong className="text-foreground">monatlicher Management-Report</strong> für den Handwerksbetrieb:
+              klare Zahlen statt Zettelchaos, Kostentrends auf einen Blick und Entscheidungen,
+              die Geld bringen — nicht kosten.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <Link href="/dashboard" className="btn-primary btn-lg">
-                Live-Demo ohne Anmeldung <ArrowRight className="h-4 w-4" />
+                Live-Report ansehen <ArrowRight className="h-4 w-4" />
               </Link>
               <Link href="#kontakt" className="btn-secondary btn-lg">
                 <Camera className="h-4 w-4" /> Beratung anfordern
@@ -130,15 +131,15 @@ export default function LandingPage() {
           <div className="text-center max-w-2xl mx-auto mb-12">
             <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Die Lösung</p>
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              Klarblick macht aus Belegen einen Unternehmer-Report.
+              Dein Betrieb in Zahlen — verständlich auf einer Seite.
             </h2>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
-              { n: 1, t: "Beleg hochladen", d: "Foto vom Handy, PDF, oder Drag & Drop am Laptop.", Icon: Camera },
-              { n: 2, t: "KI liest die Daten", d: "Betrag, Datum, Lieferant, MwSt., Kategorie — automatisch.", Icon: Sparkles },
-              { n: 3, t: "Du prüfst mit 1 Klick", d: "„Stimmt alles“ — fertig. Unsichere Belege werden markiert.", Icon: CheckCircle2 },
-              { n: 4, t: "Report & Paket fertig", d: "Monatsreport für dich. Sauberes Paket für den Steuerberater.", Icon: FileBarChart2 },
+              { n: 1, t: "Belege landen automatisch rein", d: "Per Foto, Drag & Drop oder weitergeleitete Mail — du musst nichts sortieren.", Icon: Camera },
+              { n: 2, t: "Zahlen werden ausgewertet", d: "Kosten, Trends, Kategorien, Auffälligkeiten — alles aufbereitet.", Icon: Sparkles },
+              { n: 3, t: "Du siehst, was zählt", d: "Was steigt, was sinkt, wo verlierst du Geld — ohne Excel-Frickelei.", Icon: CheckCircle2 },
+              { n: 4, t: "Monatsreport ist fertig", d: "PDF-Report für dich. Saubere DATEV-Daten für den Steuerberater.", Icon: FileBarChart2 },
             ].map(({ n, t, d, Icon }) => (
               <div key={n} className="card-soft p-6">
                 <div className="flex items-center justify-between">
@@ -345,16 +346,16 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Endlich dein Geschäft klar sehen.</h2>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Bereit für deinen ersten Report?</h2>
           <p className="mt-3 text-slate-600">
-            Lade deinen ersten Beleg hoch — der Monatsreport entsteht automatisch.
+            In wenigen Minuten siehst du deinen Betrieb in klaren Zahlen — ohne Excel, ohne Tabellen-Frust.
           </p>
           <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/dashboard" className="btn-primary btn-lg">
-              Demo-Dashboard öffnen <ArrowRight className="h-4 w-4" />
+              Live-Report öffnen <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/upload" className="btn-secondary btn-lg">
-              Beleg hochladen
+            <Link href="#kontakt" className="btn-secondary btn-lg">
+              Beratung anfordern
             </Link>
           </div>
         </div>
@@ -489,7 +490,7 @@ export default function LandingPage() {
               <img src="/klar.png" alt="Klarblick" className="h-7 w-7 object-contain" />
               Klarblick
             </div>
-            <p className="mt-2 max-w-sm">Der automatische Management-Report für kleine Unternehmen.</p>
+            <p className="mt-2 max-w-sm">Der monatliche Management-Report für Handwerksbetriebe — verständlich, automatisch, DATEV-ready.</p>
           </div>
           <div className="flex gap-8">
             <div className="space-y-2">
@@ -521,7 +522,7 @@ function HeroVisual() {
       <div className="relative grid grid-cols-5 gap-3">
         {/* Belege Stack */}
         <div className="col-span-2 space-y-2">
-          <p className="text-xs text-slate-500 font-medium pl-1">Belege rein</p>
+          <p className="text-xs text-slate-500 font-medium pl-1">Eingangsbelege</p>
           {["Hornbach · 142,90 €", "Shell · 78,40 €", "Metro · 891,20 €", "Telekom · 49,90 €", "Canva · 12,00 €"].map(
             (t, i) => (
               <div
