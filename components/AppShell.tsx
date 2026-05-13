@@ -35,7 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile top bar */}
       <div className="lg:hidden fixed top-0 inset-x-0 z-40 h-14 bg-white border-b border-border flex items-center justify-between px-4">
         <Link href="/dashboard" className="font-bold text-lg flex items-center gap-2">
-          <span className="h-7 w-7 rounded-md bg-brand-600 text-white grid place-content-center text-sm">K</span>
+          <img src="/klar.png" alt="Klarblick" className="h-8 w-8 object-contain" />
           Klarblick
         </Link>
         <button onClick={() => setOpen(!open)} className="btn-ghost !p-2" aria-label="Menü">
@@ -53,9 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         <div className="px-5 h-16 flex items-center border-b border-border">
           <Link href="/dashboard" className="font-bold text-lg flex items-center gap-2">
-            <span className="h-8 w-8 rounded-lg bg-brand-600 text-white grid place-content-center text-sm shadow-sm">
-              K
-            </span>
+            <img src="/klar.png" alt="Klarblick" className="h-9 w-9 object-contain" />
             Klarblick
           </Link>
         </div>

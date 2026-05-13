@@ -7,7 +7,7 @@ export default function PricingPage() {
       <header className="border-b border-border">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="font-bold text-lg flex items-center gap-2">
-            <span className="h-8 w-8 rounded-lg bg-brand-600 text-white grid place-content-center text-sm">K</span>
+            <img src="/klar.png" alt="Klarblick" className="h-9 w-9 object-contain" />
             Klarblick
           </Link>
           <Link href="/dashboard" className="btn-secondary">Demo</Link>

@@ -5,7 +5,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen grid lg:grid-cols-2">
       <div className="hidden lg:flex flex-col justify-between p-10 bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 text-white">
         <Link href="/" className="font-bold text-xl flex items-center gap-2">
-          <span className="h-9 w-9 rounded-lg bg-white/15 backdrop-blur grid place-content-center">B</span>
+          <img src="/klar.png" alt="Klarblick" className="h-10 w-10 object-contain bg-white/15 rounded-lg p-1" />
           Klarblick
         </Link>
         <div>

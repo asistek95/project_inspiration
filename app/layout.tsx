@@ -2,10 +2,15 @@
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Klarblick – Aus Chaos wird Unternehmerklarheit",
+  title: "Klarblick – Beleg-Cockpit für Handwerksbetriebe",
   description:
     "Klarblick verwandelt Belege automatisch in Management-Reports und klare Einblicke für Unternehmen — und ein sauberes Paket für den Steuerberater.",
   metadataBase: new URL("https://klarblick.app"),
+  icons: {
+    icon: "/klar.png",
+    shortcut: "/klar.png",
+    apple: "/klar.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

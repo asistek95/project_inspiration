@@ -67,8 +67,8 @@ const TESTIMONIALS = [
   {
     quote:
       "Wir haben Belege früher monatlich an unseren Steuerberater geschickt — chaotisch. Mit Klarblick ist das Paket in 10 Minuten fertig und wir wissen sofort, wo unsere Kosten stehen.",
-    author: "Erkan Demir",
-    role: "Geschäftsführer",
+    author: "Amir Avdagic",
+    role: "Inhaber",
     company: "ETRA Elektrotechnik GmbH",
     logo: "/partners/etra.png",
     short: "ETRA",
@@ -76,7 +76,7 @@ const TESTIMONIALS = [
   {
     quote:
       "Endlich verstehe ich meine Zahlen ohne Steuerberater-Übersetzung. Klarblick zeigt mir jeden Monat klar: was steigt, was sinkt, wo muss ich handeln.",
-    author: "Tomislav Jurić",
+    author: "Reuf Sistek",
     role: "Inhaber",
     company: "Sistek",
     logo: "/partners/sistek.png",

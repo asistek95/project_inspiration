@@ -18,6 +18,11 @@ import {
   Briefcase,
   Heart,
   Calculator,
+  MapPin,
+  Mail,
+  Phone,
+  CreditCard,
+  XCircle,
 } from "lucide-react";
 import { Disclaimer } from "@/components/Disclaimer";
 import { DemoVideo } from "@/components/DemoVideo";
@@ -30,9 +35,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-40 backdrop-blur-md bg-white/80 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="font-bold text-lg flex items-center gap-2">
-            <span className="h-8 w-8 rounded-lg bg-brand-600 text-white grid place-content-center text-sm shadow-sm">
-              K
-            </span>
+            <img src="/klar.png" alt="Klarblick" className="h-9 w-9 object-contain" />
             Klarblick
           </Link>
           <nav className="hidden md:flex items-center gap-7 text-sm text-slate-600">
@@ -40,6 +43,7 @@ export default function LandingPage() {
             <a href="#loesung" className="hover:text-foreground">Lösung</a>
             <a href="#report" className="hover:text-foreground">Report</a>
             <a href="#preise" className="hover:text-foreground">Preise</a>
+            <a href="#kontakt" className="hover:text-foreground">Kontakt</a>
             <Link href="/login" className="hover:text-foreground">Login</Link>
           </nav>
           <div className="flex items-center gap-2">
@@ -54,31 +58,30 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-16 lg:py-24 grid lg:grid-cols-2 gap-12 items-center">
           <div>
             <span className="pill border bg-brand-50 text-brand-700 border-blue-100 mb-5">
-              <Sparkles className="h-3.5 w-3.5" /> Speziell für Handwerker · Belege rein. Geld zurück.
+              <Sparkles className="h-3.5 w-3.5" /> Für Handwerksbetriebe · Made in Germany
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-foreground">
-              Aus Chaos wird{" "}
+              Schluss mit{" "}
               <span className="bg-gradient-to-r from-brand-600 to-accent bg-clip-text text-transparent">
-                Unternehmerklarheit.
+                Belegchaos am Sonntagabend.
               </span>
             </h1>
             <p className="mt-5 text-lg text-slate-600 max-w-xl leading-relaxed">
-              Klarblick ist der Beleg-Cockpit für Handwerksbetriebe: 99 % Erkennung,
-              Skonto-Alarm, DATEV-Export und SEPA-Sammelüberweisung — damit du wieder
-              Werkzeug in die Hand nehmen kannst statt Belege.
+              Klarblick spart deinem Handwerksbetrieb <strong className="text-foreground">5 Stunden pro Woche</strong> und holt im Schnitt <strong className="text-foreground">über 1.200 € verlorenes Skonto</strong> pro Jahr zurück.
+              Foto vom Beleg → DATEV-fertig. Punkt.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <Link href="/dashboard" className="btn-primary btn-lg">
-                Kostenlosen Demo-Report ansehen <ArrowRight className="h-4 w-4" />
+                Live-Demo ohne Anmeldung <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href="/upload" className="btn-secondary btn-lg">
-                <Camera className="h-4 w-4" /> Beleg hochladen
+              <Link href="#kontakt" className="btn-secondary btn-lg">
+                <Camera className="h-4 w-4" /> Beratung anfordern
               </Link>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-500">
-              <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-accent" /> DSGVO-konform geplant</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-accent" /> Mock-Modus ohne Anmeldung</span>
-              <span className="flex items-center gap-1.5"><FileBarChart2 className="h-3.5 w-3.5 text-accent" /> PDF-Export inklusive</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-accent" /> GoBD &amp; DSGVO-konform</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-accent" /> 99 % Beleg-Erkennung</span>
+              <span className="flex items-center gap-1.5"><FileBarChart2 className="h-3.5 w-3.5 text-accent" /> 14 Tage gratis testen</span>
             </div>
           </div>
 
@@ -358,11 +361,133 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ABO-MODELL */}
+      <section id="abo" className="py-20 lg:py-24 bg-slate-50 border-y border-border">
+        <div className="max-w-5xl mx-auto px-4 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">So funktioniert das Abo</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Faire Abrechnung. Monatlich kündbar.</h2>
+            <p className="mt-3 text-slate-600">Keine Einrichtungsgebühr. Keine versteckten Kosten. Du bestimmst, wann du gehst.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-5">
+            <div className="card p-6">
+              <CreditCard className="h-7 w-7 text-brand-600 mb-3" />
+              <h3 className="font-bold">SEPA-Lastschrift</h3>
+              <p className="text-sm text-slate-600 mt-1.5">Einmal Mandat erteilen — wir buchen monatlich am 1. Werktag ab. Rechnung kommt per E-Mail.</p>
+            </div>
+            <div className="card p-6">
+              <CheckCircle2 className="h-7 w-7 text-accent mb-3" />
+              <h3 className="font-bold">14 Tage gratis testen</h3>
+              <p className="text-sm text-slate-600 mt-1.5">Voller Funktionsumfang. Keine Zahlungsdaten nötig. Erst nach Testphase erfolgt erste Buchung.</p>
+            </div>
+            <div className="card p-6">
+              <XCircle className="h-7 w-7 text-amber-600 mb-3" />
+              <h3 className="font-bold">Monatlich kündbar</h3>
+              <p className="text-sm text-slate-600 mt-1.5">Ein Klick in den Einstellungen — fertig. Alle Daten lassen sich vorher exportieren (DATEV, PDF, CSV).</p>
+            </div>
+          </div>
+          <div className="mt-8 text-center">
+            <Link href="/pricing" className="btn-secondary">Preise &amp; Pakete ansehen <ArrowRight className="h-4 w-4" /></Link>
+          </div>
+        </div>
+      </section>
+
+      {/* KONTAKT */}
+      <section id="kontakt" className="py-20 lg:py-24">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Kontakt</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Lass uns reden.</h2>
+            <p className="mt-3 text-slate-600">Wir melden uns innerhalb von 24 Stunden — werktags meist deutlich schneller.</p>
+          </div>
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Form */}
+            <form
+              action="https://formsubmit.co/amin.sistek20@gmail.com"
+              method="POST"
+              className="card p-6 lg:p-8 space-y-4"
+            >
+              <input type="hidden" name="_subject" value="Neue Klarblick-Anfrage" />
+              <input type="hidden" name="_captcha" value="false" />
+              <input type="hidden" name="_template" value="table" />
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Name</label>
+                  <input name="name" required className="input mt-1.5" placeholder="Max Mustermann" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Betrieb</label>
+                  <input name="company" className="input mt-1.5" placeholder="Mustermann GmbH" />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">E-Mail</label>
+                  <input name="email" type="email" required className="input mt-1.5" placeholder="max@firma.de" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Telefon (optional)</label>
+                  <input name="phone" className="input mt-1.5" placeholder="+49 ..." />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Worum geht's?</label>
+                <textarea name="message" required rows={4} className="input mt-1.5 resize-none" placeholder="Wir sind ein Sanitärbetrieb mit 6 Mitarbeitern und suchen ..." />
+              </div>
+              <button type="submit" className="btn-primary w-full">
+                Anfrage senden <Send className="h-4 w-4" />
+              </button>
+              <p className="text-xs text-slate-500">Mit dem Absenden bestätigst du, dass deine Daten zur Bearbeitung der Anfrage verwendet werden.</p>
+            </form>
+
+            {/* Kontaktinfo + Map */}
+            <div className="space-y-6">
+              <div className="card p-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <Mail className="h-5 w-5 text-brand-600 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-slate-500">E-Mail</p>
+                    <a href="mailto:amin.sistek20@gmail.com" className="font-medium hover:text-brand-600">amin.sistek20@gmail.com</a>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Phone className="h-5 w-5 text-brand-600 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-slate-500">Antwortzeit</p>
+                    <p className="font-medium">&lt; 24 Stunden (werktags)</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-brand-600 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-slate-500">Standort</p>
+                    <p className="font-medium">Deutschland</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card overflow-hidden">
+                <iframe
+                  title="Klarblick Standort"
+                  src="https://www.openstreetmap.org/export/embed.html?bbox=6.5%2C50.5%2C13.5%2C53.5&amp;layer=mapnik"
+                  className="w-full h-72 border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+                <div className="p-3 text-xs text-slate-500 border-t border-border">
+                  Karte: OpenStreetMap-Mitwirkende
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <footer className="border-t border-border py-10">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 flex flex-col md:flex-row justify-between gap-6 text-sm text-slate-500">
           <div>
             <div className="font-bold text-foreground flex items-center gap-2">
-              <span className="h-6 w-6 rounded-md bg-brand-600 text-white grid place-content-center text-xs">K</span>
+              <img src="/klar.png" alt="Klarblick" className="h-7 w-7 object-contain" />
               Klarblick
             </div>
             <p className="mt-2 max-w-sm">Der automatische Management-Report für kleine Unternehmen.</p>
