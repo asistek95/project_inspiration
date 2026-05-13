@@ -22,6 +22,7 @@ import {
   StatusPieChart,
 } from "@/components/Charts";
 import { Disclaimer } from "@/components/Disclaimer";
+import { SavingsBoard } from "@/components/SavingsBoard";
 import { loadReceipts } from "@/lib/store";
 import {
   buildInsights,
@@ -153,6 +154,15 @@ export default function DashboardPage() {
           />
         </div>
       </div>
+
+      {/* Spar-Potenzial */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-bold tracking-tight">Spar-Potenzial</h2>
+          <span className="text-xs text-muted-foreground">Klarblick findet, wo du Geld verlierst</span>
+        </div>
+        <SavingsBoard receipts={receipts} />
+      </section>
 
       {/* Insights */}
       <section>

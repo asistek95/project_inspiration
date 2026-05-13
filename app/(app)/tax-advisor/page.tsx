@@ -11,11 +11,15 @@ import {
   Folder,
   FileText,
   FileSpreadsheet,
+  Database,
+  Landmark,
 } from "lucide-react";
 import { loadReceipts, setStatusBulk } from "@/lib/store";
 import type { Receipt } from "@/lib/types";
 import { formatEUR } from "@/lib/utils";
 import { exportCSV, generateReportPDF } from "@/lib/pdf";
+import { buildDatevCSV, downloadCSV } from "@/lib/datev";
+import { buildSepaXML, downloadXML } from "@/lib/sepa";
 import { buildInsights, periodStats } from "@/lib/insights";
 import { DEMO_COMPANY } from "@/lib/demo-data";
 import { Disclaimer } from "@/components/Disclaimer";
@@ -165,6 +169,35 @@ export default function TaxAdvisorPage() {
             className="btn-secondary"
           >
             <FileSpreadsheet className="h-4 w-4" /> CSV erzeugen
+          </button>
+          <button
+            onClick={() =>
+              downloadCSV(
+                `klarblick_datev_${from}_${to}.csv`,
+                buildDatevCSV(checkedReceipts, `${from} – ${to}`),
+              )
+            }
+            className="btn-secondary"
+          >
+            <Database className="h-4 w-4" /> DATEV-CSV exportieren
+          </button>
+          <button
+            onClick={() => {
+              const open = checkedReceipts.filter((r) => !r.paid_at && r.receipt_type === "Rechnung");
+              if (open.length === 0) {
+                alert("Keine offenen Rechnungen zum Bezahlen.");
+                return;
+              }
+              const xml = buildSepaXML({
+                debtorName: DEMO_COMPANY.company_name,
+                debtorIban: "DE89370400440532013000",
+                receipts: open,
+              });
+              downloadXML(`klarblick_sepa_${from}_${to}.xml`, xml);
+            }}
+            className="btn-secondary"
+          >
+            <Landmark className="h-4 w-4" /> SEPA-XML (Sammelüberweisung)
           </button>
           <button
             onClick={() =>

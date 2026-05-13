@@ -1,18 +1,24 @@
 import type { Receipt, Category, PaymentMethod, ReceiptType } from "./types";
 
 const SUPPLIERS_BY_CAT: Record<Category, string[]> = {
-  Wareneinkauf: ["Metro", "Lokaler Großhandel", "Würth"],
-  "Werkzeug & Material": ["Hornbach", "Bauhaus", "Obi", "Würth"],
-  Fahrtkosten: ["Shell", "Aral", "Total"],
-  Bewirtung: ["Rewe", "Restaurant Adler", "Metro"],
-  "Werbung & Marketing": ["Canva", "Meta Ads", "Google Ads"],
-  Bürobedarf: ["Amazon Business", "Rewe", "Obi"],
+  Wareneinkauf: ["GC Gienger", "Richter+Frenzel", "Sonepar", "Metro", "Klöckner"],
+  "Werkzeug & Material": ["Hornbach", "Bauhaus", "OBI", "Würth", "Hilti", "Festool", "Berner"],
+  Fahrtkosten: ["Shell", "Aral", "Esso", "ATU"],
+  Bewirtung: ["Rewe", "Restaurant Sonne", "Edeka"],
+  "Werbung & Marketing": ["Google Ads", "Meta Ads", "Canva"],
+  Bürobedarf: ["Amazon Business"],
   "Telefon & Internet": ["Telekom", "Vodafone"],
-  Software: ["Adobe", "Canva", "Microsoft 365"],
+  Software: ["DATEV", "Microsoft 365", "Adobe"],
   Miete: ["Vermietung Müller"],
   Versicherungen: ["Allianz", "HDI"],
-  Sonstiges: ["Amazon Business", "Rewe"],
+  Sonstiges: ["DHL"],
 };
+
+// Wiederkehrende Lieferanten (Abos)
+const RECURRING_SUPPLIERS = new Set([
+  "Telekom", "Vodafone", "DATEV", "Microsoft 365", "Adobe", "Canva",
+  "Allianz", "HDI", "Google Ads", "Meta Ads",
+]);
 
 const RANGES: Record<Category, [number, number]> = {
   Wareneinkauf: [180, 1800],
@@ -151,25 +157,36 @@ export function generateDemoReceipts(): Receipt[] {
       if (rand() < 0.06 && cat === "Wareneinkauf") gross = round2(gross * 1.8);
       const { net, vat } = vatFor(cat, gross);
       const supplier = pick(SUPPLIERS_BY_CAT[cat]);
-      // Confidence-Verteilung
-      let confidence = 0.92 + rand() * 0.07;
+      // 99% hohe Confidence (Klarblick-OCR ist top)
+      let confidence = 0.93 + rand() * 0.06;
       const warnings: string[] = [];
-      if (rand() < 0.09) {
-        confidence = 0.55 + rand() * 0.14; // unsicher
-        warnings.push("MwSt.-Wert nicht eindeutig erkennbar");
-        if (rand() < 0.5) warnings.push("Datum unscharf");
-      } else if (rand() < 0.15) {
-        confidence = 0.72 + rand() * 0.15;
-        warnings.push("Bitte Lieferant prüfen");
+      if (rand() < 0.01) {
+        confidence = 0.78 + rand() * 0.1;
+        warnings.push("Prüfung empfohlen");
       }
       const status =
-        confidence < 0.7
-          ? "unsicher"
-          : confidence < 0.88
-            ? "ungeprueft"
-            : rand() < 0.55
-              ? "geprueft"
-              : "ungeprueft";
+        confidence < 0.88
+          ? "ungeprueft"
+          : rand() < 0.6
+            ? "geprueft"
+            : "ungeprueft";
+
+      // Skonto-Bedingungen + Bezahl-Status (für Skonto-Alarm)
+      const isRec = RECURRING_SUPPLIERS.has(supplier);
+      let paymentTerms = null as any;
+      let paidAt: string | null = null;
+      if (!isRec && gross > 80 && rand() < 0.5) {
+        paymentTerms = {
+          skonto_pct: [2, 2, 3][Math.floor(rand() * 3)],
+          days: [7, 10, 14][Math.floor(rand() * 3)],
+          net_days: 30,
+        };
+        // 60% wurden zu spät bezahlt (verlorenes Skonto)
+        const lateDays = paymentTerms.days + (rand() < 0.6 ? 5 + Math.floor(rand() * 10) : -2);
+        const paid = new Date(date);
+        paid.setDate(paid.getDate() + lateDays);
+        if (paid <= new Date()) paidAt = paid.toISOString().slice(0, 10);
+      }
 
       const receipt: Receipt = {
         id: `r_${String(id).padStart(4, "0")}`,
@@ -190,6 +207,9 @@ export function generateDemoReceipts(): Receipt[] {
         warnings,
         notes: null,
         project: rand() < 0.18 ? pick(["Projekt Schmidt", "Projekt Müller", "BV Hauptstraße 12"]) : null,
+        payment_terms: paymentTerms,
+        is_recurring: isRec,
+        paid_at: paidAt,
         created_at: date.toISOString(),
         updated_at: date.toISOString(),
       };

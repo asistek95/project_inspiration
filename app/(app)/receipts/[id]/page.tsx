@@ -10,6 +10,8 @@ import {
   Send,
   Trash2,
   FileText,
+  History,
+  Lock,
 } from "lucide-react";
 import { ReceiptPaper } from "@/components/ReceiptPaper";
 import {
@@ -183,7 +185,42 @@ export default function ReceiptDetail() {
         </div>
       </div>
 
+      <AuditTrail receipt={receipt} />
+
       <Disclaimer />
+    </div>
+  );
+}
+
+function AuditTrail({ receipt }: { receipt: Receipt }) {
+  if (!receipt.audit_log || receipt.audit_log.length === 0) return null;
+  return (
+    <div className="card p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <History className="h-4 w-4 text-slate-500" />
+        <h2 className="font-semibold">Änderungshistorie (GoBD)</h2>
+        {receipt.locked ? (
+          <span className="pill bg-slate-100 text-slate-600 border border-slate-200">
+            <Lock className="h-3 w-3" /> Gesperrt
+          </span>
+        ) : null}
+      </div>
+      <ul className="text-sm space-y-1.5 font-mono max-h-60 overflow-y-auto">
+        {receipt.audit_log.map((e, i) => (
+          <li key={i} className="text-xs text-slate-600">
+            <span className="text-slate-400">
+              {new Date(e.ts).toLocaleString("de-DE")}
+            </span>{" "}
+            · <span className="text-foreground font-semibold">{e.action}</span>
+            {e.field ? <span> · {e.field}</span> : null}
+            {e.before !== undefined && e.after !== undefined ? (
+              <span className="text-slate-500">
+                : "{e.before}" → "{e.after}"
+              </span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

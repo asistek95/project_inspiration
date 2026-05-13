@@ -43,12 +43,49 @@ create table if not exists public.receipts (
   warnings text[] not null default '{}',
   notes text,
   project text,
+  -- Klarblick Pro: Skonto + GoBD
+  payment_terms jsonb,        -- { skonto_pct, days, net_days }
+  is_recurring boolean not null default false,
+  paid_at date,
+  iban text,
+  fingerprint text,           -- für Dubletten-Erkennung
+  locked boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 create index if not exists idx_receipts_user on public.receipts(user_id);
 create index if not exists idx_receipts_user_date on public.receipts(user_id, receipt_date desc);
 create index if not exists idx_receipts_status on public.receipts(user_id, status);
+create index if not exists idx_receipts_fingerprint on public.receipts(user_id, fingerprint);
+create index if not exists idx_receipts_recurring on public.receipts(user_id, is_recurring) where is_recurring = true;
+
+-- Audit-Log (GoBD-Konformität: alle Änderungen unveränderlich)
+create table if not exists public.receipt_audit (
+  id uuid primary key default uuid_generate_v4(),
+  receipt_id uuid not null references public.receipts(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  ts timestamptz not null default now(),
+  action text not null check (action in ('created','updated','deleted','status_change')),
+  field text,
+  before_value text,
+  after_value text
+);
+create index if not exists idx_audit_receipt on public.receipt_audit(receipt_id, ts desc);
+create index if not exists idx_audit_user on public.receipt_audit(user_id, ts desc);
+
+-- E-Mail-Forwarding Inbox
+create table if not exists public.email_inbox (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  alias text not null,             -- z.B. "amin.sistek20+klarblick@gmail.com"
+  from_address text not null,
+  subject text,
+  received_at timestamptz not null default now(),
+  attachment_url text,
+  processed_receipt_id uuid references public.receipts(id) on delete set null,
+  status text not null default 'pending' check (status in ('pending','processed','failed','rejected'))
+);
+create index if not exists idx_inbox_user on public.email_inbox(user_id, received_at desc);
 
 create or replace function public.set_updated_at() returns trigger as $$
 begin
@@ -84,6 +121,8 @@ alter table public.profiles enable row level security;
 alter table public.receipts enable row level security;
 alter table public.categories enable row level security;
 alter table public.report_runs enable row level security;
+alter table public.receipt_audit enable row level security;
+alter table public.email_inbox enable row level security;
 
 -- Profile: jeder darf nur sein eigenes lesen/schreiben
 create policy "profiles_self_select" on public.profiles
@@ -101,6 +140,17 @@ create policy "categories_owner_all" on public.categories
 
 -- Report runs
 create policy "reports_owner_all" on public.report_runs
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Audit-Log: nur lesbar (GoBD-Unveränderlichkeit), Inserts via Trigger / Server
+create policy "audit_owner_select" on public.receipt_audit
+  for select using (auth.uid() = user_id);
+create policy "audit_owner_insert" on public.receipt_audit
+  for insert with check (auth.uid() = user_id);
+-- absichtlich kein update/delete für audit_log → GoBD-konform
+
+-- E-Mail-Inbox
+create policy "inbox_owner_all" on public.email_inbox
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- ────────────────────────────────────────────────────────────

@@ -35,6 +35,21 @@ export type ReceiptType = (typeof RECEIPT_TYPES)[number];
 export const PAYMENT_METHODS = ["Bar", "Karte", "Überweisung", "Lastschrift", "PayPal"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
+export interface PaymentTerms {
+  skonto_pct: number; // z.B. 2 = 2 %
+  days: number;       // Skonto-Frist
+  net_days: number;   // Netto-Frist
+}
+
+export interface AuditEntry {
+  ts: string;          // ISO timestamp
+  action: "created" | "updated" | "deleted" | "status_change";
+  field?: string;
+  before?: string;
+  after?: string;
+  by: string;          // user_id oder "system"
+}
+
 export interface Receipt {
   id: string;
   user_id: string;
@@ -54,6 +69,14 @@ export interface Receipt {
   warnings: string[];
   notes: string | null;
   project: string | null;
+  // GoBD-Erweiterungen
+  payment_terms?: PaymentTerms | null;
+  is_recurring?: boolean;
+  paid_at?: string | null;          // ISO yyyy-mm-dd
+  iban?: string | null;             // für SEPA-Export
+  fingerprint?: string;             // für Dubletten
+  audit_log?: AuditEntry[];         // Änderungshistorie
+  locked?: boolean;                 // nach Steuerberater-Übergabe
   created_at: string;
   updated_at: string;
 }

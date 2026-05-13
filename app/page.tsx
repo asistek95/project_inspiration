@@ -54,7 +54,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-16 lg:py-24 grid lg:grid-cols-2 gap-12 items-center">
           <div>
             <span className="pill border bg-brand-50 text-brand-700 border-blue-100 mb-5">
-              <Sparkles className="h-3.5 w-3.5" /> Belege rein. Management-Report raus.
+              <Sparkles className="h-3.5 w-3.5" /> Speziell für Handwerker · Belege rein. Geld zurück.
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-foreground">
               Aus Chaos wird{" "}
@@ -63,8 +63,9 @@ export default function LandingPage() {
               </span>
             </h1>
             <p className="mt-5 text-lg text-slate-600 max-w-xl leading-relaxed">
-              Klarblick verwandelt deine Belege in Management-Reports und klare Einblicke —
-              für dich und deinen Steuerberater.
+              Klarblick ist der Beleg-Cockpit für Handwerksbetriebe: 99 % Erkennung,
+              Skonto-Alarm, DATEV-Export und SEPA-Sammelüberweisung — damit du wieder
+              Werkzeug in die Hand nehmen kannst statt Belege.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <Link href="/dashboard" className="btn-primary btn-lg">
@@ -150,7 +151,40 @@ export default function LandingPage() {
 
       <Testimonials />
 
-      {/* REPORT PREVIEW */}
+      {/* PROFI-FEATURES */}
+      <section className="py-20 lg:py-24 border-t border-border">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Profi-Features</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Mehr als nur Belege ablegen.
+            </h2>
+            <p className="mt-3 text-slate-600">Klarblick spart dir Geld — nicht nur Zeit.</p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              { Icon: TrendingUp, title: "Preis-Wächter", desc: "Erkennt automatisch, wenn dein Sanitär-Großhändler die Preise erhöht. Sofort sichtbar.", tag: "Geld sparen" },
+              { Icon: AlertTriangle, title: "Skonto-Alarm", desc: "Zeigt dir genau, wie viel Skonto du verlierst — und welche Rechnung du heute zahlen solltest.", tag: "Liquidität" },
+              { Icon: Sparkles, title: "Abo-Falle", desc: "Alle wiederkehrenden Kosten auf einen Blick. Welches Abo brauchst du wirklich?", tag: "Übersicht" },
+              { Icon: FileBarChart2, title: "DATEV-Export", desc: "Ein Klick → DATEV-CSV mit SKR03-Kontierung. Dein Steuerberater liebt dich.", tag: "Buchhaltung" },
+              { Icon: Send, title: "SEPA-Sammelüberweisung", desc: "Alle offenen Rechnungen in einer XML — ins Online-Banking laden, fertig.", tag: "Zahlung" },
+              { Icon: ShieldCheck, title: "GoBD-konform", desc: "Änderungshistorie, gesperrte Belege nach Übergabe — bestehst jede Betriebsprüfung.", tag: "Sicherheit" },
+            ].map(({ Icon, title, desc, tag }) => (
+              <div key={title} className="card p-6 hover:shadow-md transition">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="h-11 w-11 rounded-xl bg-brand-50 text-brand-700 grid place-content-center">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="pill bg-accent-soft text-accent border border-emerald-200 text-[10px]">{tag}</span>
+                </div>
+                <h3 className="font-bold text-lg">{title}</h3>
+                <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section id="report" className="py-20 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
@@ -215,7 +249,11 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
             <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Für wen?</p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Für alle, die endlich Ordnung wollen.</h2>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Gebaut für Handwerker.</h2>
+            <p className="mt-3 text-slate-600">
+              Elektriker, Sanitärinstallateure, Maler, Tischler, Dachdecker, Bauunternehmer —
+              alle, die täglich mit Bauhof-Belegen, Material-Rechnungen und Tankquittungen jonglieren.
+            </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[

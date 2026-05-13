@@ -12,8 +12,8 @@ import {
   AlertTriangle,
   X,
 } from "lucide-react";
-import { extractReceiptData } from "@/lib/ocr";
-import { upsertReceipt } from "@/lib/store";
+import { extractReceiptData, findDuplicate, suggestCategory } from "@/lib/ocr";
+import { upsertReceipt, loadReceipts } from "@/lib/store";
 import { Disclaimer } from "@/components/Disclaimer";
 import { ConfidenceBadge } from "@/components/Badges";
 import { CATEGORIES, RECEIPT_TYPES, PAYMENT_METHODS } from "@/lib/types";
@@ -24,9 +24,10 @@ interface FileState {
   id: string;
   file: File;
   preview: string;
-  status: "uploading" | "reading" | "ready" | "saved";
+  status: "uploading" | "reading" | "ready" | "saved" | "duplicate";
   extracted?: any;
   draft?: Receipt;
+  duplicate_of?: string;
 }
 
 export default function UploadPage() {
@@ -45,6 +46,17 @@ export default function UploadPage() {
     for (const item of newItems) {
       try {
         const extracted = await extractReceiptData(item.file);
+        // Dubletten-Check
+        const existing = loadReceipts();
+        const dupe = findDuplicate(extracted, existing);
+        if (dupe) {
+          setItems((prev) =>
+            prev.map((p) =>
+              p.id === item.id ? { ...p, status: "duplicate", duplicate_of: dupe.id, extracted } : p,
+            ),
+          );
+          continue;
+        }
         const draft: Receipt = {
           id: item.id,
           user_id: "demo-user",
@@ -64,6 +76,10 @@ export default function UploadPage() {
           warnings: extracted.warnings,
           notes: null,
           project: null,
+          payment_terms: extracted.payment_terms || null,
+          is_recurring: !!extracted.is_recurring,
+          paid_at: null,
+          fingerprint: extracted.fingerprint,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -89,7 +105,18 @@ export default function UploadPage() {
 
   function updateDraft(id: string, patch: Partial<Receipt>) {
     setItems((prev) =>
-      prev.map((p) => (p.id === id && p.draft ? { ...p, draft: { ...p.draft, ...patch } } : p))
+      prev.map((p) => {
+        if (p.id !== id || !p.draft) return p;
+        let next = { ...p.draft, ...patch };
+        // Auto-Kategorisierung wenn Lieferant geändert
+        if (patch.supplier_name && patch.supplier_name !== p.draft.supplier_name) {
+          const sug = suggestCategory(patch.supplier_name);
+          if (sug) {
+            next = { ...next, category: sug.category, payment_method: sug.payment };
+          }
+        }
+        return { ...p, draft: next };
+      }),
     );
   }
 
@@ -184,6 +211,24 @@ function ItemCard({
           <p className="font-medium">{item.file.name}</p>
           <p className="text-sm text-muted-foreground">Beleg wird gelesen …</p>
         </div>
+      </div>
+    );
+  }
+
+  if (item.status === "duplicate") {
+    return (
+      <div className="card p-5 flex items-start gap-3 bg-warn-soft border-amber-200">
+        <AlertTriangle className="h-5 w-5 text-warn mt-0.5" />
+        <div className="flex-1">
+          <p className="font-medium text-warn">Dublette erkannt — Beleg existiert bereits</p>
+          <p className="text-sm text-warn/90 mt-0.5">
+            {item.file.name} hat denselben Lieferant, Datum und Betrag wie ein vorhandener Beleg
+            ({item.extracted?.supplier_name} · {item.extracted?.gross_amount?.toFixed(2)} €).
+          </p>
+        </div>
+        <button onClick={onRemove} className="btn-ghost !p-2">
+          <X className="h-4 w-4" />
+        </button>
       </div>
     );
   }
