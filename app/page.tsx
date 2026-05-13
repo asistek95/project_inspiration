@@ -61,7 +61,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-16 lg:py-24 grid lg:grid-cols-2 gap-12 items-center">
           <div>
             <span className="pill border bg-brand-50 text-brand-700 border-blue-100 mb-5">
-              <Sparkles className="h-3.5 w-3.5" /> Für Handwerksbetriebe · Made in Germany
+              <Sparkles className="h-3.5 w-3.5" /> Für Handwerksbetriebe · Made in Austria
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-foreground">
               Endlich verstehen, wohin{" "}
@@ -290,18 +290,18 @@ export default function LandingPage() {
           <div className="text-center max-w-2xl mx-auto mb-12">
             <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Preise</p>
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Faire Preise. Klar verständlich.</h2>
-            <p className="mt-3 text-slate-600">14 Tage testen. Jederzeit kündbar.</p>
+            <p className="mt-3 text-slate-600">14 Tage testen. Jederzeit kündbar. Alle Preise inkl. 20 % USt.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <PricingCard
               name="Starter"
-              price="29"
+              price="100"
               tagline="Einzelmeister · 1 Nutzer"
-              features={["bis 100 Belege/Monat", "99 % KI-Auslesung", "Monatsreport (PDF)", "DATEV-CSV", "E-Mail-Support"]}
+              features={["bis 100 Belege/Monat", "KI-Belegerkennung (GPT-4o)", "Monatsreport (PDF)", "DATEV / RZL-Export", "E-Mail-Support"]}
             />
             <PricingCard
               name="Profi"
-              price="79"
+              price="150"
               featured
               tagline="Bis 5 Mitarbeiter"
               features={[
@@ -315,7 +315,7 @@ export default function LandingPage() {
             />
             <PricingCard
               name="Betrieb"
-              price="149"
+              price="180"
               tagline="Bis 20 Mitarbeiter"
               features={[
                 "unbegrenzte Belege",
@@ -650,7 +650,7 @@ function PricingCard({
       {tagline ? <p className="text-xs text-slate-500 mt-0.5">{tagline}</p> : null}
       <p className="mt-4">
         <span className="text-4xl font-extrabold">{price} €</span>
-        <span className="text-slate-500 text-sm"> / Monat</span>
+        <span className="text-slate-500 text-sm"> brutto / Monat</span>
       </p>
       <ul className="mt-5 space-y-2 flex-1">
         {features.map((f) => (

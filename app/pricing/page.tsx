@@ -29,13 +29,13 @@ export default function PricingPage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          <Plan name="Starter" price="29" tagline="Einzelmeister · 1 Nutzer"
-            features={["bis 100 Belege/Monat", "99 % KI-Auslesung", "Monatsreport (PDF)", "DATEV-CSV Export", "E-Mail-Support"]}
+          <Plan name="Starter" price="100" tagline="Einzelmeister · 1 Nutzer"
+            features={["bis 100 Belege/Monat", "KI-Belegerkennung (GPT-4o Vision)", "Monatsreport (PDF)", "DATEV / RZL-Export", "E-Mail-Support"]}
             href={STRIPE.starter} />
-          <Plan name="Profi" price="79" featured tagline="Bis 5 Mitarbeiter"
+          <Plan name="Profi" price="150" featured tagline="Bis 5 Mitarbeiter"
             features={["bis 500 Belege/Monat", "Skonto-Alarm + Preis-Wächter", "SEPA-Sammelüberweisung", "Abo-Falle Übersicht", "Steuerberater-Paket", "GoBD-Audit-Log"]}
             href={STRIPE.profi} />
-          <Plan name="Betrieb" price="149" tagline="Bis 20 Mitarbeiter"
+          <Plan name="Betrieb" price="180" tagline="Bis 20 Mitarbeiter"
             features={["unbegrenzte Belege", "Mehrere Nutzer + Rollen", "Projekt-Kostenstellen", "API-Zugang", "Prioritäts-Support", "Persönlicher Ansprechpartner"]}
             href={STRIPE.betrieb} />
         </div>
@@ -47,7 +47,7 @@ export default function PricingPage() {
         </div>
 
         <p className="mt-10 text-center text-xs text-muted-foreground max-w-2xl mx-auto">
-          Klarblick ist keine Steuerberatung. Alle Preise zzgl. 19 % MwSt.
+          Klarblick ist keine Steuerberatung. Alle Preise inkl. 20 % USt (Österreich).
         </p>
       </main>
     </div>
@@ -65,7 +65,7 @@ function Plan({ name, price, features, tagline, href, featured = false }:
       <p className="text-xs text-slate-500 mt-0.5">{tagline}</p>
       <p className="mt-4">
         <span className="text-4xl font-extrabold">{price} €</span>
-        <span className="text-slate-500 text-sm"> / Monat</span>
+        <span className="text-slate-500 text-sm"> brutto / Monat</span>
       </p>
       <ul className="mt-5 space-y-2 flex-1">
         {features.map((f) => (
