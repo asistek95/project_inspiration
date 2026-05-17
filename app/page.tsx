@@ -490,7 +490,7 @@ export default function LandingPage() {
               <img src="/klar.png" alt="Klarblick" className="h-7 w-7 object-contain" />
               Klarblick
             </div>
-            <p className="mt-2 max-w-sm">Der monatliche Management-Report für Handwerksbetriebe — verständlich, automatisch, DATEV-ready.</p>
+            <p className="mt-2 max-w-sm">Management Reports in Minuten statt Stunden — KI-Auswertung, klare Kennzahlen, weniger Steuerberater-Aufwand.</p>
           </div>
           <div className="flex gap-8">
             <div className="space-y-2">

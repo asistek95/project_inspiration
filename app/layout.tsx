@@ -2,10 +2,10 @@
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Klarblick – Beleg-Cockpit für Handwerksbetriebe",
+  title: "Klarblick – Management Reports & Steuerberater-Vorbereitung für Handwerksbetriebe",
   description:
-    "Klarblick verwandelt Belege automatisch in Management-Reports und klare Einblicke für Unternehmen — und ein sauberes Paket für den Steuerberater.",
-  metadataBase: new URL("https://klarblick.app"),
+    "Klarblick automatisiert deinen Monats-Management-Report und reduziert den Aufwand für den Steuerberater — mit KI-Auswertung, klaren Kennzahlen und fertiger Checkliste. Bis zu 70 % weniger Vorbereitungszeit.",
+  metadataBase: new URL("https://klarblick.com"),
   icons: {
     icon: "/klar.png",
     shortcut: "/klar.png",

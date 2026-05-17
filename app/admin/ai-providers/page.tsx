@@ -1,67 +1,58 @@
-"use client";
+import { Sparkles, CheckCircle2 } from "lucide-react";
+import { getActiveAiSetting, supabaseAdminEnabled } from "@/lib/supabase-admin";
+import { saveAiSetting } from "./actions";
+import { TestProviderButton } from "./test-button";
 
-import { useState } from "react";
-import { Sparkles, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+export const dynamic = "force-dynamic";
 
-interface Provider {
-  id: string;
-  name: string;
-  envKey: string;
-  models: string[];
-  status: "unknown" | "ok" | "error";
-  defaultModel: string;
-}
-
-const PROVIDERS: Provider[] = [
+const PROVIDERS = [
   {
     id: "anthropic",
     name: "Anthropic (Claude)",
     envKey: "ANTHROPIC_API_KEY",
     models: ["claude-sonnet-4-20250514", "claude-opus-4-20250514", "claude-haiku-4-20250514"],
     defaultModel: "claude-sonnet-4-20250514",
-    status: "unknown",
   },
   {
     id: "openai",
     name: "OpenAI (GPT)",
     envKey: "OPENAI_API_KEY",
-    models: ["gpt-4o", "gpt-4o-mini"],
+    models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
     defaultModel: "gpt-4o",
-    status: "unknown",
   },
 ];
 
-export default function AiProvidersPage() {
-  const [testResult, setTestResult] = useState<string>("");
-  const [testing, setTesting] = useState(false);
-
-  async function testProvider(p: Provider) {
-    setTesting(true);
-    setTestResult("");
-    try {
-      const res = await fetch("/api/ai/report", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ prompt: "Antworte mit 'OK'." }),
-      });
-      const data = await res.json();
-      setTestResult(`${p.name}: ${data.text?.slice(0, 100) || data.error || "?"} (Modell: ${data.model})`);
-    } catch (e) {
-      setTestResult("Fehler: " + (e as Error).message);
-    } finally {
-      setTesting(false);
-    }
-  }
+export default async function AiProvidersPage() {
+  const live = supabaseAdminEnabled;
+  const active = live ? await getActiveAiSetting() : null;
+  const envFallback = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514";
+  const activeProvider = active?.provider || "anthropic";
+  const activeModel = active?.model || envFallback;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Sparkles className="h-6 w-6 text-brand-600" /> AI-Modell-Provider
+          {live && (
+            <span className="pill bg-emerald-50 text-emerald-700 border-emerald-200 border text-[11px]">DB-LIVE</span>
+          )}
         </h1>
         <p className="text-sm text-slate-600">
-          Modelle für Management-Reports und WhatsApp-Bot konfigurieren.
+          Aktives Modell für AI-Reports und WhatsApp-Bot.
+          {!live && " (Demo-Modus — speichert noch nicht. Supabase + Tabelle ai_settings nötig.)"}
         </p>
+      </div>
+
+      <div className="card p-5 bg-blue-50 border-blue-200">
+        <p className="text-xs text-blue-700 uppercase tracking-wider font-semibold">Aktuell aktiv</p>
+        <p className="text-xl font-bold mt-1 flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+          {activeProvider} · <code className="text-sm font-mono bg-white px-2 py-0.5 rounded">{activeModel}</code>
+        </p>
+        {active?.updated_at && (
+          <p className="text-xs text-blue-700 mt-1">Geändert: {new Date(active.updated_at).toLocaleString("de-AT")}</p>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -70,52 +61,53 @@ export default function AiProvidersPage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="font-bold">{p.name}</p>
-                <p className="text-xs text-slate-500 mt-0.5">ENV: {p.envKey}</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  ENV: {p.envKey} {process.env[p.envKey] ? <span className="text-emerald-600">✓ gesetzt</span> : <span className="text-red-600">fehlt</span>}
+                </p>
               </div>
-              <span className="pill border bg-slate-50 border-slate-200 text-[11px]">
-                {p.models.length} Modelle
-              </span>
+              {p.id === activeProvider && (
+                <span className="pill bg-emerald-50 text-emerald-700 border-emerald-200 border text-[11px]">AKTIV</span>
+              )}
             </div>
-            <div className="mt-4">
-              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Default-Modell</p>
-              <code className="text-xs bg-slate-100 px-2 py-1 rounded">{p.defaultModel}</code>
-            </div>
-            <div className="mt-4">
-              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1.5">Verfügbare Modelle</p>
-              <div className="flex flex-wrap gap-1">
-                {p.models.map((m) => (
-                  <span key={m} className="pill border bg-slate-50 border-slate-200 text-[10px] font-mono">
-                    {m}
-                  </span>
-                ))}
+
+            <form action={saveAiSetting} className="mt-4">
+              <input type="hidden" name="provider" value={p.id} />
+              <label className="text-xs text-slate-500 uppercase tracking-wider">Modell wählen</label>
+              <div className="mt-1 flex gap-2">
+                <select name="model" defaultValue={p.id === activeProvider ? activeModel : p.defaultModel} className="input flex-1 text-sm font-mono">
+                  {p.models.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <button type="submit" className="btn-primary btn-sm" disabled={!live}>
+                  Aktivieren
+                </button>
               </div>
-            </div>
-            <button
-              onClick={() => testProvider(p)}
-              disabled={testing}
-              className="btn-secondary btn-sm mt-4 w-full justify-center"
-            >
-              {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              Test-Anfrage senden
-            </button>
+              {!live && (
+                <p className="text-[11px] text-amber-700 mt-1.5">
+                  Speichern erst möglich, wenn Supabase + Tabelle <code>ai_settings</code> vorhanden ist.
+                </p>
+              )}
+            </form>
+
+            <TestProviderButton providerName={p.name} />
           </div>
         ))}
       </div>
 
-      {testResult && (
-        <div className="card p-4 bg-slate-50">
-          <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Letztes Ergebnis</p>
-          <p className="text-sm font-mono whitespace-pre-wrap">{testResult}</p>
-        </div>
-      )}
+      <div className="card p-5 bg-slate-50">
+        <p className="font-semibold text-sm">Benötigte Supabase-Tabelle</p>
+        <pre className="mt-2 text-xs bg-white p-3 rounded border border-border overflow-x-auto">{`create table ai_settings (
+  id uuid primary key default gen_random_uuid(),
+  provider text not null,
+  model text not null,
+  active boolean default false,
+  updated_at timestamptz default now()
+);
 
-      <div className="card p-4 bg-blue-50 border-blue-200 text-sm text-blue-900">
-        <p className="font-semibold">Aktiv: Anthropic Claude Sonnet</p>
-        <p className="mt-1">
-          Der Wechsel des Default-Modells erfolgt aktuell über die ENV-Variable
-          <code className="bg-white px-1.5 py-0.5 rounded mx-1 text-xs">ANTHROPIC_MODEL</code>.
-          Eine UI-basierte Umschaltung (mit DB-Persistenz) folgt im nächsten Sprint.
-        </p>
+-- Erster Eintrag
+insert into ai_settings (provider, model, active)
+values ('anthropic', 'claude-sonnet-4-20250514', true);`}</pre>
       </div>
     </div>
   );
