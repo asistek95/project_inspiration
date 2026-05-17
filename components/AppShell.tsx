@@ -12,6 +12,7 @@ import {
   Receipt as ReceiptIcon,
   Menu,
   X,
+  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ const NAV = [
   { href: "/upload", label: "Beleg hochladen", Icon: Upload },
   { href: "/receipts", label: "Belegliste", Icon: ReceiptIcon },
   { href: "/report", label: "Management-Report", Icon: FileBarChart2 },
+  { href: "/ai-reports", label: "AI-Reports", Icon: Sparkles },
   { href: "/tax-advisor", label: "Steuerberater-Paket", Icon: Send },
   { href: "/settings", label: "Einstellungen", Icon: Settings },
 ];

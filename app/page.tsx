@@ -64,15 +64,15 @@ export default function LandingPage() {
               <Sparkles className="h-3.5 w-3.5" /> Für Handwerksbetriebe · Made in Austria
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-foreground">
-              Endlich verstehen, wohin{" "}
+              Management Reports in{" "}
               <span className="bg-gradient-to-r from-brand-600 to-accent bg-clip-text text-transparent">
-                dein Geld geht.
+                Minuten statt Stunden.
               </span>
             </h1>
             <p className="mt-5 text-lg text-slate-600 max-w-xl leading-relaxed">
-              Klarblick ist dein <strong className="text-foreground">monatlicher Management-Report</strong> für den Handwerksbetrieb:
-              klare Zahlen statt Zettelchaos, Kostentrends auf einen Blick und Entscheidungen,
-              die Geld bringen — nicht kosten.
+              Klarblick automatisiert deinen <strong className="text-foreground">Monatsreport</strong> und reduziert
+              den Aufwand für den Steuerberater — mit KI-Auswertung, klaren Kennzahlen und
+              fertiger Checkliste. <strong>Bis zu 70 % weniger Vorbereitungszeit.</strong>
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <Link href="/dashboard" className="btn-primary btn-lg">
