@@ -23,12 +23,19 @@ import {
   Phone,
   CreditCard,
   XCircle,
+  Lock,
+  Scale,
+  Database,
+  Brain,
+  FileSearch,
+  Bot,
 } from "lucide-react";
 import { Disclaimer } from "@/components/Disclaimer";
 import { DemoVideo } from "@/components/DemoVideo";
 import { PartnersStrip, Testimonials } from "@/components/Partners";
 import { LiveChat } from "@/components/LiveChat";
 import { Onboarding } from "@/components/Onboarding";
+import { MagicMoment } from "@/components/MagicMoment";
 export default function LandingPage() {
   return (
     <div className="bg-white">
@@ -94,6 +101,32 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* TRUST-WALL */}
+      <section className="py-10 bg-slate-50 border-y border-border">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {[
+              { Icon: Scale, t: "Österr. Recht", d: "UGB · EStG · UStG" },
+              { Icon: ShieldCheck, t: "GoBD-konform", d: "Audit-Log" },
+              { Icon: Lock, t: "EU-Hosting", d: "Daten in Frankfurt" },
+              { Icon: Database, t: "DSGVO", d: "AV-Vertrag verfügbar" },
+              { Icon: AlertTriangle, t: "Kein StB-Ersatz", d: "Vorbereitend" },
+              { Icon: CheckCircle2, t: "Beta", d: "Tägliche Backups" },
+            ].map(({ Icon, t, d }) => (
+              <div key={t} className="flex items-center gap-2.5 bg-white border border-border rounded-lg p-3">
+                <Icon className="h-5 w-5 text-brand-600 shrink-0" />
+                <div>
+                  <p className="text-xs font-bold leading-tight">{t}</p>
+                  <p className="text-[11px] text-slate-500 leading-tight">{d}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <MagicMoment />
+
       <PartnersStrip />
 
       {/* PROBLEM */}
@@ -157,6 +190,56 @@ export default function LandingPage() {
       </section>
 
       <Testimonials />
+
+      {/* WARUM NICHT CHATGPT */}
+      <section className="py-20 lg:py-24 border-t border-border">
+        <div className="max-w-5xl mx-auto px-4 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Häufige Frage</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              „Warum nicht einfach ChatGPT?"
+            </h2>
+            <p className="mt-3 text-slate-600">
+              Kurze Antwort: ChatGPT ist generalistisch. Klarblick ist auf österreichische Handwerksbetriebe gebaut — mit Workflow, Recht und Buchhaltungs-Standard.
+            </p>
+          </div>
+          <div className="card overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-border">
+                <tr>
+                  <th className="text-left p-4 font-semibold">Funktion</th>
+                  <th className="text-center p-4 font-semibold w-32">ChatGPT</th>
+                  <th className="text-center p-4 font-semibold w-32 bg-brand-50 text-brand-700">Klarblick</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {[
+                  ["Belege per Foto/Mail automatisch erfassen", "no", "yes"],
+                  ["DATEV / RZL-Export (SKR03)", "no", "yes"],
+                  ["Österreichisches Steuerrecht (UStG, 20 % USt)", "part", "yes"],
+                  ["Skonto-Alarm + Preis-Wächter", "no", "yes"],
+                  ["GoBD-Audit-Log für Finanzamt", "no", "yes"],
+                  ["Daten bleiben im EU-Raum", "no", "yes"],
+                  ["Unternehmenskontext gespeichert", "no", "yes"],
+                  ["Steuerberater-Paket auf Knopfdruck", "no", "yes"],
+                ].map(([label, gpt, kb], i) => (
+                  <tr key={i}>
+                    <td className="p-4">{label}</td>
+                    <td className="p-4 text-center">
+                      {gpt === "yes" && <CheckCircle2 className="h-5 w-5 text-accent inline" />}
+                      {gpt === "no" && <XCircle className="h-5 w-5 text-slate-300 inline" />}
+                      {gpt === "part" && <span className="text-amber-600 text-xs font-medium">teilweise</span>}
+                    </td>
+                    <td className="p-4 text-center bg-brand-50/40">
+                      {kb === "yes" ? <CheckCircle2 className="h-5 w-5 text-accent inline" /> : <XCircle className="h-5 w-5 text-slate-300 inline" />}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
       {/* PROFI-FEATURES */}
       <section className="py-20 lg:py-24 border-t border-border">
@@ -251,6 +334,74 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* INTELLIGENTE FEATURES (Doku-Analyse, Kontext-Memory) */}
+      <section className="py-20 lg:py-24 bg-gradient-to-br from-brand-50/40 via-white to-accent-soft/30 border-t border-border">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">KI-Intelligenz</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Klarblick lernt deinen Betrieb kennen.
+            </h2>
+            <p className="mt-3 text-slate-600">
+              Je länger du Klarblick nutzt, desto besser werden die Auswertungen.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-5">
+            <div className="card p-6">
+              <FileSearch className="h-8 w-8 text-brand-600 mb-3" />
+              <h3 className="font-bold">Dokumentanalyse</h3>
+              <p className="text-sm text-slate-600 mt-1.5">
+                PDF-Rechnung oder Vertrag hochladen → KI erkennt Lieferant, Kündigungsfrist, Skonto und kategorisiert automatisch.
+              </p>
+            </div>
+            <div className="card p-6">
+              <Brain className="h-8 w-8 text-brand-600 mb-3" />
+              <h3 className="font-bold">Unternehmens-Kontext</h3>
+              <p className="text-sm text-slate-600 mt-1.5">
+                Klarblick merkt sich Gewerbe, Mitarbeiterzahl, Fahrzeuge, Homeoffice — Antworten werden mit jeder Woche präziser.
+              </p>
+            </div>
+            <div className="card p-6">
+              <Bot className="h-8 w-8 text-brand-600 mb-3" />
+              <h3 className="font-bold">Rückfragen wie ein Profi</h3>
+              <p className="text-sm text-slate-600 mt-1.5">
+                Unklarer Beleg? Die KI fragt nach — statt zu raten. Jede Antwort mit Confidence-Level (Hoch / Mittel).
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* WAS KLARBLICK NICHT MACHT */}
+      <section className="py-16 lg:py-20 bg-slate-50 border-y border-border">
+        <div className="max-w-5xl mx-auto px-4 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Ehrlich gesagt</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Was Klarblick <span className="text-danger">nicht</span> macht.
+            </h2>
+            <p className="mt-3 text-slate-600">
+              Wir versprechen lieber weniger und liefern das zuverlässig — als zu viel und enttäuschen dich.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            {[
+              "Keine Steuererklärung — das macht dein Steuerberater.",
+              "Keine Rechtsberatung — wir verweisen aufs Gesetz, nicht auf Paragraphen-Auslegung.",
+              "Keine direkte FinanzOnline-Übermittlung — du bekommst die Daten, der StB übermittelt.",
+              "Keine Buchungssätze in DATEV — wir exportieren, dein StB bucht.",
+              "Keine Lohnverrechnung oder Gehaltsabrechnung.",
+              "Keine Garantie auf 100 % korrekte KI-Ergebnisse — deshalb Confidence-Level + Prüfschritt.",
+            ].map((t, i) => (
+              <div key={i} className="flex items-start gap-3 bg-white border border-border rounded-lg p-4">
+                <XCircle className="h-5 w-5 text-danger shrink-0 mt-0.5" />
+                <span className="text-sm text-slate-700">{t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* FÜR WEN */}
       <section className="py-20 lg:py-24 bg-slate-50 border-y border-border">
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
@@ -328,6 +479,24 @@ export default function LandingPage() {
           </div>
           <div className="mt-8 text-center">
             <Link href="/pricing" className="btn-secondary">Alle Details &amp; Stripe-Checkout <ArrowRight className="h-4 w-4" /></Link>
+          </div>
+
+          {/* WHITE-LABEL FÜR KANZLEIEN */}
+          <div className="mt-16 card-soft p-8 lg:p-10 bg-gradient-to-br from-foreground to-slate-800 text-white">
+            <div className="grid lg:grid-cols-2 gap-6 items-center">
+              <div>
+                <span className="pill bg-white/10 text-white border border-white/20 mb-4">
+                  <Calculator className="h-3.5 w-3.5" /> Für Steuerkanzleien
+                </span>
+                <h3 className="text-2xl md:text-3xl font-bold">White-Label für deine Kanzlei.</h3>
+                <p className="mt-3 text-slate-300 text-sm leading-relaxed">
+                  Biete deinen Klienten Klarblick unter deinem Logo an. Du bekommst saubere DATEV-Daten, deine Klienten bekommen Klarheit — und du sparst Stunden Rückfragen pro Monat.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 lg:justify-end">
+                <a href="#kontakt" className="btn-primary">Kanzlei-Anfrage stellen <ArrowRight className="h-4 w-4" /></a>
+              </div>
+            </div>
           </div>
         </div>
       </section>

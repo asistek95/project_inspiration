@@ -174,13 +174,40 @@ export default function AiReportsPage() {
                 {model && <p className="text-xs text-slate-500">Modell: {model}</p>}
               </div>
             </div>
-            {result && !loading && (
-              <button onClick={copyResult} className="btn-secondary btn-sm">
-                {copied ? <Check className="h-4 w-4 text-accent" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Kopiert" : "Kopieren"}
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {result && !loading && (
+                <span
+                  className={`pill border ${
+                    all.length >= 20
+                      ? "bg-accent-soft text-accent border-emerald-200"
+                      : "bg-warn-soft text-warn border-amber-200"
+                  }`}
+                  title={
+                    all.length >= 20
+                      ? "Genug Belege für verlässliche Auswertung"
+                      : "Wenige Belege — Ergebnis bitte manuell prüfen"
+                  }
+                >
+                  Confidence: {all.length >= 20 ? "Hoch" : "Mittel"}
+                </span>
+              )}
+              {result && !loading && (
+                <button onClick={copyResult} className="btn-secondary btn-sm">
+                  {copied ? <Check className="h-4 w-4 text-accent" /> : <Copy className="h-4 w-4" />}
+                  {copied ? "Kopiert" : "Kopieren"}
+                </button>
+              )}
+            </div>
           </div>
+
+          {result && !loading && all.length < 20 && (
+            <div className="mb-4 rounded-md bg-warn-soft border border-amber-200 p-3 text-xs text-warn flex items-start gap-2">
+              <span>ⓘ</span>
+              <span>
+                Auswertung basiert auf nur {all.length} Belegen. Für höhere Aussagekraft empfehlen wir mind. 20 Belege im Zeitraum. <strong>Kein Ersatz für Steuerberatung.</strong>
+              </span>
+            </div>
+          )}
 
           {loading ? (
             <div className="flex items-center gap-3 text-slate-500 py-8">
