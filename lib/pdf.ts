@@ -5,6 +5,7 @@ import autoTable from "jspdf-autotable";
 import type { Receipt } from "./types";
 import { formatDate, formatEUR } from "./utils";
 import { groupByCategory, groupBySupplier, periodStats } from "./insights";
+import { KLARBLICK_BRAND } from "./brand";
 
 interface ReportParams {
   company: string;
@@ -16,6 +17,50 @@ interface ReportParams {
 const BRAND = "#2563eb";
 const TEXT = "#0f172a";
 const MUTED = "#64748b";
+
+/** Vektor-Logo „K" — Brand-Quadrat + weißer Buchstabe. Kein PNG-Load nötig. */
+function drawLogo(doc: jsPDF, x: number, y: number, size = 10) {
+  doc.setFillColor(37, 99, 235);
+  doc.roundedRect(x, y, size, size, 1.5, 1.5, "F");
+  doc.setTextColor("#ffffff");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(size * 0.85);
+  doc.text("K", x + size / 2, y + size * 0.75, { align: "center" });
+}
+
+/** Briefkopf mit Klarblick-Anschrift rechts (für Rechnungen + Reports). */
+export function addLetterhead(doc: jsPDF) {
+  const b = KLARBLICK_BRAND;
+  drawLogo(doc, 14, 14, 12);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(TEXT);
+  doc.text("Klarblick", 30, 19);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(MUTED);
+  doc.text("Vom Schuhkarton zum Management-Report.", 30, 23.5);
+
+  // Anschrift rechts
+  doc.setFontSize(8);
+  doc.setTextColor(TEXT);
+  const lines = [
+    `${b.legal_name} · ${b.owner}`,
+    `${b.address_line1}`,
+    `${b.address_line2}`,
+    `${b.zip_city}, ${b.country}`,
+    `${b.email} · ${b.web}`,
+  ];
+  let yy = 14;
+  lines.forEach((l) => {
+    doc.text(l, 196, yy, { align: "right" });
+    yy += 3.6;
+  });
+  doc.setDrawColor("#e2e8f0");
+  doc.setLineWidth(0.3);
+  doc.line(14, 34, 196, 34);
+  doc.setTextColor(TEXT);
+}
 
 function header(doc: jsPDF, title: string, subtitle?: string) {
   doc.setFillColor(37, 99, 235);
@@ -335,4 +380,414 @@ export function exportCSV(receipts: Receipt[], filename = "belege.csv") {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ *  AI-Report-PDF  (Markdown-Output von Claude in brandiges PDF gießen)
+ * ──────────────────────────────────────────────────────────────────────── */
+
+interface AiReportParams {
+  company: string;
+  periodLabel: string;
+  prompt: string;
+  markdown: string;
+  receipts: Receipt[];
+  model?: string;
+}
+
+/** Sehr leichter Markdown-Renderer für jsPDF (Headings, Bold, Lists). */
+function renderMarkdownToPdf(doc: jsPDF, md: string, startY: number): number {
+  const maxW = 182;
+  let y = startY;
+  const lineH = 5;
+  const lines = md.split(/\r?\n/);
+
+  const ensureSpace = (need: number) => {
+    if (y + need > 275) {
+      doc.addPage();
+      addLetterhead(doc);
+      y = 44;
+    }
+  };
+
+  const writeBoldRun = (text: string, x: number, yy: number) => {
+    // **bold** Inline. Sehr einfacher Parser.
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    let cursorX = x;
+    parts.forEach((p) => {
+      if (!p) return;
+      const bold = p.startsWith("**") && p.endsWith("**");
+      const t = bold ? p.slice(2, -2) : p;
+      doc.setFont("helvetica", bold ? "bold" : "normal");
+      const w = doc.getTextWidth(t);
+      doc.text(t, cursorX, yy);
+      cursorX += w;
+    });
+    doc.setFont("helvetica", "normal");
+  };
+
+  for (let raw of lines) {
+    const line = raw.replace(/\t/g, "  ");
+    if (line.trim() === "") {
+      y += lineH * 0.6;
+      continue;
+    }
+    // ---
+    if (/^---+$/.test(line.trim())) {
+      ensureSpace(4);
+      doc.setDrawColor("#e2e8f0");
+      doc.setLineWidth(0.2);
+      doc.line(14, y, 196, y);
+      y += 3;
+      continue;
+    }
+    // Headings
+    let m = line.match(/^(#{1,4})\s+(.*)$/);
+    if (m) {
+      const level = m[1].length;
+      const text = m[2];
+      const size = level === 1 ? 16 : level === 2 ? 13 : level === 3 ? 11 : 10;
+      ensureSpace(size * 0.7 + 4);
+      y += level === 1 ? 4 : 2;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(size);
+      doc.setTextColor(level <= 2 ? BRAND : TEXT);
+      const wrapped = doc.splitTextToSize(text, maxW);
+      doc.text(wrapped, 14, y);
+      y += wrapped.length * (size * 0.45) + 2;
+      doc.setTextColor(TEXT);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      continue;
+    }
+    // List item
+    m = line.match(/^(\s*)[-*•]\s+(.*)$/);
+    if (m) {
+      const indent = Math.min(Math.floor(m[1].length / 2), 3);
+      const text = m[2];
+      ensureSpace(lineH + 1);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(BRAND);
+      doc.text("•", 14 + indent * 4, y);
+      doc.setTextColor(TEXT);
+      const x0 = 18 + indent * 4;
+      const wrapped = doc.splitTextToSize(text.replace(/\*\*/g, ""), maxW - (x0 - 14));
+      // For multi-line list items render bold runs on first line only (simpler).
+      writeBoldRun(wrapped[0], x0, y);
+      for (let i = 1; i < wrapped.length; i++) {
+        y += lineH;
+        ensureSpace(lineH);
+        doc.text(wrapped[i], x0, y);
+      }
+      y += lineH;
+      continue;
+    }
+    // Numbered list
+    m = line.match(/^\s*(\d+)\.\s+(.*)$/);
+    if (m) {
+      ensureSpace(lineH + 1);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(BRAND);
+      doc.text(`${m[1]}.`, 14, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(TEXT);
+      const wrapped = doc.splitTextToSize(m[2].replace(/\*\*/g, ""), maxW - 8);
+      writeBoldRun(wrapped[0], 22, y);
+      for (let i = 1; i < wrapped.length; i++) {
+        y += lineH;
+        ensureSpace(lineH);
+        doc.text(wrapped[i], 22, y);
+      }
+      y += lineH;
+      continue;
+    }
+    // Paragraph
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(TEXT);
+    const wrapped = doc.splitTextToSize(line.replace(/\*\*/g, ""), maxW);
+    wrapped.forEach((w: string, idx: number) => {
+      ensureSpace(lineH);
+      if (idx === 0) writeBoldRun(w, 14, y);
+      else doc.text(w, 14, y);
+      y += lineH;
+    });
+  }
+  return y;
+}
+
+export function generateAiReportPDF({
+  company,
+  periodLabel,
+  prompt,
+  markdown,
+  receipts,
+  model,
+}: AiReportParams) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const stats = periodStats(receipts);
+
+  // Briefkopf
+  addLetterhead(doc);
+  let y = 44;
+
+  // Titel
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor(TEXT);
+  doc.text("KI-Auswertung", 14, y);
+  y += 7;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(MUTED);
+  const meta = [`Firma: ${company}`, `Zeitraum: ${periodLabel}`, `Erstellt: ${formatDate(new Date())}`];
+  if (model) meta.push(`Modell: ${model}`);
+  doc.text(meta.join("  ·  "), 14, y);
+  y += 8;
+
+  // Prompt-Block (grau-blau hinterlegt)
+  const promptLines = doc.splitTextToSize(prompt, 175);
+  const blockH = 8 + promptLines.length * 4.2;
+  doc.setFillColor("#eff6ff");
+  doc.setDrawColor("#bfdbfe");
+  doc.roundedRect(14, y, 182, blockH, 2, 2, "FD");
+  doc.setTextColor(BRAND);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.text("FRAGESTELLUNG", 18, y + 5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(TEXT);
+  doc.setFontSize(9.5);
+  doc.text(promptLines, 18, y + 10);
+  y += blockH + 8;
+
+  // KPI-Strip
+  const cardW = 42;
+  const cardH = 18;
+  kpiBox(doc, 14, y, cardW, cardH, "Belege", String(stats.count));
+  kpiBox(doc, 14 + (cardW + 4), y, cardW, cardH, "Brutto", formatEUR(stats.total_gross));
+  kpiBox(doc, 14 + 2 * (cardW + 4), y, cardW, cardH, "MwSt.", formatEUR(stats.total_vat));
+  kpiBox(doc, 14 + 3 * (cardW + 4), y, cardW, cardH, "Geprüft", `${stats.advisorReadyPct}%`, "#10b981");
+  y += cardH + 8;
+
+  // Markdown
+  sectionTitle(doc, "Ergebnis", y);
+  y += 7;
+  y = renderMarkdownToPdf(doc, markdown, y);
+
+  // Footer auf allen Seiten
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    footer(doc, i, totalPages);
+  }
+
+  doc.save(`Klarblick_KI-Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ *  Rechnungs-PDF  (für eigene Rechnungen / später Stripe)
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface InvoiceItem {
+  description: string;
+  quantity: number;
+  unit_price: number; // netto
+  vat_rate?: number; // 0.20 = 20 %
+}
+
+export interface InvoiceParams {
+  invoice_number: string;
+  invoice_date: string; // YYYY-MM-DD
+  due_date?: string;
+  to: {
+    name: string;
+    address_line1?: string;
+    address_line2?: string;
+    zip_city?: string;
+    country?: string;
+    uid?: string;
+  };
+  items: InvoiceItem[];
+  notes?: string;
+  payment_terms?: string;
+}
+
+export function generateInvoicePDF(p: InvoiceParams) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  addLetterhead(doc);
+
+  let y = 46;
+  // Empfänger-Block
+  doc.setFontSize(8);
+  doc.setTextColor(MUTED);
+  doc.text(
+    `${KLARBLICK_BRAND.legal_name}, ${KLARBLICK_BRAND.address_line2}, ${KLARBLICK_BRAND.zip_city}`,
+    14,
+    y
+  );
+  y += 6;
+  doc.setTextColor(TEXT);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text(p.to.name, 14, y);
+  y += 5;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  if (p.to.address_line1) {
+    doc.text(p.to.address_line1, 14, y);
+    y += 4.5;
+  }
+  if (p.to.address_line2) {
+    doc.text(p.to.address_line2, 14, y);
+    y += 4.5;
+  }
+  if (p.to.zip_city) {
+    doc.text(`${p.to.zip_city}${p.to.country ? ", " + p.to.country : ""}`, 14, y);
+    y += 4.5;
+  }
+  if (p.to.uid) {
+    doc.text(`UID: ${p.to.uid}`, 14, y);
+    y += 4.5;
+  }
+
+  // Rechnungs-Meta rechts
+  let yMeta = 46;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(BRAND);
+  doc.text("RECHNUNG", 196, yMeta, { align: "right" });
+  yMeta += 8;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(TEXT);
+  const metaRows: [string, string][] = [
+    ["Rechnungs-Nr.", p.invoice_number],
+    ["Datum", formatDate(p.invoice_date)],
+  ];
+  if (p.due_date) metaRows.push(["Fällig am", formatDate(p.due_date)]);
+  metaRows.forEach(([k, v]) => {
+    doc.setTextColor(MUTED);
+    doc.text(k, 160, yMeta);
+    doc.setTextColor(TEXT);
+    doc.text(v, 196, yMeta, { align: "right" });
+    yMeta += 5;
+  });
+
+  y = Math.max(y, yMeta) + 6;
+
+  // Positionen
+  const rows = p.items.map((it) => {
+    const vatRate = it.vat_rate ?? 0.2;
+    const net = it.quantity * it.unit_price;
+    const vat = net * vatRate;
+    const gross = net + vat;
+    return {
+      description: it.description,
+      qty: it.quantity,
+      unit_price: it.unit_price,
+      vat_rate: vatRate,
+      net,
+      vat,
+      gross,
+    };
+  });
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Pos.", "Beschreibung", "Menge", "Einzelpreis", "MwSt.", "Netto", "Brutto"]],
+    body: rows.map((r, i) => [
+      String(i + 1),
+      r.description,
+      String(r.qty),
+      formatEUR(r.unit_price),
+      `${Math.round(r.vat_rate * 100)} %`,
+      formatEUR(r.net),
+      formatEUR(r.gross),
+    ]),
+    headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+    styles: { fontSize: 9, cellPadding: 2.5 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    columnStyles: {
+      0: { halign: "center", cellWidth: 12 },
+      2: { halign: "right", cellWidth: 18 },
+      3: { halign: "right", cellWidth: 26 },
+      4: { halign: "right", cellWidth: 18 },
+      5: { halign: "right", cellWidth: 26 },
+      6: { halign: "right", cellWidth: 26 },
+    },
+  });
+
+  let yEnd = (doc as any).lastAutoTable.finalY + 6;
+
+  // Summen rechts
+  const totalNet = rows.reduce((s, r) => s + r.net, 0);
+  const totalVat = rows.reduce((s, r) => s + r.vat, 0);
+  const totalGross = totalNet + totalVat;
+
+  const xLabel = 140;
+  const xVal = 196;
+  doc.setFontSize(10);
+  doc.setTextColor(TEXT);
+  doc.text("Zwischensumme (netto)", xLabel, yEnd);
+  doc.text(formatEUR(totalNet), xVal, yEnd, { align: "right" });
+  yEnd += 5;
+  doc.text("MwSt.", xLabel, yEnd);
+  doc.text(formatEUR(totalVat), xVal, yEnd, { align: "right" });
+  yEnd += 6;
+  doc.setDrawColor(BRAND);
+  doc.setLineWidth(0.4);
+  doc.line(xLabel, yEnd - 3, xVal, yEnd - 3);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(BRAND);
+  doc.text("Gesamtbetrag", xLabel, yEnd + 2);
+  doc.text(formatEUR(totalGross), xVal, yEnd + 2, { align: "right" });
+  yEnd += 12;
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(TEXT);
+
+  // Zahlungshinweis
+  if (p.payment_terms) {
+    doc.setFontSize(9);
+    doc.setTextColor(MUTED);
+    const lines = doc.splitTextToSize(p.payment_terms, 182);
+    doc.text(lines, 14, yEnd);
+    yEnd += lines.length * 4 + 2;
+  }
+
+  // Notizen
+  if (p.notes) {
+    doc.setFontSize(9);
+    doc.setTextColor(TEXT);
+    const lines = doc.splitTextToSize(p.notes, 182);
+    doc.text(lines, 14, yEnd);
+    yEnd += lines.length * 4 + 2;
+  }
+
+  // Bankdaten / Fußnote
+  const fy = 275;
+  doc.setDrawColor("#e2e8f0");
+  doc.setLineWidth(0.3);
+  doc.line(14, fy - 4, 196, fy - 4);
+  doc.setFontSize(7.5);
+  doc.setTextColor(MUTED);
+  const b = KLARBLICK_BRAND;
+  const bankLine = b.iban
+    ? `Bank: ${b.bank_name}  ·  IBAN: ${b.iban}  ·  BIC: ${b.bic}`
+    : "Bankdaten auf Anfrage.";
+  doc.text(
+    [
+      `${b.legal_name} · ${b.owner} · ${b.address_line1}, ${b.address_line2}, ${b.zip_city}, ${b.country}`,
+      `${b.email} · ${b.web} · UID: ${b.uid}`,
+      bankLine,
+    ],
+    14,
+    fy
+  );
+
+  doc.save(`Klarblick_Rechnung_${p.invoice_number}.pdf`);
 }

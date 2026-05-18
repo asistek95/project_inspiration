@@ -13,9 +13,12 @@ import {
   Menu,
   X,
   Sparkles,
+  LogOut,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { getSupabaseBrowser, supabaseEnabled } from "@/lib/supabase";
+import { setSessionCookie, clearSessionCookie } from "@/lib/session-cookie";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
@@ -31,6 +34,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const [user, setUser] = useState<{ email: string; name?: string; company?: string } | null>(null);
+
+  useEffect(() => {
+    const sb = getSupabaseBrowser();
+    if (!sb) return;
+    sb.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        const meta = (data.user.user_metadata || {}) as any;
+        setUser({
+          email: data.user.email || "",
+          name: meta.owner_name,
+          company: meta.company_name,
+        });
+        if (data.user.email) setSessionCookie(data.user.email);
+      }
+    });
+  }, []);
+
+  async function signOut() {
+    const sb = getSupabaseBrowser();
+    if (sb) await sb.auth.signOut();
+    clearSessionCookie();
+    router.push("/login");
+  }
 
   return (
     <div className="min-h-screen flex bg-slate-50/50">
@@ -81,22 +108,47 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <div className="p-4 border-t border-border text-xs text-muted-foreground space-y-2">
-          <p className="font-medium text-foreground">Demo-Modus aktiv</p>
-          <p>Alle Daten lokal. Verbinde Supabase für Produktion.</p>
-          <button
-            onClick={() => {
-              if (confirm("Demo-Daten zurücksetzen?")) {
-                import("@/lib/store").then(({ resetToDemo }) => {
-                  resetToDemo();
-                  router.refresh();
-                  location.reload();
-                });
-              }
-            }}
-            className="text-brand-600 hover:underline"
-          >
-            Demo neu laden
-          </button>
+          {user ? (
+            <>
+              <div className="flex items-center gap-2.5">
+                <span className="h-9 w-9 rounded-full bg-brand-600 text-white grid place-content-center text-sm font-bold">
+                  {(user.name || user.email).slice(0, 1).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground truncate">
+                    {user.name || user.email.split("@")[0]}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <span className="pill bg-brand-50 text-brand-700 border border-brand-100 text-[10px]">
+                  BETA
+                </span>
+                {user.company && (
+                  <span className="text-[10px] truncate">{user.company}</span>
+                )}
+              </div>
+              <button
+                onClick={signOut}
+                className="text-slate-500 hover:text-foreground inline-flex items-center gap-1 text-xs mt-1"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Abmelden
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="font-medium text-foreground">Beta-Vorschau</p>
+              <p>
+                {supabaseEnabled
+                  ? "Nicht angemeldet — bitte einloggen."
+                  : "Konfiguration unvollständig."}
+              </p>
+              <Link href="/login" className="text-brand-600 hover:underline">
+                Anmelden →
+              </Link>
+            </>
+          )}
         </div>
       </aside>
 

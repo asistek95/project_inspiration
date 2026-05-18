@@ -27,8 +27,6 @@ import {
 import type { Receipt, ReceiptStatus } from "@/lib/types";
 import { ConfidenceBadge, StatusBadge } from "@/components/Badges";
 import { formatEUR } from "@/lib/utils";
-import { Disclaimer } from "@/components/Disclaimer";
-
 export default function ReceiptDetail() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -186,9 +184,7 @@ export default function ReceiptDetail() {
       </div>
 
       <AuditTrail receipt={receipt} />
-
-      <Disclaimer />
-    </div>
+</div>
   );
 }
 

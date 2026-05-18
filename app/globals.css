@@ -30,6 +30,27 @@
   .input {
     @apply w-full rounded-lg border border-input bg-white px-3 py-2.5 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100;
   }
+  /* Native Selects modernisieren – eigener Chevron, kein Browser-Default */
+  select.input {
+    @apply appearance-none pr-9 cursor-pointer bg-no-repeat;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-position: right 0.65rem center;
+    background-size: 1.1rem;
+  }
+  select.input:hover { @apply border-slate-300 bg-slate-50; }
+  /* Date/Time-Inputs aufhübschen */
+  input.input[type="date"],
+  input.input[type="time"],
+  input.input[type="datetime-local"] {
+    @apply pr-9 cursor-pointer;
+  }
+  input.input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.55;
+    cursor: pointer;
+    filter: invert(35%) sepia(11%) saturate(541%) hue-rotate(176deg) brightness(93%) contrast(86%);
+    transition: opacity 0.15s;
+  }
+  input.input[type="date"]:hover::-webkit-calendar-picker-indicator { opacity: 1; }
   .label { @apply block text-sm font-medium text-foreground mb-1.5; }
   .pill {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;

@@ -9,23 +9,29 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const OCR_PROMPT = `Analysiere diesen Beleg/diese Rechnung und extrahiere die Daten als striktes JSON.
+const OCR_PROMPT = `Du bist ein präziser Beleg-Extraktor für österreichisches Steuerrecht.
+Analysiere das Bild SORGFÄLTIG (auch unscharfe Kassenbons, Tankquittungen, Kartenzahlungsbelege, handschriftliche Quittungen, Rechnungen).
 
-Format (KEINE zusätzlichen Felder, KEINE Erklärung, NUR das JSON):
+Gib AUSSCHLIESSLICH dieses JSON zurück (keine Erklärung, kein Markdown, kein Code-Fence):
 {
-  "vendor": "Name des Lieferanten/Geschäfts",
-  "date": "YYYY-MM-DD",
-  "gross_amount": 0.00,
-  "net_amount": 0.00,
-  "vat_amount": 0.00,
-  "vat_rate": 20,
+  "vendor": "Name des Geschäfts/Lieferanten (z.B. 'Shell', 'Hornbach', 'OBI', 'BKV Card', 'METRO')",
+  "date": "YYYY-MM-DD oder null",
+  "gross_amount": Zahl (Gesamtbetrag/Total),
+  "net_amount": Zahl (oder berechnet aus gross/(1+rate/100)),
+  "vat_amount": Zahl (oder berechnet),
+  "vat_rate": 20 | 13 | 10 | 0,
   "currency": "EUR",
-  "category": "Material | Werkzeug | Treibstoff | Büro | Bewirtung | Sonstiges",
-  "receipt_type": "Rechnung | Kassenbon | Quittung",
-  "confidence": 0.0
+  "category": "Material" | "Werkzeug" | "Treibstoff" | "Büro" | "Bewirtung" | "Sonstiges",
+  "receipt_type": "Rechnung" | "Kassenbon" | "Quittung" | "Tankbeleg" | "Bewirtungsbeleg" | "Kartenzahlungsbeleg",
+  "confidence": 0.0-1.0
 }
 
-Wenn ein Wert nicht erkennbar ist: null. Beträge als Zahlen (kein €-Zeichen, Punkt als Dezimaltrenner).`;
+WICHTIG:
+- Wenn nur ein Gesamtbetrag erkennbar ist (z.B. Kartenzahlungsbeleg ohne Steueraufschlüsselung): trotzdem vendor + gross_amount extrahieren, vat_rate auf 20 schätzen, net/vat berechnen, confidence niedriger.
+- Erkenne ALLE Beträge im Bild (auch "Gesamtbetrag", "Total", "Summe", "EUR ..."). Nimm den höchsten plausiblen Endbetrag.
+- Bei Tankstellen-Kartenbelegen: receipt_type = "Tankbeleg" oder "Kartenzahlungsbeleg", category = "Treibstoff".
+- Zahlen IMMER als Number (Punkt als Dezimaltrenner, kein €).
+- Niemals "null" für vendor oder gross_amount — versuche IMMER zu lesen, auch wenn unscharf. Im äußersten Notfall: vendor = "Unbekannt", confidence = 0.3.`;
 
 async function callClaudeVision(imageUrl: string): Promise<any> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -67,8 +73,8 @@ async function callClaudeVision(imageUrl: string): Promise<any> {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
-      max_tokens: 600,
+      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
+      max_tokens: 1000,
       messages: [
         {
           role: "user",
@@ -121,7 +127,7 @@ export async function POST(req: NextRequest) {
     const result = await callClaudeVision(imageUrl);
     return NextResponse.json(result);
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+    return NextResponse.json({ _error: (e as Error).message, vendor: null }, { status: 500 });
   }
 }
 

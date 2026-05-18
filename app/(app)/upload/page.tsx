@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
@@ -11,10 +11,11 @@ import {
   Loader2,
   AlertTriangle,
   X,
+  ZoomIn,
 } from "lucide-react";
 import { extractReceiptData, findDuplicate, suggestCategory } from "@/lib/ocr";
 import { upsertReceipt, loadReceipts } from "@/lib/store";
-import { Disclaimer } from "@/components/Disclaimer";
+import { loadNumbering, previewNext, reserveNextNumber } from "@/lib/numbering";
 import { ConfidenceBadge } from "@/components/Badges";
 import { CATEGORIES, RECEIPT_TYPES, PAYMENT_METHODS } from "@/lib/types";
 import { formatEUR } from "@/lib/utils";
@@ -76,6 +77,7 @@ export default function UploadPage() {
           warnings: extracted.warnings,
           notes: null,
           project: null,
+          receipt_number: previewNext(),
           payment_terms: extracted.payment_terms || null,
           is_recurring: !!extracted.is_recurring,
           paid_at: null,
@@ -98,7 +100,12 @@ export default function UploadPage() {
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
-    accept: { "image/*": [], "application/pdf": [] },
+    accept: {
+      "image/*": [".heic", ".heif"],
+      "image/heic": [".heic"],
+      "image/heif": [".heif"],
+      "application/pdf": [".pdf"],
+    },
     noClick: true,
     multiple: true,
   });
@@ -108,7 +115,7 @@ export default function UploadPage() {
       prev.map((p) => {
         if (p.id !== id || !p.draft) return p;
         let next = { ...p.draft, ...patch };
-        // Auto-Kategorisierung wenn Lieferant geändert
+        // Auto-Kategorisierung wenn Lieferant ge�ndert
         if (patch.supplier_name && patch.supplier_name !== p.draft.supplier_name) {
           const sug = suggestCategory(patch.supplier_name);
           if (sug) {
@@ -123,7 +130,14 @@ export default function UploadPage() {
   function saveDraft(id: string, status: Receipt["status"]) {
     const item = items.find((p) => p.id === id);
     if (!item || !item.draft) return;
-    const final = { ...item.draft, status };
+    // Wenn die Nummer noch der Auto-Vorschlag ist (oder leer), echte Nummer reservieren.
+    const cfg = loadNumbering();
+    const autoPreview = previewNext(cfg);
+    let receipt_number = item.draft.receipt_number || null;
+    if (cfg.enabled && (!receipt_number || receipt_number === autoPreview)) {
+      receipt_number = reserveNextNumber();
+    }
+    const final = { ...item.draft, status, receipt_number };
     upsertReceipt(final);
     setItems((prev) => prev.map((p) => (p.id === id ? { ...p, status: "saved" } : p)));
   }
@@ -149,10 +163,10 @@ export default function UploadPage() {
           <UploadIcon className="h-6 w-6" />
         </span>
         <p className="mt-4 font-semibold">Belege hierher ziehen</p>
-        <p className="text-sm text-muted-foreground">oder klicken zum Auswählen · PDF, JPG, PNG</p>
+        <p className="text-sm text-muted-foreground">oder klicken zum Auswählen · PDF, JPG, PNG, HEIC · mehrere gleichzeitig</p>
         <div className="mt-5 flex justify-center gap-2">
           <button type="button" onClick={open} className="btn-primary">
-            Datei auswählen
+            Datei ausw�hlen
           </button>
           <label className="btn-secondary cursor-pointer">
             <Camera className="h-4 w-4" /> Foto vom Handy
@@ -169,10 +183,7 @@ export default function UploadPage() {
           </label>
         </div>
       </div>
-
-      <Disclaimer />
-
-      {items.length > 0 ? (
+{items.length > 0 ? (
         <div className="space-y-4">
           <h2 className="text-xl font-bold tracking-tight">Erkannte Belege</h2>
           {items.map((item) => (
@@ -203,13 +214,14 @@ function ItemCard({
   onRemove: () => void;
   onGoToReview: () => void;
 }) {
+  const [lightbox, setLightbox] = useState(false);
   if (item.status === "reading") {
     return (
       <div className="card p-5 flex items-center gap-4">
         <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
         <div className="flex-1">
           <p className="font-medium">{item.file.name}</p>
-          <p className="text-sm text-muted-foreground">Beleg wird gelesen …</p>
+          <p className="text-sm text-muted-foreground">Beleg wird gelesen �</p>
         </div>
       </div>
     );
@@ -220,10 +232,10 @@ function ItemCard({
       <div className="card p-5 flex items-start gap-3 bg-warn-soft border-amber-200">
         <AlertTriangle className="h-5 w-5 text-warn mt-0.5" />
         <div className="flex-1">
-          <p className="font-medium text-warn">Dublette erkannt — Beleg existiert bereits</p>
+          <p className="font-medium text-warn">Dublette erkannt � Beleg existiert bereits</p>
           <p className="text-sm text-warn/90 mt-0.5">
             {item.file.name} hat denselben Lieferant, Datum und Betrag wie ein vorhandener Beleg
-            ({item.extracted?.supplier_name} · {item.extracted?.gross_amount?.toFixed(2)} €).
+            ({item.extracted?.supplier_name} � {item.extracted?.gross_amount?.toFixed(2)} �).
           </p>
         </div>
         <button onClick={onRemove} className="btn-ghost !p-2">
@@ -253,9 +265,19 @@ function ItemCard({
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3 min-w-0">
           {item.preview ? (
-            <img src={item.preview} alt="" className="h-14 w-14 object-cover rounded-lg border" />
+            <button
+              type="button"
+              onClick={() => setLightbox(true)}
+              className="relative h-14 w-14 rounded-lg border overflow-hidden group shrink-0"
+              aria-label="Beleg vergr��ern"
+            >
+              <img src={item.preview} alt="" className="h-full w-full object-cover" />
+              <span className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center">
+                <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition" />
+              </span>
+            </button>
           ) : (
-            <span className="h-14 w-14 rounded-lg bg-slate-100 grid place-content-center">
+            <span className="h-14 w-14 rounded-lg bg-slate-100 grid place-content-center shrink-0">
               <FileText className="h-6 w-6 text-slate-500" />
             </span>
           )}
@@ -276,7 +298,7 @@ function ItemCard({
         </button>
       </div>
 
-      <p className="text-sm font-medium mb-3">Bitte kurz prüfen: Stimmen diese Daten?</p>
+      <p className="text-sm font-medium mb-3">Bitte kurz pr�fen: Stimmen diese Daten?</p>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <Field label="Lieferant">
@@ -298,6 +320,14 @@ function ItemCard({
               <option key={c}>{c}</option>
             ))}
           </select>
+        </Field>
+        <Field label="Belegnummer">
+          <input
+            className="input font-mono"
+            value={draft.receipt_number || ""}
+            onChange={(e) => onUpdate({ receipt_number: e.target.value })}
+            placeholder={previewNext()}
+          />
         </Field>
         <Field label="Zahlungsart">
           <select className="input" value={draft.payment_method} onChange={(e) => onUpdate({ payment_method: e.target.value as any })}>
@@ -359,9 +389,35 @@ function ItemCard({
           <AlertTriangle className="h-4 w-4" /> Als unsicher markieren
         </button>
         <button className="btn-ghost" onClick={() => onSave("ungeprueft")}>
-          Später prüfen
+          Sp�ter pr�fen
         </button>
       </div>
+
+      {lightbox && item.preview ? (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm grid place-content-center p-4 animate-in fade-in"
+          onClick={() => setLightbox(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            onClick={() => setLightbox(false)}
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white grid place-content-center transition"
+            aria-label="Schlie�en"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={item.preview}
+            alt={item.file.name}
+            className="max-h-[90vh] max-w-[92vw] object-contain rounded-xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <p className="text-center text-white/70 text-xs mt-3">{item.file.name} � klicke zum Schlie�en</p>
+        </div>
+      ) : null}
     </div>
   );
 }

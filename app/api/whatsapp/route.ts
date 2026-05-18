@@ -45,7 +45,7 @@ async function callOcr(imageDataUrl: string): Promise<any | null> {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
+        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
         max_tokens: 400,
         messages: [{
           role: "user",
@@ -72,7 +72,7 @@ async function askClaude(userMessage: string): Promise<string> {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
+        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
         max_tokens: 300,
         system: SYSTEM,
         messages: [{ role: "user", content: userMessage }],

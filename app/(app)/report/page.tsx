@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { Download, FileBarChart2, Mail, Link2, FileSpreadsheet } from "lucide-react";
@@ -14,7 +14,6 @@ import {
 import { formatDate, formatEUR, monthLabel } from "@/lib/utils";
 import { CategoryChart, SupplierChart } from "@/components/Charts";
 import { InsightCard } from "@/components/InsightCard";
-import { Disclaimer } from "@/components/Disclaimer";
 import { exportCSV, generateReportPDF } from "@/lib/pdf";
 import { DEMO_COMPANY } from "@/lib/demo-data";
 
@@ -24,16 +23,36 @@ export default function ReportPage() {
   const [to, setTo] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "checked">("all");
   const [excludedCats, setExcludedCats] = useState<Set<string>>(new Set());
+  const [profile, setProfile] = useState<{ company_name: string; tax_advisor_email?: string }>({
+    company_name: DEMO_COMPANY.company_name,
+    tax_advisor_email: DEMO_COMPANY.tax_advisor_email || undefined,
+  });
 
   useEffect(() => {
     const r = loadReceipts();
     setAll(r);
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("klarblick.profile");
+        if (raw) {
+          const p = JSON.parse(raw);
+          setProfile({
+            company_name: p.company_name || DEMO_COMPANY.company_name,
+            tax_advisor_email: p.tax_advisor_email || undefined,
+          });
+        }
+      } catch {}
+    }
     if (r.length > 0) {
-      // Defaults: jüngster Monat
+      // Defaults: gesamter Zeitraum aller Belege (statt nur letzter Monat)
       const dates = r.map((x) => x.receipt_date).sort();
-      const latest = new Date(dates[dates.length - 1]);
-      const start = new Date(latest.getFullYear(), latest.getMonth(), 1);
-      const end = new Date(latest.getFullYear(), latest.getMonth() + 1, 0);
+      setFrom(dates[0]);
+      setTo(dates[dates.length - 1]);
+    } else {
+      // Keine Belege ? letzter Monat als Default
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const end = new Date(now.getFullYear(), now.getMonth(), 0);
       setFrom(start.toISOString().slice(0, 10));
       setTo(end.toISOString().slice(0, 10));
     }
@@ -53,11 +72,11 @@ export default function ReportPage() {
   const insights = buildInsights(filtered);
   const cats = groupByCategory(filtered);
   const sups = groupBySupplier(filtered, 10);
-  const periodLabel = from && to ? `${formatDate(from)} – ${formatDate(to)}` : "Zeitraum";
+  const periodLabel = from && to ? `${formatDate(from)} � ${formatDate(to)}` : "Zeitraum";
 
   function downloadPDF() {
     generateReportPDF({
-      company: DEMO_COMPANY.company_name,
+      company: profile.company_name,
       periodLabel,
       receipts: filtered,
       insights: insights.map((i) => ({ title: i.title, description: i.description })),
@@ -73,7 +92,7 @@ export default function ReportPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Management-Report</h1>
         <p className="text-muted-foreground mt-1">
-          Wähle Zeitraum und Filter — Klarblick erstellt deinen Report automatisch.
+          W�hle Zeitraum und Filter � Klarblick erstellt deinen Report automatisch.
         </p>
       </div>
 
@@ -91,7 +110,7 @@ export default function ReportPage() {
           <label className="label">Status</label>
           <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}>
             <option value="all">Alle Belege</option>
-            <option value="checked">Nur geprüfte</option>
+            <option value="checked">Nur gepr�fte</option>
           </select>
         </div>
         <div className="flex items-end gap-2">
@@ -100,7 +119,7 @@ export default function ReportPage() {
           </button>
         </div>
         <div className="lg:col-span-4">
-          <label className="label">Kategorien ausschließen</label>
+          <label className="label">Kategorien ausschlie�en</label>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => {
               const off = excludedCats.has(c);
@@ -143,7 +162,7 @@ export default function ReportPage() {
         <button
           className="btn-secondary"
           onClick={() =>
-            (window.location.href = `mailto:${DEMO_COMPANY.tax_advisor_email}?subject=Management-Report%20${periodLabel}&body=Hallo,%20anbei%20mein%20Monatsreport%20aus%20Klarblick.`)
+            (window.location.href = `mailto:${profile.tax_advisor_email || ""}?subject=Management-Report%20${periodLabel}&body=Hallo,%20anbei%20mein%20Monatsreport%20aus%20Klarblick.`)
           }
         >
           <Mail className="h-4 w-4" /> Per E-Mail vorbereiten
@@ -155,9 +174,9 @@ export default function ReportPage() {
         {/* Cover */}
         <div className="text-center pb-8 border-b border-border">
           <p className="text-xs text-brand-600 font-semibold uppercase tracking-widest">Management-Report</p>
-          <h2 className="text-3xl font-extrabold tracking-tight mt-1">{DEMO_COMPANY.company_name}</h2>
+          <h2 className="text-3xl font-extrabold tracking-tight mt-1">{profile.company_name}</h2>
           <p className="text-muted-foreground mt-1">{periodLabel}</p>
-          <p className="mt-2 text-sm text-muted-foreground">Automatisch erstellt aus geprüften Belegdaten</p>
+          <p className="mt-2 text-sm text-muted-foreground">Automatisch erstellt aus gepr�ften Belegdaten</p>
         </div>
 
         {/* Executive Summary */}
@@ -167,13 +186,13 @@ export default function ReportPage() {
             <Stat label="Gesamtausgaben" value={formatEUR(stats.total_gross)} />
             <Stat label="MwSt.-Summe" value={formatEUR(stats.total_vat)} />
             <Stat label="Belege" value={String(stats.count)} />
-            <Stat label="Geprüft" value={`${stats.checked}`} />
+            <Stat label="Gepr�ft" value={`${stats.checked}`} />
             <Stat label="Unsicher" value={`${stats.uncertain}`} accent="warn" />
-            <Stat label="Ungeprüft" value={`${stats.unchecked}`} accent="muted" />
+            <Stat label="Ungepr�ft" value={`${stats.unchecked}`} accent="muted" />
             <Stat label="Paket bereit" value={`${stats.advisorReadyPct} %`} accent="accent" />
             <Stat
               label="Wichtigster Hinweis"
-              value={insights[0]?.title || "—"}
+              value={insights[0]?.title || "�"}
               accent="brand"
               small
             />
@@ -213,7 +232,7 @@ export default function ReportPage() {
                     <td className="p-3 font-medium">{s.name}</td>
                     <td className="p-3 text-right">{formatEUR(s.value)}</td>
                     <td className="p-3 text-right text-slate-600">
-                      {stats.total_gross ? `${Math.round((s.value / stats.total_gross) * 100)} %` : "—"}
+                      {stats.total_gross ? `${Math.round((s.value / stats.total_gross) * 100)} %` : "�"}
                     </td>
                   </tr>
                 ))}
@@ -226,7 +245,7 @@ export default function ReportPage() {
         <section>
           <SectionHeading n={4} title="Steuerberater-Check" />
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-            <Stat label="Belege geprüft" value={`${stats.checked} / ${stats.count}`} accent="accent" />
+            <Stat label="Belege gepr�ft" value={`${stats.checked} / ${stats.count}`} accent="accent" />
             <Stat label="Unsichere Belege" value={`${stats.uncertain}`} accent="warn" />
             <Stat
               label="Belege ohne MwSt."
@@ -248,7 +267,7 @@ export default function ReportPage() {
 
         {/* Anhang */}
         <section>
-          <SectionHeading n={6} title="Anhang · Belegliste" />
+          <SectionHeading n={6} title="Anhang � Belegliste" />
           <div className="rounded-lg border border-border overflow-hidden mt-4 overflow-x-auto">
             <table className="w-full text-sm min-w-[700px]">
               <thead className="bg-slate-50 text-xs uppercase tracking-wider text-muted-foreground">
@@ -280,15 +299,14 @@ export default function ReportPage() {
             </table>
             {filtered.length > 60 ? (
               <p className="p-3 text-xs text-muted-foreground text-center">
-                … {filtered.length - 60} weitere Belege im PDF.
+                � {filtered.length - 60} weitere Belege im PDF.
               </p>
             ) : null}
           </div>
         </section>
 
         <div className="pt-6 border-t border-border">
-          <Disclaimer />
-        </div>
+</div>
       </div>
 
       <div className="flex justify-center pb-6">

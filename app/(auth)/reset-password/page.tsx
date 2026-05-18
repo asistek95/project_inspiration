@@ -60,7 +60,7 @@ export default function ResetPasswordPage() {
 
       {!supabaseEnabled ? (
         <div className="mt-5 rounded-lg border border-brand-100 bg-brand-50 p-3 text-sm text-brand-800">
-          <strong>Demo-Modus:</strong> Kein Supabase verbunden.
+          <strong>Hinweis:</strong> Konfiguration unvollständig — bitte Admin kontaktieren.
         </div>
       ) : null}
 

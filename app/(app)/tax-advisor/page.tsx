@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -22,8 +22,6 @@ import { buildDatevCSV, downloadCSV } from "@/lib/datev";
 import { buildSepaXML, downloadXML } from "@/lib/sepa";
 import { buildInsights, periodStats } from "@/lib/insights";
 import { DEMO_COMPANY } from "@/lib/demo-data";
-import { Disclaimer } from "@/components/Disclaimer";
-
 export default function TaxAdvisorPage() {
   const [all, setAll] = useState<Receipt[]>([]);
   const [from, setFrom] = useState("");
@@ -69,7 +67,7 @@ export default function TaxAdvisorPage() {
   function downloadPdf() {
     generateReportPDF({
       company: DEMO_COMPANY.company_name,
-      periodLabel: `${from} – ${to}`,
+      periodLabel: `${from} � ${to}`,
       receipts: checkedReceipts,
       insights: buildInsights(checkedReceipts).map((i) => ({ title: i.title, description: i.description })),
     });
@@ -80,7 +78,7 @@ export default function TaxAdvisorPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Steuerberater-Paket</h1>
         <p className="text-muted-foreground mt-1">
-          Bereite dein Paket vor — geprüfte Belege, Report und CSV in einem.
+          Bereite dein Paket vor � gepr�fte Belege, Report und CSV in einem.
         </p>
       </div>
 
@@ -94,12 +92,12 @@ export default function TaxAdvisorPage() {
             <div>
               <p className="text-2xl font-bold">Dein Paket ist zu {stats.advisorReadyPct} % bereit</p>
               <p className="text-sm text-muted-foreground">
-                {stats.checked} Belege geprüft · {stats.uncertain} unsicher · {stats.unchecked} ungeprüft
+                {stats.checked} Belege gepr�ft � {stats.uncertain} unsicher � {stats.unchecked} ungepr�ft
               </p>
             </div>
           </div>
           <button onClick={release} className="btn-primary btn-lg">
-            <CheckCircle2 className="h-5 w-5" /> Übergabe vorbereiten
+            <CheckCircle2 className="h-5 w-5" /> �bergabe vorbereiten
           </button>
         </div>
         <div className="mt-5 h-2.5 bg-slate-100 rounded-full overflow-hidden">
@@ -137,20 +135,20 @@ export default function TaxAdvisorPage() {
         <StatusCard
           tone="accent"
           Icon={CheckCircle2}
-          title={`${checkedReceipts.length} Belege können übergeben werden`}
-          subtitle="Geprüft & vollständig"
+          title={`${checkedReceipts.length} Belege k�nnen �bergeben werden`}
+          subtitle="Gepr�ft & vollst�ndig"
         />
         <StatusCard
           tone="warn"
           Icon={AlertTriangle}
           title={`${uncertain.length} Belege sind unsicher`}
-          subtitle="Bitte prüfen oder separat markieren"
+          subtitle="Bitte pr�fen oder separat markieren"
         />
         <StatusCard
           tone="muted"
           Icon={FileText}
-          title={`${unchecked.length} Belege müssen geprüft werden`}
-          subtitle="Noch keine Bestätigung"
+          title={`${unchecked.length} Belege m�ssen gepr�ft werden`}
+          subtitle="Noch keine Best�tigung"
         />
       </div>
 
@@ -158,7 +156,7 @@ export default function TaxAdvisorPage() {
       <div className="card p-5">
         <h2 className="font-semibold">Paket-Aktionen</h2>
         <p className="text-sm text-muted-foreground">
-          Erzeuge PDF, CSV oder einen sicheren Link für deinen Steuerberater.
+          Erzeuge PDF, CSV oder einen sicheren Link f�r deinen Steuerberater.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button onClick={downloadPdf} className="btn-primary">
@@ -174,7 +172,7 @@ export default function TaxAdvisorPage() {
             onClick={() =>
               downloadCSV(
                 `klarblick_datev_${from}_${to}.csv`,
-                buildDatevCSV(checkedReceipts, `${from} – ${to}`),
+                buildDatevCSV(checkedReceipts, `${from} � ${to}`),
               )
             }
             className="btn-secondary"
@@ -197,7 +195,7 @@ export default function TaxAdvisorPage() {
             }}
             className="btn-secondary"
           >
-            <Landmark className="h-4 w-4" /> SEPA-XML (Sammelüberweisung)
+            <Landmark className="h-4 w-4" /> SEPA-XML (Sammel�berweisung)
           </button>
           <button
             onClick={() =>
@@ -230,9 +228,7 @@ export default function TaxAdvisorPage() {
           <Tree level={1} icon={<FileText className="h-4 w-4 text-slate-500" />} label="readme.txt" />
         </div>
       </div>
-
-      <Disclaimer />
-    </div>
+</div>
   );
 }
 

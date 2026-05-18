@@ -23,6 +23,7 @@ import {
 } from "@/components/Charts";
 import { Disclaimer } from "@/components/Disclaimer";
 import { SavingsBoard } from "@/components/SavingsBoard";
+import { UspStats } from "@/components/UspStats";
 import { loadReceipts } from "@/lib/store";
 import {
   buildInsights,
@@ -164,6 +165,9 @@ export default function DashboardPage() {
         <SavingsBoard receipts={receipts} />
       </section>
 
+      {/* USP-Stats — Klarblick-Intelligence */}
+      <UspStats receipts={receipts} />
+
       {/* Insights */}
       <section>
         <div className="flex items-center justify-between mb-3">
@@ -192,8 +196,6 @@ export default function DashboardPage() {
           <StatusPieChart data={statusDistribution(receipts)} />
         </ChartCard>
       </div>
-
-      <Disclaimer />
     </div>
   );
 }

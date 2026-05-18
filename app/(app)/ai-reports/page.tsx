@@ -16,7 +16,9 @@ import type { Receipt } from "@/lib/types";
 import { periodStats } from "@/lib/insights";
 import { formatEUR } from "@/lib/utils";
 import { DEMO_COMPANY } from "@/lib/demo-data";
-import { Disclaimer } from "@/components/Disclaimer";
+import { Markdown } from "@/components/Markdown";
+import { generateAiReportPDF } from "@/lib/pdf";
+import { FileDown } from "lucide-react";
 
 const CATEGORIES: PromptCategory[] = ["report", "steuerberater", "premium"];
 
@@ -215,13 +217,26 @@ export default function AiReportsPage() {
               <span>KI analysiert deine Zahlen…</span>
             </div>
           ) : (
-            <div className="prose prose-slate max-w-none text-sm whitespace-pre-wrap">
-              {result}
-            </div>
+            <Markdown source={result} />
           )}
 
           {result && !loading && (
-            <div className="mt-6 pt-4 border-t border-border flex gap-2">
+            <div className="mt-6 pt-4 border-t border-border flex flex-wrap gap-2">
+              <button
+                onClick={() =>
+                  generateAiReportPDF({
+                    company: DEMO_COMPANY.company_name,
+                    periodLabel: "aktueller Monat",
+                    prompt: prompt || "KI-Auswertung",
+                    markdown: result,
+                    receipts: all,
+                    model,
+                  })
+                }
+                className="btn-primary btn-sm"
+              >
+                <FileDown className="h-4 w-4" /> Als PDF herunterladen
+              </button>
               <button
                 onClick={() => {
                   const blob = new Blob([result], { type: "text/markdown" });
@@ -240,8 +255,6 @@ export default function AiReportsPage() {
           )}
         </div>
       )}
-
-      <Disclaimer />
     </div>
   );
 }

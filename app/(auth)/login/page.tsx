@@ -1,12 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { getSupabaseBrowser, supabaseEnabled } from "@/lib/supabase";
+import { setSessionCookie } from "@/lib/session-cookie";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginInner />
+    </Suspense>
+  );
+}
+
+function LoginInner() {
   const router = useRouter();
+  const params = useSearchParams();
+  const next = params.get("next") || "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,7 +33,8 @@ export default function LoginPage() {
         const { error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      router.push("/dashboard");
+      setSessionCookie(email);
+      router.push(next);
     } catch (err: any) {
       setError(err.message || "Anmeldung fehlgeschlagen.");
     } finally {
@@ -36,13 +48,14 @@ export default function LoginPage() {
       <p className="mt-2 text-slate-600">Melde dich an, um deinen Monatsreport zu sehen.</p>
 
       {!supabaseEnabled ? (
-        <div className="mt-5 rounded-lg border border-brand-100 bg-brand-50 p-3 text-sm text-brand-800">
-          <strong>Demo-Modus:</strong> Kein Supabase verbunden. Du kannst die App ohne Login testen.
-          <Link href="/dashboard" className="ml-1 underline font-medium">
-            Zum Demo-Dashboard →
-          </Link>
+        <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <strong>Hinweis:</strong> Konfiguration unvollständig — bitte Admin kontaktieren.
         </div>
-      ) : null}
+      ) : (
+        <div className="mt-5 rounded-lg border border-brand-100 bg-brand-50 p-3 text-xs text-brand-800">
+          <strong>Private Beta:</strong> Aktuell nur für eingeladene Nutzer. Anmeldungen werden manuell freigeschaltet.
+        </div>
+      )}
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <div>

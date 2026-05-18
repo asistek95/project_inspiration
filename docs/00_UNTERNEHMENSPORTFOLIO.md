@@ -12,7 +12,8 @@
 | **Name** | Klarblick |
 | **Gründungsjahr** | 2026 |
 | **Rechtsform** | Einzelunternehmer (geplant: FlexCo 2027) |
-| **Sitz** | Österreich |
+| **Sitz** | Icon Tower, Wienerbergstraße 11 / 16. OG, 1100 Wien, Österreich |
+| **Kontakt** | office@klarblick.at · klarblick.at |
 | **Gründer** | Amin Sistek |
 | **Branche** | B2B-SaaS / FinTech / Vertical SaaS Handwerk |
 | **Mitarbeiter** | 1 (Solo-Founder) |
@@ -73,13 +74,34 @@ Klarblick zeigt **was es bedeutet** — und **was du dagegen tun kannst**.
 
 ---
 
+## USP — Was Klarblick anders macht
+
+Klarblick ist **kein weiteres Buchhaltungs-Tool**. Wir sind das **Unternehmer-Cockpit**, das aus deinen Belegen Entscheidungen macht.
+
+| Feature | DATEV / BMD / RZL | sevDesk / lexoffice | **Klarblick** |
+|---|:-:|:-:|:-:|
+| Zielgruppe | Steuerberater | Buchhalter | **Unternehmer / Handwerker** |
+| AT-Steuerrecht (§ 11 / 12 UStG, § 26 EStG) | ✓ | teilweise | **✓ nativ** |
+| KI-Erstanalyse mit Claude Sonnet 4.5 | ✗ | ✗ | **✓ 95 % Confidence** |
+| Cashflow-Prognose (30 Tage) | ✗ | ✗ | **✓** |
+| Geschätzte Steuer-Ersparnis | ✗ | ✗ | **✓** |
+| Branchen-Benchmark (KMU AT) | ✗ | ✗ | **✓** |
+| Steuerberater-Paket auf Knopfdruck | ✗ | teilweise | **✓ inkl. PDF + CSV** |
+| Confidence-gewichtete Auswertung | ✗ | ✗ | **✓** |
+| Preis-Einstieg | 60 €/Mo + Setup | 19–49 €/Mo | **79–279 €/Mo all-in** |
+| AT-Fokus / Made in Austria | ✗ | ✗ | **✓** |
+
+**Kernunterschied:** Andere zeigen *was gebucht wurde*. Klarblick sagt dir *was du tun sollst* — Sparpotenzial, Risiken, Prognose, Branchen-Vergleich. Das ist der USP, der über Buchhaltung hinausgeht.
+
+---
+
 ## Tech-Stack
 
 | Layer | Technologie | Warum |
 |---|---|---|
 | Frontend | Next.js 14, React, Tailwind | Modern, SEO-fähig, schnell |
 | Backend | Supabase (Postgres + Auth + Storage) | EU-Server, RLS, Open-Source |
-| KI/OCR | OpenAI GPT-4o Vision | Beste Genauigkeit auf deutsche Belege |
+| KI/OCR | Anthropic Claude Sonnet 4.5 (Vision) | Beste Genauigkeit auf deutsche/österreichische Belege (95 %+ Confidence im Live-Test) |
 | Zahlung | Stripe (Payment Links + Subscriptions) | DSGVO + EU-konform, schnellster Setup |
 | Hosting | Railway | Auto-Deploy aus GitHub, EU-Region |
 | Monitoring | Sentry + UptimeRobot | Open Standards |

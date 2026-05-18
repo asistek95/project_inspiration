@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getSupabaseBrowser, supabaseEnabled } from "@/lib/supabase";
+import { setSessionCookie } from "@/lib/session-cookie";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -31,8 +32,20 @@ export default function RegisterPage() {
             company_name: form.company,
             owner_name: form.name,
           });
+          // Admin-Notification — best effort, blockiert den Flow nicht.
+          fetch("/api/admin/notify-signup", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              email: form.email,
+              company: form.company,
+              name: form.name,
+              user_id: data.user.id,
+            }),
+          }).catch(() => {});
         }
       }
+      setSessionCookie(form.email);
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Registrierung fehlgeschlagen.");
@@ -47,11 +60,14 @@ export default function RegisterPage() {
       <p className="mt-2 text-slate-600">Probiere Klarblick 14 Tage unverbindlich.</p>
 
       {!supabaseEnabled ? (
-        <div className="mt-5 rounded-lg border border-brand-100 bg-brand-50 p-3 text-sm text-brand-800">
-          <strong>Demo-Modus:</strong> Du kannst die App ohne Anmeldung erkunden.{" "}
-          <Link href="/dashboard" className="underline font-medium">Zum Demo-Dashboard</Link>
+        <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <strong>Hinweis:</strong> Konfiguration unvollständig — bitte Admin kontaktieren.
         </div>
-      ) : null}
+      ) : (
+        <div className="mt-5 rounded-lg border border-brand-100 bg-brand-50 p-3 text-xs text-brand-800">
+          <strong>Beta-Programm:</strong> Erste 50 Beta-Kunden erhalten 6 Monate gratis Klarblick + persönliches Onboarding.
+        </div>
+      )}
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <div className="grid grid-cols-2 gap-3">
@@ -62,7 +78,7 @@ export default function RegisterPage() {
               value={form.company}
               onChange={(e) => setForm({ ...form, company: e.target.value })}
               required
-              placeholder="Musterbau GmbH"
+              placeholder="z. B. Sistek Bau e.U."
             />
           </div>
           <div>
@@ -72,7 +88,7 @@ export default function RegisterPage() {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
-              placeholder="Max Muster"
+              placeholder="Vor- und Nachname"
             />
           </div>
         </div>

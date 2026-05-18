@@ -3,7 +3,8 @@
 **Stand:** Mai 2026
 **Gründer:** Amin Sistek
 **Rechtsform geplant:** Phase 1 Einzelunternehmer (Neue Selbstständige), Phase 2 FlexCo
-**Sitz:** Österreich
+**Sitz:** Icon Tower, Wienerbergstraße 11 / 16. OG, 1100 Wien, Österreich  
+**Kontakt:** office@klarblick.at · klarblick.at
 
 ---
 

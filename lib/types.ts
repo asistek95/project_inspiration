@@ -69,6 +69,7 @@ export interface Receipt {
   warnings: string[];
   notes: string | null;
   project: string | null;
+  receipt_number?: string | null;   // fortlaufende Belegnummer (User-konfigurierbar)
   // GoBD-Erweiterungen
   payment_terms?: PaymentTerms | null;
   is_recurring?: boolean;
