@@ -446,13 +446,13 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <PricingCard
               name="Starter"
-              price="100"
+              price="49"
               tagline="Einzelmeister · 1 Nutzer"
-              features={["bis 100 Belege/Monat", "KI-Belegerkennung (GPT-4o)", "Monatsreport (PDF)", "DATEV / RZL-Export", "E-Mail-Support"]}
+              features={["bis 100 Belege/Monat", "KI-Belegerkennung (Claude Sonnet)", "Monatsreport (PDF)", "DATEV / RZL-Export", "E-Mail-Support"]}
             />
             <PricingCard
               name="Profi"
-              price="150"
+              price="119"
               featured
               tagline="Bis 5 Mitarbeiter"
               features={[
@@ -462,11 +462,12 @@ export default function LandingPage() {
                 "Abo-Falle",
                 "Steuerberater-Paket",
                 "GoBD-Audit-Log",
+                "AI-Reports (13 Premium-Prompts)",
               ]}
             />
             <PricingCard
               name="Betrieb"
-              price="180"
+              price="199"
               tagline="Bis 20 Mitarbeiter"
               features={[
                 "unbegrenzte Belege",
@@ -474,6 +475,7 @@ export default function LandingPage() {
                 "Projekt-Kostenstellen",
                 "API-Zugang",
                 "Prioritäts-Support",
+                "White-Label optional",
               ]}
             />
           </div>

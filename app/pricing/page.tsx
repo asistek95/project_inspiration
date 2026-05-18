@@ -29,14 +29,14 @@ export default function PricingPage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          <Plan name="Starter" price="100" tagline="Einzelmeister · 1 Nutzer"
-            features={["bis 100 Belege/Monat", "KI-Belegerkennung (GPT-4o Vision)", "Monatsreport (PDF)", "DATEV / RZL-Export", "E-Mail-Support"]}
+          <Plan name="Starter" price="49" tagline="Einzelmeister · 1 Nutzer"
+            features={["bis 100 Belege/Monat", "KI-Belegerkennung (Claude Sonnet)", "Monatsreport (PDF)", "DATEV / RZL-Export", "E-Mail-Support"]}
             href={STRIPE.starter} />
-          <Plan name="Profi" price="150" featured tagline="Bis 5 Mitarbeiter"
-            features={["bis 500 Belege/Monat", "Skonto-Alarm + Preis-Wächter", "SEPA-Sammelüberweisung", "Abo-Falle Übersicht", "Steuerberater-Paket", "GoBD-Audit-Log"]}
+          <Plan name="Profi" price="119" featured tagline="Bis 5 Mitarbeiter"
+            features={["bis 500 Belege/Monat", "Skonto-Alarm + Preis-Wächter", "SEPA-Sammelüberweisung", "Abo-Falle Übersicht", "Steuerberater-Paket", "GoBD-Audit-Log", "AI-Reports (13 Premium-Prompts)"]}
             href={STRIPE.profi} />
-          <Plan name="Betrieb" price="180" tagline="Bis 20 Mitarbeiter"
-            features={["unbegrenzte Belege", "Mehrere Nutzer + Rollen", "Projekt-Kostenstellen", "API-Zugang", "Prioritäts-Support", "Persönlicher Ansprechpartner"]}
+          <Plan name="Betrieb" price="199" tagline="Bis 20 Mitarbeiter"
+            features={["unbegrenzte Belege", "Mehrere Nutzer + Rollen", "Projekt-Kostenstellen", "API-Zugang", "Prioritäts-Support", "Persönlicher Ansprechpartner", "White-Label optional"]}
             href={STRIPE.betrieb} />
         </div>
 
