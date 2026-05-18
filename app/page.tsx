@@ -632,21 +632,23 @@ export default function LandingPage() {
                   <MapPin className="h-5 w-5 text-brand-600 mt-0.5" />
                   <div>
                     <p className="text-xs text-slate-500">Standort</p>
-                    <p className="font-medium">Deutschland</p>
+                    <p className="font-medium">Wien, Österreich</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Icon Tower · Wienerbergstraße 11 · 16. Stock</p>
                   </div>
                 </div>
               </div>
 
               <div className="card overflow-hidden">
                 <iframe
-                  title="Klarblick Standort"
-                  src="https://www.openstreetmap.org/export/embed.html?bbox=6.5%2C50.5%2C13.5%2C53.5&amp;layer=mapnik"
+                  title="Klarblick Standort — Icon Tower Wien, 16. Stock (cohub Coworking)"
+                  src="https://www.google.com/maps?q=Icon+Tower+Wienerbergstra%C3%9Fe+11+1100+Wien&z=16&output=embed"
                   className="w-full h-72 border-0"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
                 />
                 <div className="p-3 text-xs text-slate-500 border-t border-border">
-                  Karte: OpenStreetMap-Mitwirkende
+                  Icon Tower · Wienerbergstraße 11 · 1100 Wien · 16. Stock (cohub Coworking)
                 </div>
               </div>
             </div>
