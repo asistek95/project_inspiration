@@ -53,19 +53,40 @@ export function LiveChat() {
   const [input, setInput] = useState("");
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [thinking, setThinking] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, open]);
 
-  function send(text: string) {
+  async function send(text: string) {
     const t = text.trim();
-    if (!t) return;
+    if (!t || thinking) return;
     const user: Msg = { from: "user", text: t, ts: Date.now() };
-    const bot: Msg = { from: "bot", text: botReply(t), ts: Date.now() + 1 };
-    setMsgs((m) => [...m, user, bot]);
+    const nextMsgs = [...msgs, user];
+    setMsgs(nextMsgs);
     setInput("");
+    setThinking(true);
+
+    try {
+      const history = nextMsgs.map((m) => ({
+        role: m.from === "user" ? "user" : "assistant",
+        content: m.text,
+      }));
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: history }),
+      });
+      const data = await res.json();
+      const reply = (data?.text as string) || botReply(t);
+      setMsgs((m) => [...m, { from: "bot", text: reply, ts: Date.now() }]);
+    } catch {
+      setMsgs((m) => [...m, { from: "bot", text: botReply(t), ts: Date.now() }]);
+    } finally {
+      setThinking(false);
+    }
   }
 
   async function escalate(e: React.FormEvent) {
@@ -133,6 +154,15 @@ export function LiveChat() {
                 {m.text}
               </div>
             ))}
+            {thinking ? (
+              <div className="bg-white border border-border text-slate-500 rounded-2xl rounded-bl-sm max-w-[60%] px-3 py-2 text-sm">
+                <span className="inline-flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:120ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:240ms]" />
+                </span>
+              </div>
+            ) : null}
             {msgs.length <= 2 ? (
               <div className="flex flex-wrap gap-1.5 pt-2">
                 {SUGGESTIONS.map((s) => (

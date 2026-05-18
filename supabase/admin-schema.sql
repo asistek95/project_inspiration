@@ -29,6 +29,7 @@ for each row execute procedure public.set_updated_at();
 alter table public.companies enable row level security;
 
 -- User darf sein eigenes Company-Profil lesen, aber NICHT plan/status ändern (nur Stripe-Webhook via service_role)
+drop policy if exists "companies_owner_select" on public.companies;
 create policy "companies_owner_select" on public.companies
   for select using (auth.uid() = user_id);
 
@@ -71,6 +72,7 @@ create index if not exists idx_wa_status on public.whatsapp_messages(status, cre
 
 alter table public.whatsapp_messages enable row level security;
 
+drop policy if exists "wa_owner_select" on public.whatsapp_messages;
 create policy "wa_owner_select" on public.whatsapp_messages
   for select using (auth.uid() = user_id);
 -- Inserts/Updates nur via service_role (Twilio-Webhook).

@@ -118,6 +118,65 @@ export function receiptFingerprint(supplier: string, date: string, gross: number
  * im Stammdaten-Index, MwSt-Satz konsistent).
  */
 export async function extractReceiptData(file: File): Promise<ExtractedReceipt> {
+  // ── Versuche zuerst echte Claude-Vision OCR via /api/ocr ──
+  if (file.type.startsWith("image/") || file.type === "application/pdf") {
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/ocr", { method: "POST", body: form });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && !data._demo && !data._error && data.vendor && data.gross_amount != null) {
+          const gross = Number(data.gross_amount) || 0;
+          const net = Number(data.net_amount) || round2(gross / 1.20);
+          const vat = Number(data.vat_amount) || round2(gross - net);
+          const date = (data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date))
+            ? data.date
+            : new Date().toISOString().slice(0, 10);
+          // Kategorie-Mapping
+          const catMap: Record<string, Category> = {
+            Material: "Werkzeug & Material",
+            Werkzeug: "Werkzeug & Material",
+            Treibstoff: "Fahrtkosten",
+            "Büro": "Bürobedarf",
+            Bewirtung: "Bewirtung",
+            Sonstiges: "Sonstiges",
+          };
+          const category: Category = catMap[data.category] || "Sonstiges";
+          const suggest = suggestCategory(data.vendor);
+          const finalCategory = suggest?.category || category;
+          const payment: PaymentMethod = suggest?.payment || "Karte";
+          const receiptType: ReceiptType =
+            (data.receipt_type as ReceiptType) || "Rechnung";
+          const warnings: string[] = [];
+          if (Math.abs(net + vat - gross) > 0.05) {
+            warnings.push("Brutto ≠ Netto + MwSt — bitte prüfen");
+          }
+          const confidence = typeof data.confidence === "number" ? data.confidence : 0.92;
+          return {
+            supplier_name: String(data.vendor),
+            receipt_date: date,
+            category: finalCategory,
+            receipt_type: receiptType,
+            payment_method: payment,
+            net_amount: round2(net),
+            vat_amount: round2(vat),
+            gross_amount: round2(gross),
+            currency: "EUR",
+            confidence_score: round2(Math.max(0, Math.min(1, confidence))),
+            warnings,
+            payment_terms: null,
+            is_recurring: false,
+            fingerprint: receiptFingerprint(String(data.vendor), date, gross),
+          };
+        }
+      }
+    } catch {
+      // Falls API nicht erreichbar oder Key fehlt → Demo-Fallback unten
+    }
+  }
+
+  // ── Demo-Fallback (kein API-Key oder Datei kein Bild/PDF) ──
   await new Promise((r) => setTimeout(r, 700 + Math.random() * 500));
 
   const { sup, fromName } = pickSupplier(file.name);

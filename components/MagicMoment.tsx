@@ -100,10 +100,75 @@ export function MagicMoment() {
     }, STEPS.length * stepDuration + 400);
   };
 
+  const runRealOcr = async (file: File) => {
+    if (state === "scanning") return;
+    setState("scanning");
+    setResult(null);
+    setActiveStep(0);
+    setUploadedName(file.name);
+
+    const stepDuration = 650;
+    STEPS.forEach((_, i) => {
+      setTimeout(() => setActiveStep(i), i * stepDuration);
+    });
+
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/ocr", { method: "POST", body: form });
+      const data = await res.json();
+
+      // Mindest-Animations-Zeit abwarten, damit Steps sichtbar bleiben
+      await new Promise((r) => setTimeout(r, STEPS.length * stepDuration + 200));
+
+      if (!res.ok || data._error || data._demo || !data.vendor) {
+        // Fallback auf Demo-Ergebnis (zeigt User dennoch was)
+        const pick = DEMO_RESULTS[Math.floor(Math.random() * DEMO_RESULTS.length)];
+        setResult(pick);
+      } else {
+        const gross = Number(data.gross_amount) || 0;
+        const net = Number(data.net_amount) || gross / 1.2;
+        const vat = Number(data.vat_amount) || gross - net;
+        const rate = Number(data.vat_rate) || 20;
+        const fmt = (n: number) => `${n.toFixed(2).replace(".", ",")} €`;
+        const realResult: Result = {
+          vendor: String(data.vendor),
+          date: data.date || new Date().toISOString().slice(0, 10),
+          gross: fmt(gross),
+          net: fmt(net),
+          vat: fmt(vat),
+          vatRate: `${rate} %`,
+          category: data.category || "Sonstiges",
+          legalNotes: [
+            "§ 11 UStG: Rechnungsdaten von Claude extrahiert",
+            `MwSt-Satz ${rate} % erkannt`,
+            Math.abs(net + vat - gross) < 0.05
+              ? "Brutto = Netto + MwSt ✓"
+              : "Achtung: Brutto/Netto/MwSt prüfen",
+          ],
+          confidence: typeof data.confidence === "number" && data.confidence > 0.85 ? "Hoch" : "Mittel",
+        };
+        setResult(realResult);
+      }
+      setState("done");
+      setActiveStep(STEPS.length);
+    } catch {
+      const pick = DEMO_RESULTS[Math.floor(Math.random() * DEMO_RESULTS.length)];
+      setResult(pick);
+      setState("done");
+      setActiveStep(STEPS.length);
+    }
+  };
+
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    runDemo(f.name);
+    // Wenn echte Datei (Bild/PDF) hochgeladen wurde → echte OCR via Claude
+    if (f.type.startsWith("image/") || f.type === "application/pdf") {
+      runRealOcr(f);
+    } else {
+      runDemo(f.name);
+    }
   };
 
   return (
