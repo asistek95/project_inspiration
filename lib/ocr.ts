@@ -17,6 +17,12 @@ export interface ExtractedReceipt {
   payment_terms?: { skonto_pct: number; days: number; net_days: number } | null;
   is_recurring?: boolean;
   fingerprint?: string;
+  
+  // ── NEU: Eingangs-/Ausgangsrechnung-Erkennung ──
+  invoice_type?: "eingang" | "ausgang" | "unknown";
+  vendor_uid?: string | null;
+  vendor_identifier_confidence?: number;
+  is_vendor_match?: boolean;
 }
 
 // Handwerker-Fokus: Werkzeug, Material, Großhandel, Sanitär, Elektro, KFZ
@@ -212,6 +218,15 @@ export async function extractReceiptData(file: File): Promise<ExtractedReceipt> 
             warnings.push("Brutto ≠ Netto + MwSt — bitte prüfen");
           }
           const confidence = typeof data.confidence === "number" ? data.confidence : 0.92;
+          
+          // ── NEU: Eingangs/Ausgangsrechnung-Felder aus OCR ──
+          const invoiceType = data.invoice_type || "unknown";
+          const vendorUid = data.vendor_uid || null;
+          const vendorIdentifierConfidence = typeof data.vendor_identifier_confidence === "number" 
+            ? data.vendor_identifier_confidence 
+            : 0.5;
+          const isVendorMatch = !!data.is_vendor_match;
+          
           return {
             supplier_name: String(data.vendor),
             receipt_date: date,
@@ -229,6 +244,10 @@ export async function extractReceiptData(file: File): Promise<ExtractedReceipt> 
             payment_terms: null,
             is_recurring: false,
             fingerprint: receiptFingerprint(String(data.vendor), date, gross),
+            invoice_type: invoiceType as "eingang" | "ausgang" | "unknown",
+            vendor_uid: vendorUid,
+            vendor_identifier_confidence: round2(vendorIdentifierConfidence),
+            is_vendor_match: isVendorMatch,
           };
         }
       }
@@ -274,6 +293,10 @@ export async function extractReceiptData(file: File): Promise<ExtractedReceipt> 
   }
 
   const date = recentDate();
+  
+  // ── Demo: invoice_type basierend auf direction ──
+  const demoInvoiceType: "eingang" | "ausgang" | "unknown" = 
+    sup.type === "Rechnung" ? "eingang" : "unknown";
 
   return {
     supplier_name: sup.name,
@@ -292,6 +315,10 @@ export async function extractReceiptData(file: File): Promise<ExtractedReceipt> 
     payment_terms,
     is_recurring: !!sup.recurring,
     fingerprint: receiptFingerprint(sup.name, date, gross),
+    invoice_type: demoInvoiceType,
+    vendor_uid: null,
+    vendor_identifier_confidence: 0,
+    is_vendor_match: false,
   };
 }
 

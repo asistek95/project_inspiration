@@ -137,6 +137,21 @@ export interface Receipt {
   notes: string | null;
   project: string | null;
   receipt_number?: string | null;   // fortlaufende Belegnummer (User-konfigurierbar)
+  
+  // ────────────────────────────────────────────────────
+  // Neue OCR-Erkennung (Eingangs-/Ausgangsrechnung)
+  // ────────────────────────────────────────────────────
+  invoice_type?: "eingang" | "ausgang" | "unknown";  // OCR-erkannt
+  vendor_uid?: string | null;                         // UID-Nummer des Lieferanten
+  vendor_identifier_confidence?: number;              // 0..1 wie sicher ist die Erkennung
+  is_vendor_match?: boolean;                          // ob der Vendor in company_identifiers ist (= Ausgangsrechnung)
+  
+  // ────────────────────────────────────────────────────
+  // Beleg-Bennung (Audit-Trail für OCR + User)
+  // ────────────────────────────────────────────────────
+  ocr_filename?: string | null;                       // Von OCR generiert (z.B. "B_157")
+  user_custom_name?: string | null;                   // User-definiert / überschrieben
+  
   // GoBD-Erweiterungen
   payment_terms?: PaymentTerms | null;
   is_recurring?: boolean;

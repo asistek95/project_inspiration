@@ -84,6 +84,13 @@ export default function UploadPage() {
           fingerprint: extracted.fingerprint,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          // ── NEU: Eingangs/Ausgangsrechnung-Felder ──
+          invoice_type: extracted.invoice_type || "unknown",
+          vendor_uid: extracted.vendor_uid || null,
+          vendor_identifier_confidence: extracted.vendor_identifier_confidence || 0,
+          is_vendor_match: extracted.is_vendor_match || false,
+          ocr_filename: null, // Wird später beim Speichern generiert
+          user_custom_name: null,
         };
         (draft as any).direction = extracted.direction;
         (draft as any).rechnung_subtyp = extracted.rechnung_subtyp;
