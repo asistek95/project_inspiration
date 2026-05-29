@@ -80,21 +80,23 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-col lg:flex-row gap-4">
         <div>
-          <p className="text-sm text-brand-600 font-semibold uppercase tracking-wider">Dein Monatsreport</p>
+          <p className="text-sm text-brand-600 font-semibold uppercase tracking-wider">
+            Monatsabschluss-Assistent
+          </p>
           <h1 className="text-3xl font-bold tracking-tight">{currentLabel}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Automatisch erstellt aus {stats.count} Belegen.
+            Ziel: bis zum 15. steuerberaterbereit · {stats.count} Belege im aktuellen Monat
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/upload" className="btn-primary">
-            <UploadIcon className="h-4 w-4" /> Beleg hochladen
+            <UploadIcon className="h-4 w-4" /> Belege hochladen
           </Link>
           <Link href="/report" className="btn-secondary">
-            <FileBarChart2 className="h-4 w-4" /> Report erstellen
+            <FileBarChart2 className="h-4 w-4" /> Gewinn & Kosten
           </Link>
           <Link href="/tax-advisor" className="btn-secondary">
-            <Send className="h-4 w-4" /> An Steuerberater
+            <Send className="h-4 w-4" /> Paket vorbereiten
           </Link>
         </div>
       </div>
@@ -102,7 +104,7 @@ export default function DashboardPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-4">
         <MetricCard
-          label="Gesamtausgaben"
+          label="Ausgaben (Monat)"
           value={formatEUR(stats.total_gross)}
           Icon={Wallet}
           accent="brand"
@@ -111,9 +113,9 @@ export default function DashboardPage() {
           className="col-span-2"
         />
         <MetricCard label="Belege" value={stats.count} Icon={ReceiptIcon} accent="muted" />
-        <MetricCard label="MwSt.-Summe" value={formatEUR(stats.total_vat)} Icon={Percent} accent="accent" />
+        <MetricCard label="USt-Vorbereitung" value={formatEUR(stats.total_vat)} Icon={Percent} accent="accent" hint="Vorsteuer kumuliert" />
         <MetricCard
-          label="Ungeprüft"
+          label="Offen"
           value={stats.unchecked}
           Icon={Clock}
           accent="muted"
@@ -124,11 +126,11 @@ export default function DashboardPage() {
           value={stats.uncertain}
           Icon={AlertTriangle}
           accent="warn"
-          hint="bitte prüfen"
+          hint="bitte klären"
         />
       </div>
 
-      {/* Tax Advisor Progress */}
+      {/* Monatsabschluss-Status */}
       <div className="card-soft p-5 lg:p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -137,15 +139,15 @@ export default function DashboardPage() {
             </span>
             <div>
               <p className="font-semibold">
-                Dein Steuerberater-Paket ist zu {allStats!.advisorReadyPct} % bereit
+                Monatsabschluss zu {allStats!.advisorReadyPct} % bereit
               </p>
               <p className="text-sm text-muted-foreground">
-                {allStats!.checked} von {allStats!.count} Belegen geprüft · {allStats!.uncertain} unsicher
+                {allStats!.checked} von {allStats!.count} Belegen geprüft · {allStats!.uncertain} unsicher · Ziel: bis 15. des Folgemonats
               </p>
             </div>
           </div>
           <Link href="/tax-advisor" className="btn-primary">
-            Paket öffnen <ArrowRight className="h-4 w-4" />
+            Paket vorbereiten <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
         <div className="mt-4 h-2.5 bg-slate-100 rounded-full overflow-hidden">
@@ -171,7 +173,7 @@ export default function DashboardPage() {
       {/* Insights */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold tracking-tight">Was diesen Monat auffällt</h2>
+          <h2 className="text-xl font-bold tracking-tight">Was diesen Monat passiert ist</h2>
           <span className="text-xs text-muted-foreground">{insights.length} Hinweise</span>
         </div>
         <div className="grid md:grid-cols-2 gap-3">

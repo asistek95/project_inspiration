@@ -10,10 +10,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </Link>
         <div>
           <p className="text-3xl font-extrabold leading-tight max-w-md">
-            „Endlich verstehe ich, wohin mein Geld geht."
+            „Mein Monat ist bis zum 15. fertig.“
           </p>
           <p className="mt-4 text-white/80 max-w-md">
-            Vom Schuhkarton zum Management-Report. Belege rein. Klare Zahlen raus.
+            Belege rein. Monat bis zum 15. steuerberaterbereit. Dein digitaler Monatsabschluss-Assistent.
           </p>
         </div>
         <p className="text-xs text-white/60">

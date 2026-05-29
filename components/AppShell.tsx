@@ -14,6 +14,8 @@ import {
   X,
   Sparkles,
   LogOut,
+  Calculator,
+  PackageCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -21,13 +23,14 @@ import { getSupabaseBrowser, supabaseEnabled } from "@/lib/supabase";
 import { setSessionCookie, clearSessionCookie } from "@/lib/session-cookie";
 
 const NAV = [
-  { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
-  { href: "/upload", label: "Beleg hochladen", Icon: Upload },
-  { href: "/receipts", label: "Belegliste", Icon: ReceiptIcon },
-  { href: "/report", label: "Management-Report", Icon: FileBarChart2 },
-  { href: "/ai-reports", label: "AI-Reports", Icon: Sparkles },
-  { href: "/tax-advisor", label: "Steuerberater-Paket", Icon: Send },
-  { href: "/settings", label: "Einstellungen", Icon: Settings },
+  { href: "/dashboard", label: "Monatsabschluss", Icon: LayoutDashboard, basic: true },
+  { href: "/upload", label: "Belege hochladen", Icon: Upload, basic: true },
+  { href: "/receipts", label: "Belegliste", Icon: ReceiptIcon, basic: true },
+  { href: "/report", label: "Gewinn & Kosten", Icon: FileBarChart2, basic: false },
+  { href: "/uva", label: "UVA-Vorerfassung", Icon: Calculator, basic: false },
+  { href: "/ai-reports", label: "KI-Berichte", Icon: Sparkles, basic: false },
+  { href: "/tax-advisor", label: "Monatsabschluss-Paket", Icon: PackageCheck, basic: false },
+  { href: "/settings", label: "Einstellungen", Icon: Settings, basic: true },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -35,6 +38,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const [user, setUser] = useState<{ email: string; name?: string; company?: string } | null>(null);
+  const [proMode, setProMode] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setProMode(localStorage.getItem("klarblick.proMode") === "1");
+    }
+  }, []);
+
+  function toggleProMode() {
+    const next = !proMode;
+    setProMode(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("klarblick.proMode", next ? "1" : "0");
+    }
+  }
+
+  const visibleNav = NAV.filter((n) => proMode || n.basic);
 
   useEffect(() => {
     const sb = getSupabaseBrowser();
@@ -63,9 +83,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex bg-slate-50/50">
       {/* Mobile top bar */}
       <div className="lg:hidden fixed top-0 inset-x-0 z-40 h-14 bg-white border-b border-border flex items-center justify-between px-4">
-        <Link href="/dashboard" className="font-bold text-lg flex items-center gap-2">
-          <img src="/klar.png" alt="Klarblick" className="h-8 w-8 object-contain" />
-          Klarblick
+        <Link href="/dashboard" className="font-bold flex items-center gap-2">
+          <span className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white grid place-content-center font-black text-sm shadow-sm">
+            K
+          </span>
+          <span className="leading-tight">
+            <span className="text-lg font-bold block">Klarblick</span>
+          </span>
         </Link>
         <button onClick={() => setOpen(!open)} className="btn-ghost !p-2" aria-label="Menü">
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -81,13 +105,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
       >
         <div className="px-5 h-16 flex items-center border-b border-border">
-          <Link href="/dashboard" className="font-bold text-lg flex items-center gap-2">
-            <img src="/klar.png" alt="Klarblick" className="h-9 w-9 object-contain" />
-            Klarblick
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <span className="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white grid place-content-center font-black text-lg shadow-md ring-1 ring-brand-300/40">
+              K
+            </span>
+            <span className="leading-tight">
+              <span className="block text-lg font-bold tracking-tight">Klarblick</span>
+              <span className="block text-[10.5px] font-medium text-slate-500 uppercase tracking-wider">
+                Monatsabschluss-Assistent
+              </span>
+            </span>
           </Link>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {NAV.map(({ href, label, Icon }) => {
+          {visibleNav.map(({ href, label, Icon }) => {
             const active = pathname === href || pathname?.startsWith(href + "/");
             return (
               <Link
@@ -95,17 +126,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={href}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition",
+                  "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition",
                   active
                     ? "bg-brand-50 text-brand-700"
                     : "text-slate-700 hover:bg-slate-50 hover:text-foreground"
                 )}
               >
-                <Icon className={cn("h-4.5 w-4.5", active ? "text-brand-600" : "text-slate-500")} />
+                <Icon className={cn("h-5 w-5", active ? "text-brand-600" : "text-slate-500")} />
                 {label}
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={toggleProMode}
+            className="w-full mt-3 px-3 py-2.5 rounded-lg text-xs font-semibold border border-dashed border-slate-300 text-slate-500 hover:text-brand-700 hover:border-brand-300 transition flex items-center justify-between"
+          >
+            <span>Profi-Modus</span>
+            <span className={cn(
+              "px-2 py-0.5 rounded-full text-[10px] font-bold",
+              proMode ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-500"
+            )}>
+              {proMode ? "AN" : "AUS"}
+            </span>
+          </button>
+          {!proMode ? (
+            <p className="text-[10px] text-slate-400 px-3 pt-1 leading-snug">
+              Zeigt UVA, KI-Berichte, Gewinn &amp; Kosten und Steuerberater-Paket.
+            </p>
+          ) : null}
         </nav>
         <div className="p-4 border-t border-border text-xs text-muted-foreground space-y-2">
           {user ? (

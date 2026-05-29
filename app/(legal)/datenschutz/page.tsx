@@ -34,11 +34,32 @@ export default function DatenschutzPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-xl font-bold text-foreground">4. Speicherdauer</h2>
+        <h2 className="text-xl font-bold text-foreground">4. Speicherdauer &amp; Buchhaltung</h2>
         <p>
-          Beleg-Daten werden nach den gesetzlichen Aufbewahrungsfristen (§ 147 AO: 10 Jahre für Rechnungen) gespeichert,
-          sofern du sie nicht früher löschst. GoBD-relevante, freigegebene Belege sind unveränderlich archiviert.
-          Nach Kontolöschung werden Daten 30 Tage als Backup gehalten, dann endgültig gelöscht.
+          Beleg-Daten unterliegen gesetzlichen Aufbewahrungsfristen und werden für deren Dauer
+          unveränderlich archiviert:
+        </p>
+        <ul className="list-disc pl-6 space-y-1">
+          <li>
+            <strong>Österreich:</strong> 7 Jahre nach Ablauf des Kalenderjahres (§ 132 BAO).
+          </li>
+          <li>
+            <strong>Deutschland:</strong> 10 Jahre für Rechnungen, Buchungsbelege und Jahresabschlüsse
+            (§ 147 AO, § 257 HGB).
+          </li>
+          <li>
+            Nach Steuerberater-Übergabe werden Belege als <em>freigegeben</em> markiert und gegen
+            Änderung gesperrt (GoBD-konforme Unveränderbarkeit).
+          </li>
+          <li>
+            Jede Übergabe wird im <strong>Audit-Log</strong> mit Zeitstempel, Empfänger-E-Mail und
+            Anzahl der Belege dokumentiert.
+          </li>
+        </ul>
+        <p>
+          Nach Ablauf der Aufbewahrungspflicht bzw. nach Kontolöschung (mit Cooldown von 30 Tagen)
+          werden alle personenbezogenen Daten unwiderruflich gelöscht. Du kannst jederzeit einen
+          vollständigen Daten-Export im JSON-Format anfordern (DSGVO Art. 20).
         </p>
       </section>
 

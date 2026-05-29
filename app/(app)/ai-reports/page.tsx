@@ -78,12 +78,12 @@ export default function AiReportsPage() {
           <Sparkles className="h-4 w-4" /> AI-Reports
         </div>
         <h1 className="text-3xl font-bold tracking-tight">
-          Management Reports erstellen. Steuerberaterkosten reduzieren.
+          KI-Berichte: dein digitaler Buchhaltungs-Assistent
         </h1>
         <p className="text-muted-foreground mt-1.5 max-w-3xl">
-          Wähle einen Premium-Prompt — die KI analysiert deine Belege und liefert
-          Executive Summary, Risiken, Empfehlungen und Steuerberater-Checkliste.
-          Bis zu <strong>70 % weniger Vorbereitungszeit</strong>.
+          Klick auf eine Karte — die KI schaut sich deine Belege an und erklärt dir in einfacher Sprache,
+          wie dein Monat gelaufen ist, was auffällig ist und was du dem Steuerberater
+          schicken solltest. Spart bis zu <strong>70 % Vorbereitungszeit</strong>.
         </p>
       </div>
 

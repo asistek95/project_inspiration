@@ -138,7 +138,7 @@ export const QUICK_ACTIONS: PromptTemplate[] = [
 ];
 
 export const CATEGORY_LABELS: Record<PromptCategory, string> = {
-  report: "Management Report",
-  steuerberater: "Steuerberater-Vorbereitung",
-  premium: "Premium-Analysen",
+  report: "Mein Monat — einfach erklärt",
+  steuerberater: "Für den Steuerberater",
+  premium: "Premium: Komplett-Analyse",
 };

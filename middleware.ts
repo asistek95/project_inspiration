@@ -15,6 +15,7 @@ const PROTECTED_PREFIXES = [
   "/report",
   "/ai-reports",
   "/tax-advisor",
+  "/uva",
   "/settings",
   "/savings",
 ];
@@ -43,6 +44,7 @@ export const config = {
     "/report/:path*",
     "/ai-reports/:path*",
     "/tax-advisor/:path*",
+    "/uva/:path*",
     "/settings/:path*",
     "/savings/:path*",
   ],

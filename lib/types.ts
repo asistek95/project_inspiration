@@ -32,6 +32,71 @@ export const RECEIPT_TYPES = [
 ] as const;
 export type ReceiptType = (typeof RECEIPT_TYPES)[number];
 
+// Richtung des Belegs — entscheidend für USt vs. Vorsteuer
+export const DIRECTIONS = ["eingang", "ausgang", "neutral"] as const;
+export type ReceiptDirection = (typeof DIRECTIONS)[number];
+export const DIRECTION_LABEL: Record<ReceiptDirection, string> = {
+  eingang: "Eingangsbeleg (Vorsteuer)",
+  ausgang: "Ausgangsrechnung (Umsatz)",
+  neutral: "Material/Spesen",
+};
+export const DIRECTION_SHORT: Record<ReceiptDirection, string> = {
+  eingang: "Eingang",
+  ausgang: "Ausgang",
+  neutral: "Material",
+};
+
+// Klartext-Labels für Handwerker — ohne UVA/KZ/Vorsteuer-Jargon
+export const DIRECTION_FRIENDLY: Record<ReceiptDirection, string> = {
+  eingang: "Material / Lieferant",
+  ausgang: "Rechnung an Kunde",
+  neutral: "Quittung / Spesen",
+};
+export const DIRECTION_FRIENDLY_HINT: Record<ReceiptDirection, string> = {
+  eingang: "Du hast eingekauft — das Finanzamt zahlt dir die MwSt. zurück.",
+  ausgang: "Du hast deinem Kunden Rechnung gestellt — wird zu deinem Umsatz.",
+  neutral: "Tankbeleg, Bewirtung, Quittung — normale Betriebsausgabe.",
+};
+export const DIRECTION_EMOJI: Record<ReceiptDirection, string> = {
+  eingang: "📥",
+  ausgang: "📤",
+  neutral: "🧾",
+};
+
+// Rechnungs-Subtypen — nur relevant wenn receipt_type === "Rechnung"
+// Standard österreichischer/deutscher Rechnungs-Arten:
+//   • Standard       — normale Rechnung
+//   • Kleinbetrag    — bis 250 € brutto, vereinfachte Pflichtangaben
+//   • Anzahlung      — Anzahlungs-/Abschlagsrechnung während Projekt
+//   • Schluss        — finale Rechnung mit Abzug der Abschläge
+//   • Gutschrift     — Rabatt / Rückvergütung
+//   • Storno         — Korrekturrechnung
+export const RECHNUNG_SUBTYPEN = [
+  "standard",
+  "kleinbetrag",
+  "anzahlung",
+  "schluss",
+  "gutschrift",
+  "storno",
+] as const;
+export type RechnungSubtyp = (typeof RECHNUNG_SUBTYPEN)[number];
+export const RECHNUNG_SUBTYP_LABEL: Record<RechnungSubtyp, string> = {
+  standard: "Standardrechnung",
+  kleinbetrag: "Kleinbetragsrechnung",
+  anzahlung: "Anzahlungsrechnung",
+  schluss: "Schlussrechnung",
+  gutschrift: "Gutschrift",
+  storno: "Stornorechnung",
+};
+export const RECHNUNG_SUBTYP_HINT: Record<RechnungSubtyp, string> = {
+  standard: "Normale Rechnung mit allen Pflichtangaben.",
+  kleinbetrag: "Bis 250 € brutto — vereinfachte Pflichtangaben (z. B. Kassenbon).",
+  anzahlung: "Vorabzahlung vor Projektabschluss — Schlussrechnung folgt.",
+  schluss: "Finale Rechnung, in der Anzahlungen abgezogen werden.",
+  gutschrift: "Rabatt oder Rückvergütung an den Kunden / vom Lieferanten.",
+  storno: "Storniert eine vorherige Rechnung wegen Fehler / Rückabwicklung.",
+};
+
 export const PAYMENT_METHODS = ["Bar", "Karte", "Überweisung", "Lastschrift", "PayPal"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
@@ -59,6 +124,8 @@ export interface Receipt {
   receipt_date: string; // ISO yyyy-mm-dd
   category: Category;
   receipt_type: ReceiptType;
+  direction?: ReceiptDirection;     // Eingang/Ausgang/Material (Material = Kassenbon/Tankbeleg/etc.)
+  rechnung_subtyp?: RechnungSubtyp; // Nur relevant wenn receipt_type === "Rechnung"
   payment_method: PaymentMethod;
   net_amount: number;
   vat_amount: number;

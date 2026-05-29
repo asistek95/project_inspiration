@@ -223,8 +223,8 @@ export function generateDemoReceipts(): Receipt[] {
 }
 
 export const DEMO_COMPANY = {
-  company_name: "Musterbau GmbH",
-  owner_name: "Thomas Müller",
-  tax_advisor_email: "kanzlei@beispiel-steuerberater.de",
-  company_type: "GmbH",
+  company_name: "Thomas Bau & Montage",
+  owner_name: "Thomas Wagner",
+  tax_advisor_email: "kanzlei@beispiel-steuerberater.at",
+  company_type: "Einzelunternehmen",
 };

@@ -45,7 +45,7 @@ function LoginInner() {
   return (
     <div>
       <h1 className="text-3xl font-extrabold tracking-tight">Willkommen zurück</h1>
-      <p className="mt-2 text-slate-600">Melde dich an, um deinen Monatsreport zu sehen.</p>
+      <p className="mt-2 text-slate-600">Melde dich an, um deinen Monatsabschluss zu öffnen.</p>
 
       {!supabaseEnabled ? (
         <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">

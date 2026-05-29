@@ -1,10 +1,12 @@
-import type { Category, PaymentMethod, ReceiptType, Receipt } from "./types";
+import type { Category, PaymentMethod, ReceiptType, Receipt, ReceiptDirection, RechnungSubtyp } from "./types";
 
 export interface ExtractedReceipt {
   supplier_name: string;
   receipt_date: string;
   category: Category;
   receipt_type: ReceiptType;
+  direction: ReceiptDirection;
+  rechnung_subtyp?: RechnungSubtyp;
   payment_method: PaymentMethod;
   net_amount: number;
   vat_amount: number;
@@ -106,6 +108,61 @@ export function receiptFingerprint(supplier: string, date: string, gross: number
 }
 
 /**
+ * Heuristik für den Rechnungs-Subtyp.
+ * Kleinbetragsrechnung: Brutto ≤ 250 €.
+ * Anzahlung/Schluss/Gutschrift/Storno: aus Dateiname.
+ */
+export function detectRechnungSubtyp(
+  receiptType: ReceiptType,
+  fileName: string,
+  gross: number,
+): RechnungSubtyp | undefined {
+  if (receiptType !== "Rechnung") return undefined;
+  const lower = fileName.toLowerCase();
+  if (lower.includes("storno")) return "storno";
+  if (lower.includes("gutschrift") || lower.includes("credit-note")) return "gutschrift";
+  if (lower.includes("schluss") || lower.includes("final")) return "schluss";
+  if (lower.includes("anzahl") || lower.includes("abschlag") || lower.includes("acconto"))
+    return "anzahlung";
+  if (gross > 0 && gross <= 250) return "kleinbetrag";
+  return "standard";
+}
+
+/**
+ * Heuristik für Eingang/Ausgang/Material.
+ * — Kassenbon / Tankbeleg / Quittung / Bewirtungsbeleg → "neutral" (Material/Spesen)
+ * — Rechnung → default "eingang". Dateiname-Hinweise wie "ausgang", "rechnung-an",
+ *   "kunde", "AR-" → "ausgang".
+ */
+export function detectDirection(
+  receiptType: ReceiptType,
+  fileName: string,
+  supplier: string,
+  ownCompany?: string | null,
+): ReceiptDirection {
+  const lower = `${fileName} ${supplier}`.toLowerCase();
+  if (receiptType === "Rechnung") {
+    if (
+      lower.includes("ausgang") ||
+      lower.includes("rechnung-an") ||
+      lower.includes("rechnung_an") ||
+      lower.includes("an-kunde") ||
+      lower.includes("ar-2") ||
+      lower.includes("ar_2") ||
+      lower.startsWith("ar-")
+    ) {
+      return "ausgang";
+    }
+    if (ownCompany && supplier.toLowerCase().includes(ownCompany.toLowerCase().slice(0, 6))) {
+      return "ausgang";
+    }
+    return "eingang";
+  }
+  // Kassenbon, Tankbeleg, Quittung, Bewirtungsbeleg, Sonstiges → Material/Spesen
+  return "neutral";
+}
+
+/**
  * Klarblick OCR — kalibrierte Vision-Erkennung.
  *
  * Realistische Confidence-Verteilung mit Plausi-Validierung:
@@ -148,6 +205,8 @@ export async function extractReceiptData(file: File): Promise<ExtractedReceipt> 
           const payment: PaymentMethod = suggest?.payment || "Karte";
           const receiptType: ReceiptType =
             (data.receipt_type as ReceiptType) || "Rechnung";
+          const direction = detectDirection(receiptType, file.name, String(data.vendor));
+          const rechnung_subtyp = detectRechnungSubtyp(receiptType, file.name, gross);
           const warnings: string[] = [];
           if (Math.abs(net + vat - gross) > 0.05) {
             warnings.push("Brutto ≠ Netto + MwSt — bitte prüfen");
@@ -158,6 +217,8 @@ export async function extractReceiptData(file: File): Promise<ExtractedReceipt> 
             receipt_date: date,
             category: finalCategory,
             receipt_type: receiptType,
+            direction,
+            rechnung_subtyp,
             payment_method: payment,
             net_amount: round2(net),
             vat_amount: round2(vat),
@@ -219,6 +280,8 @@ export async function extractReceiptData(file: File): Promise<ExtractedReceipt> 
     receipt_date: date,
     category: sup.cat,
     receipt_type: sup.type,
+    direction: detectDirection(sup.type, file.name, sup.name),
+    rechnung_subtyp: detectRechnungSubtyp(sup.type, file.name, gross),
     payment_method: sup.pay,
     net_amount: net,
     vat_amount: vat,
