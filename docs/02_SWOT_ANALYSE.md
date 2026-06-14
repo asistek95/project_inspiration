@@ -1,6 +1,6 @@
 # Klarblick — SWOT-Analyse
 
-**Stand:** Mai 2026
+**Stand:** Juni 2026 (aktualisiert)
 
 ---
 
@@ -16,14 +16,15 @@
 ## 🟢 STÄRKEN (Strengths) — Intern
 
 ### S1. Tech-Stack auf dem aktuellsten Stand
-- Next.js 14, TypeScript strict, Supabase, Stripe Payment-Links
-- 18 Routen, sauberer Code, Build grün
+- Next.js 14, TypeScript strict, Supabase RLS, Netlify Deployment
+- 30+ Routen, sauberer Code, Build grün
 - Schnelle Iteration möglich (Solo-Developer kennt jede Zeile)
 
-### S2. Spezifische Handwerk-Features als USP
-- 38 deutsche/österreichische Handwerker-Lieferanten vortrainiert (Hornbach, Würth, GC Gienger, Baufix, Bauhaus)
-- Skonto-Alarm, Preis-Wächter, Abo-Killer — **so nicht bei Mitbewerb**
-- DATEV-CSV + SEPA-XML Export bereits implementiert
+### S2. Einzigartige Eingangskanäle als USP
+- **WhatsApp-first:** Foto schicken → Beleg sofort ausgelesen (Twilio Webhook + Claude Vision)
+- **E-Mail-Weiterleitung:** Rechnungsmail an persönliche Klarblick-Adresse → Postmark Inbound
+- **Österreich-native KI:** Claude Vision mit AT MwSt-Sätzen, §12 Vorsteuer, ATU-Matching
+- DATEV-CSV Export bereits implementiert
 
 ### S3. Solo-Gründer = niedrige Fixkosten
 - Keine Gehälter, kein Office, kein Investor-Druck

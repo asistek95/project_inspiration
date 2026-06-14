@@ -1,24 +1,26 @@
 # Klarblick — Businessplan
 
-**Stand:** Mai 2026
+**Stand:** Juni 2026 (aktualisiert)
 **Gründer:** Amin Sistek
 **Rechtsform geplant:** Phase 1 Einzelunternehmer (Neue Selbstständige), Phase 2 FlexCo
-**Sitz:** Icon Tower, Wienerbergstraße 11 / 16. OG, 1100 Wien, Österreich  
-**Kontakt:** office@klarblick.at · klarblick.at
+**Sitz:** cohub Coworking · Wienerbergstraße 11 / 16. OG, 1100 Wien, Österreich  
+**Kontakt:** office@klarblick.at · klarblick.at · app.klarblick.at
 
 ---
 
 ## 1. Executive Summary
 
-**Klarblick** ist ein SaaS-Tool, das Handwerksbetrieben (1–15 Mitarbeiter) einen automatisierten monatlichen Management-Report liefert: Belege werden per Foto/PDF/E-Mail erfasst, durch KI ausgelesen (GPT-4o Vision), automatisch kategorisiert und in einem visuellen Cockpit aufbereitet. Der Betrieb sieht auf einer Seite: Wohin geht das Geld, wo sind Sparpotenziale (Skonto-Verluste, Preissteigerungen, Abo-Leichen), wann droht Liquiditätsengpass.
+**Klarblick** ist ein SaaS-Tool, das Handwerksbetrieben und KMU (1–15 Mitarbeiter) die monatliche Belegverwaltung automatisiert: Belege werden per **WhatsApp-Foto, E-Mail, Upload oder Kamera** erfasst, durch **Claude Vision KI** (Anthropic) ausgelesen, automatisch kategorisiert und in einem visuellen Cockpit aufbereitet. Der Betrieb sieht auf einen Blick: Wohin geht das Geld, wie hoch ist die Vorsteuer, wann ist die UVA fällig.
 
-**Positionierung:** Nicht „noch eine Buchhaltung" wie lexoffice/sevDesk, sondern der **Management-Report für Handwerker** — entscheidungsorientiert, nicht buchhalterisch.
+**Positionierung:** Nicht „noch eine Buchhaltung" wie lexoffice/sevDesk, sondern der **Belegassistent für Österreich** — WhatsApp-first, Steuerberater-kompatibel, kein Buchungsjargon.
 
-**USP gegenüber lexoffice/sevDesk:**
-- Fokus auf **Entscheidungen** statt Buchungssätze
-- Skonto-Alarm + Preis-Wächter + Abo-Killer als USP-Features
-- DATEV/RZL-Export → kein Konflikt mit Steuerberater, ergänzt ihn
-- Made for Handwerk: Lieferanten-Erkennung (Hornbach, Würth, GC Gienger, Baufix, ...) vortrainiert
+**USP gegenüber lexoffice/sevDesk/BuchhaltungsButler:**
+- **WhatsApp-Eingang:** Foto schicken → Beleg ist 3 Sekunden später gespeichert & ausgelesen (kein App-Öffnen)
+- **E-Mail-Weiterleitung:** Rechnungs-Mail an persönliche Klarblick-Adresse → automatisch verarbeitet
+- **Österreich-native KI:** Claude Vision kennt AT MwSt-Sätze (20/13/10%), §12 Vorsteuer, ATU-Matching, Reverse Charge §19
+- **Eingang vs. Ausgang automatisch:** KI erkennt anhand der ATU-Nummer ob Beleg Vorsteuer oder USt-Schuld erzeugt
+- **DATEV/RZL-Export:** kein Konflikt mit Steuerberater, ergänzt ihn
+- **Pilot-Ansatz:** kein teures Abo-System, kein Selbst-Signup — persönliches Onboarding
 
 **Geplantes Wachstum:**
 | | Jahr 1 | Jahr 2 | Jahr 3 |
@@ -96,69 +98,75 @@ Statt einer Bilanz im März des Folgejahres → Klarheit jeden Monatsanfang.
 ## 4. Geschäftsmodell
 
 ### Einnahmen
-Monatliche SaaS-Abos in 2 Tiers + Founding-Member-Sondertarif:
+Monatliche SaaS-Abos in 3 Tiers — kein Selbst-Signup, Pilot-Onboarding manuell:
 
-| Plan | Preis netto/Monat | Inkl. |
-|---|---|---|
-| **Founding Member** (1. Jahr fix, erste 10 Kunden) | 79 € | Profi-Features, 12 Monate fix |
-| **Profi** | 149 € | Bis 3 Nutzer, 250 Belege/Monat, alle Features |
-| **Betrieb** | 279 € | Bis 10 Nutzer, unbegrenzt Belege, Priority Support, AVV, telefonischer Erstberater |
+| Plan | Preis/Monat | Zielgruppe | Features |
+|---|---|---|---|
+| **Basic** | 20 € | Einzelunternehmer | Dashboard, Upload, Belegliste, Einstellungen · bis 30 Belege |
+| **Betrieb** | 35 € | Bis 5 Mitarbeiter | + WhatsApp & E-Mail Eingang, Auswertung, UVA, Steuerberater-Übergabe · bis 100 Belege |
+| **Pro** | 50 € | Unbegrenzt | + KI Pro-Analyse, Steuerfälle, Rollen & Team · unbegrenzte Belege |
+
+> **Kein Stripe** bis Ende Pilot-Phase — Zahlung per Überweisung, Plan wird manuell in Supabase gesetzt.
 
 ### Sekundäre Einnahmen (Jahr 2+)
 - **Steuerberater-Partnerprogramm**: StB empfiehlt Klarblick → 20 % Recurring-Revenue-Share
-- **Setup-Service**: Onboarding 1:1 für 299 € einmalig
-- **Datenmigration** aus lexoffice/sevDesk: 99 €
-- **Whitelabel** für Buchhaltungskanzleien (ab Jahr 3): 49 €/Kunde
+- **Setup-Service**: Onboarding 1:1 für 149 € einmalig
+- **DATEV/RZL-Export**: inklusive im Betrieb/Pro-Plan
+- **Whitelabel** für Buchhaltungskanzleien (ab Jahr 3)
 
 ### Kosten (variable)
 
 | Posten | Pro Kunde/Monat |
 |---|---|
-| OCR (GPT-4o Vision, ~80 Belege) | 0,64 € |
+| OCR (Claude Vision, ~80 Belege) | ~0,60 € |
 | Supabase (anteilig) | 0,25 € |
-| Railway/Vercel | 0,20 € |
-| Resend E-Mails | 0,10 € |
-| Stripe (1,5 % + 0,25 €) | 2,50 € |
-| **Total** | **~3,70 €** |
+| Netlify Hosting | 0,15 € |
+| Twilio WhatsApp | ~0,10 € |
+| Postmark E-Mail | ~0,05 € |
+| **Total** | **~1,15 €** |
 
 ### Kosten (fix Jahr 1)
 
 | Posten | €/Jahr |
 |---|---|
-| Domain klarblick.at + .de | 60 |
-| Supabase Pro (ab 100 Kunden) | 300 |
-| Stripe-Konto + KYC | 0 |
+| Domain klarblick.at | 60 |
+| Supabase Pro | 300 |
+| Anthropic API | ~180 |
+| Twilio + Postmark | ~120 |
+| Netlify Pro | 228 |
 | Buchhaltung (Einzelunternehmer) | 800 |
 | Wirtschaftskammer AT | 200 |
 | SVS-Beiträge (reduziert J1) | 1.700 |
 | Versicherung (Berufs-Haftpflicht) | 350 |
-| Marketing (Google Ads + Messen) | 3.000 |
-| Tools (Notion, Slack, etc.) | 600 |
-| **Total fix Jahr 1** | **~7.000 €** |
+| Marketing (Messen, Ads) | 2.000 |
+| **Total fix Jahr 1** | **~6.000 €** |
 
 ### Break-Even
-- Pro Profi-Kunde DB nach Variable: 149 – 3,70 = **145,30 €/Monat**
-- Break-Even: 7.000 € / 145,30 ÷ 12 ≈ **4 zahlende Kunden** dauerhaft
+- Pro Betrieb-Kunde DB nach Variable: 35 – 1,15 = **33,85 €/Monat**
+- Break-Even: 6.000 € / 33,85 ÷ 12 ≈ **15 zahlende Kunden** dauerhaft
 
 ---
 
 ## 5. Roadmap (Produkt)
 
-### Phase 0 — JETZT (Mai 2026)
-- ✅ MVP gebaut: Landingpage, Auth, Dashboard, Spar-Cockpit, DATEV-Export
-- ✅ Mock-OCR funktional
-- ✅ Stripe Payment-Links vorbereitet
-- ✅ Legal: Impressum, AGB, Datenschutz
-- 🔄 Live-Deployment auf Railway (in Arbeit)
+### Phase 0 — Abgeschlossen (Mai–Juni 2026)
+- ✅ MVP gebaut: Landingpage, Auth, Dashboard, Belegliste, DATEV-Export
+- ✅ Claude Vision OCR live (`/api/ocr`)
+- ✅ WhatsApp-Integration via Twilio Webhook (`/api/whatsapp`)
+- ✅ E-Mail-Integration via Postmark Inbound (`/api/email/webhook`)
+- ✅ Multi-Tenant RLS in Supabase (whatsapp_messages, email_inbox)
+- ✅ Plan-Gating: Basic/Betrieb/Pro mit Lock-Icon in Sidebar
+- ✅ Steuerberater-Login (`/advisor-login`, Nur-Lesen)
+- ✅ Netlify Deployment live (`klarblickprod.netlify.app`)
+- ✅ Technische Dokumentation (PDF)
+- 🔄 Custom Domain app.klarblick.at (CNAME noch setzen)
 
-### Phase 1 — Mai–Juli 2026 (Pre-Launch)
-- 🎯 Echte OCR via GPT-4o Vision integrieren
-- 🎯 3 Pilotkunden onboarden (gratis 3 Monate)
+### Phase 1 — Juli–September 2026 (Pilot)
+- 🎯 3–5 Pilotkunden onboarden (persönlich, kostenlos oder €20)
 - 🎯 Echte DATEV/RZL-Export mit Steuerberater testen
-- 🎯 Stripe-Account + KYC + Payment-Links live
-- 🎯 Supabase-Projekt live + RLS-Policies testen
-- 🎯 Domain klarblick.at registrieren
-- 🎯 E-Mail-Forwarding (CloudMailin → Webhook)
+- 🎯 Feedback einsammeln, OCR-Genauigkeit messen
+- 🎯 Demo-Video vom Dashboard aufnehmen (Loom ~45s)
+- 🎯 Rechtliche Seiten (AGB, Datenschutz, Impressum) fertigstellen
 - 🎯 Sentry + Uptime-Monitoring
 
 ### Phase 2 — August–Dezember 2026 (Soft-Launch)

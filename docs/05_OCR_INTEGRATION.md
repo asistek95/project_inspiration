@@ -1,244 +1,166 @@
-# Klarblick — OCR-Integration (GPT-4o Vision)
+# Klarblick — OCR-Integration (Claude Vision)
 
-**Stand:** Mai 2026
-**Status:** Geplant, ersetzt aktuelles `lib/ocr.ts` Mock
+**Stand:** Juni 2026  
+**Status:** ✅ Live implementiert in `app/api/ocr/route.ts`
 
 ---
 
-## 1. Warum GPT-4o Vision?
+## 1. Warum Claude Vision?
 
-| Kriterium | GPT-4o Vision | Claude 3.5 Vision | Google DocAI | Mindee |
+| Kriterium | **Claude Sonnet 4.6** | GPT-4o Vision | Google DocAI | Mindee |
 |---|---|---|---|---|
-| Genauigkeit DE-Belege | ★★★★★ | ★★★★★ | ★★★★ | ★★★★ |
-| Kosten/Beleg | ~0,008 € | ~0,012 € | ~0,03 € | ~0,08 € |
-| Layout-Verständnis | Exzellent (versteht Layout-Kontext) | Exzellent | Gut (Templates) | Sehr gut |
-| Setup-Komplexität | Niedrig (1 API-Call) | Niedrig | Hoch (GCP-Projekt) | Niedrig |
-| EU-Server | Nein (US, AVV möglich) | Nein (US/EU optional) | Ja | Ja (Paris) |
-| Fallback bei Fehler | API down → Queue | analog | analog | analog |
+| Genauigkeit AT-Belege | ★★★★★ | ★★★★★ | ★★★★ | ★★★★ |
+| Österreich MwSt-Sätze (20/13/10%) | **Nativ verstanden** | Teilweise | Nein | Nein |
+| Eingang vs. Ausgang erkennen | **Per ATU-Matching** | Nur manuell | Nein | Nein |
+| JSON-Structured Output | Sehr zuverlässig | Gut | Gut (Templates) | Gut |
+| Kosten/Beleg | ~0,010 € | ~0,008 € | ~0,03 € | ~0,08 € |
+| EU-Server-Option | US + EU (AVV möglich) | US | Ja | Ja (Paris) |
+| Setup-Komplexität | Niedrig (1 API-Call) | Niedrig | Hoch | Niedrig |
 
-**Entscheidung:** **GPT-4o Vision** als Primär-OCR, **Mindee** als DSGVO-strenger EU-Fallback für Kunden, die das fordern.
-
----
-
-## 2. Architektur
-
-```
-Browser (Upload-Komponente)
-  ↓ POST /api/ocr  (multipart/form-data, max 10 MB)
-Next.js API-Route (Server-Side)
-  ↓ konvertiert zu base64
-  ↓ POST https://api.openai.com/v1/chat/completions
-OpenAI GPT-4o Vision API
-  ↓ strukturiertes JSON
-Next.js API-Route
-  ↓ Zod-Validation + Sanitization
-  ↓ Speichert in Supabase (Tabelle receipts)
-Client erhält Receipt-Objekt
-```
+**Entscheidung:** **Claude Sonnet 4.6 (Anthropic)** — ausschlaggebend war die überlegene Fähigkeit,  
+österreichische Steuermerkmale (ATU-Nummer, §12 Vorsteuer, Reverse Charge §19) nativ zu verstehen.
 
 ---
 
-## 3. API-Route — Pseudocode
+## 2. Architektur (Live)
 
-`app/api/ocr/route.ts`:
+```
+Eingangskanäle:
+  📁 Datei-Upload (Browser)         → POST /api/ocr
+  📷 Kamera/Foto (Browser)          → POST /api/ocr
+  💬 WhatsApp-Foto (Twilio Webhook) → POST /api/whatsapp → intern /api/ocr
+  ✉️  E-Mail-Anhang (Postmark)       → POST /api/email/webhook → intern /api/ocr
+
+/api/ocr (Next.js API Route):
+  ↓ Datei als Buffer lesen
+  ↓ base64 enkodieren
+  ↓ POST https://api.anthropic.com/v1/messages
+    model: claude-sonnet-4-6
+    content: [{ type: "image", source: { type: "base64", ... } }, { type: "text", text: PROMPT }]
+  ↓ JSON parsen + validieren
+  ↓ Eingang/Ausgang bestimmen (ATU-Matching)
+  ↓ INSERT INTO receipts (Supabase, RLS: user_id)
+  ↓ Response an Client / Webhook-Caller
+```
+
+---
+
+## 3. Extrahierte Felder
 
 ```ts
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-
-const ReceiptSchema = z.object({
-  vendor: z.string(),
-  date: z.string(), // ISO YYYY-MM-DD
-  netto: z.number(),
-  mwst: z.number(),
-  brutto: z.number(),
-  mwstSatz: z.number(), // 7 oder 19 (DE), 10 oder 20 (AT)
-  currency: z.string().default("EUR"),
-  category: z.enum(["material", "werkzeug", "sprit", "sub", "abo", "sonstiges"]).optional(),
-  paymentDeadline: z.string().nullable().optional(),
-  skontoFrist: z.string().nullable().optional(),
-  skontoProzent: z.number().nullable().optional(),
-  confidence: z.number().min(0).max(1),
-});
-
-const PROMPT = `Du bist ein Buchhaltungs-Assistent für österreichische und deutsche Handwerksbetriebe.
-Extrahiere aus dem Beleg folgende Felder als reines JSON (keine Erklärungen):
-- vendor: Name des Lieferanten/Geschäfts
-- date: Belegdatum im Format YYYY-MM-DD
-- netto: Nettobetrag in EUR (Zahl)
-- mwst: MwSt-Betrag in EUR
-- brutto: Bruttobetrag in EUR
-- mwstSatz: MwSt-Satz in Prozent (7, 10, 19 oder 20)
-- currency: Währung (default EUR)
-- category: einer von [material, werkzeug, sprit, sub, abo, sonstiges]
-- paymentDeadline: Zahlungsziel als YYYY-MM-DD oder null
-- skontoFrist: Skonto-Frist als YYYY-MM-DD oder null
-- skontoProzent: Skonto-Prozentsatz als Zahl oder null
-- confidence: Deine Sicherheit zwischen 0.0 und 1.0
-
-Wenn ein Feld nicht erkennbar ist, gib null zurück. Antworte AUSSCHLIESSLICH mit JSON.`;
-
-export async function POST(req: NextRequest) {
-  try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
-    if (!file) return NextResponse.json({ error: "no file" }, { status: 400 });
-    if (file.size > 10_000_000) return NextResponse.json({ error: "too large" }, { status: 413 });
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const base64 = buffer.toString("base64");
-    const mime = file.type || "image/jpeg";
-
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: PROMPT },
-              { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
-            ],
-          },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1,
-        max_tokens: 800,
-      }),
-    });
-
-    if (!resp.ok) {
-      const err = await resp.text();
-      console.error("OpenAI error:", err);
-      return NextResponse.json({ error: "ocr_failed" }, { status: 502 });
-    }
-
-    const data = await resp.json();
-    const content = data.choices?.[0]?.message?.content;
-    const parsed = JSON.parse(content);
-    const validated = ReceiptSchema.parse(parsed);
-
-    return NextResponse.json(validated);
-  } catch (e: any) {
-    console.error(e);
-    return NextResponse.json({ error: e.message ?? "internal" }, { status: 500 });
-  }
+// Rückgabe von /api/ocr
+{
+  vendor:          string,     // "Shell Tankstelle Wien"
+  date:            string,     // "2026-06-12" (ISO)
+  gross_amount:    number,     // 87.40
+  net_amount:      number,     // 72.83
+  vat_amount:      number,     // 14.57
+  vat_rate:        number,     // 20 (AT: 20 | 13 | 10 | 0)
+  currency:        string,     // "EUR"
+  invoice_type:    string,     // "eingang" | "ausgang" | "unknown"
+  category:        string,     // "Treibstoff/KFZ"
+  receipt_type:    string,     // "Tankbeleg"
+  warnings:        string[],   // Unsicherheiten von Claude
 }
 ```
 
 ---
 
-## 4. Frontend-Anpassung
+## 4. Österreich-spezifischer Prompt (Kern-USP)
 
-`lib/ocr.ts` wird zu:
+Claude wird explizit mit AT-Steuerrecht instruiert:
 
-```ts
-export async function extractReceiptData(file: File): Promise<Receipt> {
-  const fd = new FormData();
-  fd.append("file", file);
+```
+Du bist Buchhaltungs-Assistent für ÖSTERREICHISCHE Handwerksbetriebe.
+Geltendes Recht: UStG 1994, §12 Vorsteuerabzug, §19 Reverse Charge.
 
-  const r = await fetch("/api/ocr", { method: "POST", body: fd });
-  if (!r.ok) {
-    // Fallback: leeres Manual-Edit-Formular zurückgeben
-    return blankReceipt(file.name);
-  }
-  const data = await r.json();
-  return mapToReceipt(data, file.name);
-}
+MwSt-Sätze AT:
+- 20 %: Normalsteuersatz (Werkzeug, Material, Sprit, meiste Dienstleistungen)
+- 13 %: Kulturleistungen, bestimmte Lebensmittel, Saatgut
+- 10 %: Grundnahrungsmittel, Bücher, Miete, Personenbeförderung
+- 0 %:  Innergemeinschaftliche Lieferungen, Exporte
+
+Eingang vs. Ausgang:
+- ATU des Unternehmens: {atu_nummer}
+- Steht diese ATU im Empfänger-Feld → EINGANG (Vorsteuer §12 prüfen)
+- Steht eine FREMDE ATU im Empfänger → AUSGANG (USt-Schuld)
+
+Vorsteuer-Ausschluss §12 Abs. 2:
+- PKW/Kombi → KEIN Vorsteuerabzug (nur Kastenwagen/LKW erlaubt)
+- Repräsentation → kein Abzug
+- Privatanteil > 50 % → nur anteilig
+
+Antworte AUSSCHLIESSLICH als JSON, keine Erklärungen.
 ```
 
 ---
 
-## 5. ENV-Variables
+## 5. Eingang / Ausgang Erkennung
+
+```
+ATU des Unternehmens (aus localStorage "klarblick.profile.atu_nummer")
+          ↓
+  Ist ATU im Empfänger-Feld des Belegs?
+        JA ↓                    NEIN ↓
+   invoice_type                invoice_type
+   = "eingang"                 = "ausgang"
+   Vorsteuer §12 prüfen        USt-Schuld berechnen
+   → UVA Zeile 060             → UVA Zeile 000
+```
+
+---
+
+## 6. Confidence & Warnings
+
+| Status | Bedingung | App-Darstellung |
+|---|---|---|
+| ✅ geprueft | Alle Pflichtfelder vorhanden, warnings leer | Grüner Punkt |
+| ⚠️ unsicher | Claude hat warnings gesetzt | Gelber Punkt, manuelle Prüfung |
+| ❌ fehlgeschlagen | Kein JSON extrahierbar | Roter Punkt, manuell erfassen |
+
+---
+
+## 7. ENV-Variables
 
 ```bash
-OPENAI_API_KEY=sk-proj-...
-NEXT_PUBLIC_OCR_PROVIDER=openai   # später "mindee" optional
-MINDEE_API_KEY=...                # nur falls Fallback aktiv
+ANTHROPIC_API_KEY=sk-ant-api03-...   # Pflicht
+# kein OPENAI_API_KEY nötig
 ```
 
 ---
 
-## 6. Kosten-Schätzung
+## 8. Kosten-Schätzung (Claude Sonnet 4.6)
 
-| Anzahl Kunden | Belege/Monat (∅ 80/Kunde) | Gesamt-Belege | Kosten OpenAI |
-|---|---|---|---|
-| 25 (J1) | 2.000 | 2.000 | 16 € |
-| 80 (J2) | 6.400 | 6.400 | 51 € |
-| 200 (J3) | 16.000 | 16.000 | 128 € |
-| 600 (J5) | 48.000 | 48.000 | 384 € |
+| Anzahl Kunden | Belege/Monat | Kosten Anthropic |
+|---|---|---|
+| 10 (Pilot) | 300 | ~3 € |
+| 25 (J1) | 1.500 | ~15 € |
+| 80 (J2) | 5.000 | ~50 € |
+| 200 (J3) | 15.000 | ~150 € |
 
-**Pro Kunde: 0,64 €/Monat OCR-Kosten** — bei 149 €/Monat Preis = **0,43 % Kostenanteil**. Sehr gesund.
-
----
-
-## 7. DSGVO-Behandlung
-
-**Problem:** OpenAI ist US-Anbieter. Belege enthalten oft personenbezogene Daten (Lieferanten-Namen, Inhaber-Namen).
-
-**Lösung:**
-1. **Standard-Vertragsklauseln** (SCC) mit OpenAI abgeschlossen — siehe https://openai.com/policies/eu-terms
-2. **AVV** mit OpenAI vorhanden
-3. **In Datenschutzerklärung explizit benennen**: „Wir nutzen OpenAI Ireland Ltd. (Dublin) zur Beleg-Analyse. Belegdaten werden zur Verarbeitung übermittelt, nicht zum Training verwendet (Zero-Retention-Modus)."
-4. **Zero-Retention-Modus aktivieren** bei OpenAI (Enterprise-Feature, oder pro API-Call mit Header `OpenAI-Beta: assistants=v2` und entsprechendem Setting)
-5. **Mindee als Opt-In-Fallback** für Kunden mit strengen Anforderungen (z. B. öffentliche Auftraggeber-Belege)
+**Pro Kunde: ~0,60 €/Monat** bei Plan-Preisen €20–50 = < 3 % Kostenanteil. Sehr gesund.
 
 ---
 
-## 8. Test-Plan
+## 9. DSGVO
 
-### Test-Set: 100 echte Belege
-- 30 Hornbach/Bauhaus-Kassenzettel (gedruckt)
-- 20 Würth/Industriewerkzeuge PDF-Rechnungen
-- 20 GC Gienger/Großhandel Sanitär PDF
-- 10 Shell/OMV Tankquittungen
-- 10 Mobilfunk/Strom-Rechnungen
-- 10 Handgeschriebene Lieferscheine (Edge-Case)
-
-### Erfolgs-Metrik
-- **Vendor**: ≥ 95 % korrekt
-- **Datum**: ≥ 98 %
-- **Brutto-Betrag**: ≥ 95 %
-- **MwSt-Trennung**: ≥ 90 %
-- **Skonto-Erkennung**: ≥ 80 % (oft handschriftlich oder versteckt)
-
-### Validierung
-- Jeder Beleg wird manuell mit Klarblick-OCR-Output verglichen
-- Abweichungen in Excel dokumentiert
-- Prompt iterieren bei < 90 %
+- Anthropic ist US-Anbieter → AVV abschließbar (Anthropic EU Terms)
+- API-Calls werden nicht für Training verwendet (Zero-Retention)
+- Belegbilder werden nicht dauerhaft auf Anthropic-Servern gespeichert
+- In Datenschutzerklärung benennen: „KI-Analyse via Anthropic (API, kein Training)"
+- Alle extrahierten Textdaten liegen ausschließlich in der EU-Supabase-Instanz (Frankfurt)
 
 ---
 
-## 9. Edge-Cases & Lösungen
+## 10. Edge-Cases
 
 | Edge-Case | Lösung |
 |---|---|
-| Schief fotografierter Beleg | GPT-4o erkennt rotation, kein Pre-Processing nötig |
-| Sehr unscharf | Confidence < 0.5 → manuelle Eingabe-UI |
-| Mehrere Belege auf einem Foto | Prompt erkennt, fragt User welcher gemeint ist |
-| PDF mit mehreren Seiten | Vor Upload alle Seiten zu JPGs konvertieren (pdf.js client-side) |
-| Handgeschriebener Lieferschein | Confidence niedrig → manuelles Editier-Formular |
-| HEIC (iPhone) | Client-side Konvertierung zu JPG (heic2any) |
-| Ausländischer Beleg (z. B. IT, EN) | Funktioniert, MwSt-Satz erkennt OpenAI auch |
-
----
-
-## 10. Implementierungs-Schritte (konkret)
-
-- [ ] **Tag 1**: Branch `feat/real-ocr` erstellen
-- [ ] **Tag 1**: OpenAI-API-Key besorgen, ENV setzen
-- [ ] **Tag 1**: `app/api/ocr/route.ts` schreiben (siehe oben)
-- [ ] **Tag 2**: `lib/ocr.ts` umschreiben auf API-Call
-- [ ] **Tag 2**: Manuelles Editier-Formular bauen (für niedrige Confidence)
-- [ ] **Tag 3**: 20 echte Belege testen, Bugs fixen
-- [ ] **Tag 4**: Prompt iterieren bis > 90 % Genauigkeit
-- [ ] **Tag 5**: Confidence-Score-UI im Upload-Flow
-- [ ] **Tag 6**: HEIC + PDF-Support
-- [ ] **Tag 7**: 100-Beleg-Test, dokumentieren, mergen
-
-**Geschätzter Aufwand: 5–7 Personentage** (also 1–2 Wochen Solo neben Vertrieb).
+| Schief fotografierter Beleg | Claude Vision erkennt rotation nativ |
+| Sehr unscharf | warnings gesetzt → manuelles Edit-Formular |
+| PDF mehrseitig | Erste Seite wird verarbeitet (Deckblatt-Erkennung) |
+| HEIC (iPhone) | Browser konvertiert client-side zu JPEG |
+| Ausländischer Beleg (DE, IT, EN) | Funktioniert, Claude erkennt MwSt-Satz des Landes |
+| Handgeschriebener Lieferschein | confidence niedrig, warnings → manuell |
+| WhatsApp-Foto (komprimiert) | Twilio liefert direkte Media-URL, Base64-Fetch |
+| E-Mail-Anhang (PDF) | Postmark liefert Base64 im JSON-Payload direkt |
