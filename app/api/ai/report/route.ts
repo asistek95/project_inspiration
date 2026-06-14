@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Rate-Limiting für AI-Analyse (teurer als OCR)
+const AI_RATE_WINDOW = 60_000;
+const AI_RATE_LIMIT = 5; // max 5 AI-Anfragen pro Minute pro IP
+const aiIpCounter = new Map<string, { count: number; windowStart: number }>();
+function checkAiRateLimit(ip: string) {
+  const now = Date.now();
+  const e = aiIpCounter.get(ip);
+  if (!e || now - e.windowStart > AI_RATE_WINDOW) { aiIpCounter.set(ip, { count: 1, windowStart: now }); return true; }
+  if (e.count >= AI_RATE_LIMIT) return false;
+  e.count++; return true;
+}
+
 // Anthropic Claude Sonnet — direkt via fetch (kein SDK nötig)
 // Erwartet: { prompt: string, context: { receipts: Receipt[], periodLabel: string, company: string } }
 // Liefert: { text: string, model: string, tokensIn: number, tokensOut: number }
@@ -33,6 +45,11 @@ export async function POST(req: NextRequest) {
         },
         { status: 200 }
       );
+    }
+
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!checkAiRateLimit(ip)) {
+      return NextResponse.json({ error: "Rate-Limit: max 5 KI-Anfragen pro Minute.", code: "RATE_LIMIT" }, { status: 429 });
     }
 
     const body = await req.json();

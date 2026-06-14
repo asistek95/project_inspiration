@@ -61,7 +61,7 @@ export function calculateAuswertungsStats(receipts: Receipt[]): AuswertungStats 
     }
 
     // Fremdbelege: Manual marked (z.B. durch Steuerberater eingegeben)
-    if (r.status === "fremdbeleg" || r.notes?.includes("Fremdbeleg")) {
+    if (r.notes?.includes("Fremdbeleg")) {
       fremdbelege_count++;
     }
   }

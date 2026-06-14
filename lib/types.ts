@@ -152,6 +152,12 @@ export interface Receipt {
   ocr_filename?: string | null;                       // Von OCR generiert (z.B. "B_157")
   user_custom_name?: string | null;                   // User-definiert / überschrieben
   
+  // ────────────────────────────────────────────────────
+  // Österreichisches Steuerrecht: Vorsteuerabzug
+  // ────────────────────────────────────────────────────
+  vorsteuerabzug?: boolean | null;    // Vorsteuerabzugsberechtigt? null = unbekannt
+  custom_category?: string | null;    // User-definierte Kategorie (Freitext)
+
   // GoBD-Erweiterungen
   payment_terms?: PaymentTerms | null;
   is_recurring?: boolean;
@@ -170,6 +176,7 @@ export interface Profile {
   owner_name: string;
   tax_advisor_email: string | null;
   company_type: string | null;
+  atu_nummer?: string | null;         // ATU12345678 — für OCR-Matching Ausgangsrechnung
   created_at: string;
 }
 

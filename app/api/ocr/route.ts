@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, ocrSemaphore } from "@/lib/rate-limit";
 
 // OCR-Endpoint: Beleg-Bild (URL) → strukturierte Daten via Claude Vision
 // Wird vom WhatsApp-Webhook UND vom Upload-Frontend genutzt.
@@ -10,40 +11,145 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Basis-OCR Prompt — extrahiert strukturierte Daten
-const OCR_PROMPT = `Du bist ein präziser Beleg-Extraktor für österreichisches Steuerrecht.
-Analysiere das Bild SORGFÄLTIG (auch unscharfe Kassenbons, Tankquittungen, Kartenzahlungsbelege, handschriftliche Quittungen, Rechnungen).
-Untersuche Kopf- und Fußdaten sowie Firmenwortlaut (z.B. "ÖBB", "SHELL", "HORNBACH", "Metall-Werk GmbH", etc.).
+// Österreichisches Steuerrecht — vollständige Fallabdeckung (UStG 1994)
+const OCR_PROMPT = `Du bist ein österreichischer Steuerexperte und Beleg-OCR.
+Analysiere den Beleg VOLLSTÄNDIG (Kopf + Mitte + Fußzeile + alle Seiten).
 
-Gib AUSSCHLIESSLICH dieses JSON zurück (keine Erklärung, kein Markdown, kein Code-Fence):
+Gib NUR dieses JSON zurück — kein Markdown, kein Text davor/danach:
 {
-  "vendor": "Name des Geschäfts/Lieferanten (z.B. 'Shell AG', 'Hornbach GmbH', 'ÖBB', 'METRO Cash & Carry')",
-  "vendor_uid": "UID-Nummer falls sichtbar (z.B. 'ATU12345678'), sonst null",
-  "date": "YYYY-MM-DD oder null",
-  "gross_amount": Zahl (Gesamtbetrag/Total),
-  "net_amount": Zahl (oder berechnet aus gross/(1+rate/100)),
-  "vat_amount": Zahl (oder berechnet),
+  "vendor": "Firmenname des AUSSTELLERS (Briefkopf oben, z.B. 'Infocom GmbH', 'GitHub Inc.', 'Shell Austria GmbH')",
+  "vendor_uid": "ATU/UID des AUSSTELLERS (z.B. 'ATU70447037'), null wenn nicht vorhanden",
+  "customer_uid": "ATU/UID des EMPFÄNGERS falls sichtbar (z.B. 'ATU66952069'), null wenn nicht vorhanden",
+  "invoice_number": "Rechnungsnummer (z.B. 'HR260145', 'INV135863718', 'RE-2026-047'), null wenn nicht vorhanden",
+  "date": "Rechnungsdatum YYYY-MM-DD, null wenn nicht lesbar",
+  "due_date": "Fälligkeitsdatum YYYY-MM-DD, null wenn nicht vorhanden",
+  "period": "Leistungszeitraum als Text (z.B. 'Mai 2026', '01.05-31.05.2026'), null wenn nicht vorhanden",
+  "gross_amount": Bruttobetrag als Zahl (Dezimalpunkt, kein €, z.B. 964.73),
+  "net_amount": Nettobetrag als Zahl,
+  "vat_amount": USt-Betrag als Zahl (0 bei Reverse Charge / steuerfreien Umsätzen),
   "vat_rate": 20 | 13 | 10 | 0,
-  "currency": "EUR",
-  "category": "Material" | "Werkzeug" | "Treibstoff" | "Büro" | "Bewirtung" | "Sonstiges",
-  "receipt_type": "Rechnung" | "Kassenbon" | "Quittung" | "Tankbeleg" | "Bewirtungsbeleg" | "Kartenzahlungsbeleg",
+  "currency": "EUR" | "USD" | "GBP" | "CHF",
+  "vat_treatment": siehe PFLICHTFELD unten,
+  "reverse_charge": true | false,
+  "reverse_charge_law": "§19 Abs 1a UStG 1994" | "§19 Abs 1 UStG (sonstige Leistungen EU)" | "Art 196 MwStSystRL" | null,
+  "eu_country": "AT" | "DE" | "IT" | "HU" | "SK" | ... | null (nur bei EU-Rechnungen),
+  "category": "Personal/Lohn" | "Wareneinkauf" | "Werkzeug/Material" | "Treibstoff/KFZ" | "Bürobedarf" | "Software/IT" | "Bewirtung" | "Versicherung" | "Miete/Leasing" | "Werbung/Marketing" | "Reise/Diäten" | "Bau/Instandhaltung" | "Sonstiges",
+  "receipt_type": "Rechnung" | "Kleinbetragsrechnung" | "Kassenbon" | "Tankbeleg" | "Bewirtungsbeleg" | "Kartenzahlungsbeleg" | "Anzahlungsrechnung" | "Schlussrechnung" | "Gutschrift" | "Storno" | "Lohnabrechnung" | "Lieferschein",
+  "is_kleinbetrag": true wenn Brutto ≤ 400€ und vereinfachte Rechnung,
+  "iban": "IBAN des Ausstellers für Zahlung, null wenn nicht vorhanden",
+  "payment_method_hint": "bar" | "überweisung" | "karte" | "lastschrift" | null,
+  "invoice_type_guess": "eingang" | "ausgang",
+  "invoice_type_reason": "1 klarer Satz warum",
   "confidence": 0.0-1.0,
-  
-  "invoice_type_guess": "eingang" | "ausgang" | "unknown",
-  "invoice_type_reason": "kurze Begründung (z.B. 'Kopfzeile enthält Rechnungs-Format mit Zahlungszielen', 'Kassenbon-Format = Einkauf')"
+  "warnings": ["Array mit Hinweisen, leer wenn keine Besonderheiten"]
 }
 
-WICHTIG:
-- Wenn nur ein Gesamtbetrag erkennbar ist (z.B. Kartenzahlungsbeleg ohne Steueraufschlüsselung): trotzdem vendor + gross_amount extrahieren, vat_rate auf 20 schätzen, net/vat berechnen, confidence niedriger.
-- Erkenne ALLE Beträge im Bild (auch "Gesamtbetrag", "Total", "Summe", "EUR ..."). Nimm den höchsten plausiblen Endbetrag.
-- Bei Tankstellen-Kartenbelegen: receipt_type = "Tankbeleg", category = "Treibstoff", invoice_type_guess = "eingang" (Einkauf).
-- Zahlen IMMER als Number (Punkt als Dezimaltrenner, kein €).
-- Niemals "null" für vendor oder gross_amount — versuche IMMER zu lesen, auch wenn unscharf. Im äußersten Notfall: vendor = "Unbekannt", confidence = 0.3.
-- invoice_type_guess: Versuche zu erkennen ob es eine Eingangs-/Ausgangsrechnung ist basierend auf:
-  * Rechnungs-Format (Rechnung = eher Ausgang, wenn "Kunde berechnet werden", "Zahlung bis ...")
-  * Kassenbon/Tankbeleg = immer Eingang (Einkauf)
-  * Quittung = neutral / material
-  * Firmenwortlaut (wenn nicht selbst-bekannt, = Eingang als Lieferant)`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PFLICHTFELD vat_treatment — JEDEN FALL KORREKT ZUORDNEN:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"normal_20"        → Österreichische Standardrechnung, 20% USt
+                     Erkennbar: österr. Firma, USt-Ausweis 20%, normaler Geschäftsfall
+                     Beispiel: Würth-Rechnung, Hornbach-Kassenbon, ÖBB-Ticket
+
+"normal_13"        → 13% USt (Kultur, Beherbergung, Wein ab Hof, Sportveranstaltungen)
+                     Erkennbar: Hotel, Weingut, Theater, Freibad, Museum
+
+"normal_10"        → 10% USt (Lebensmittel, Bücher, Zeitungen, Arzneimittel, ÖPNV intern.)
+                     Erkennbar: Supermarkt, Buchhandlung, Arztbedarf, Wiener Linien
+
+"reverse_charge_§19_bauleistung"
+                   → §19 Abs 1a UStG 1994: Bauleistungen im Inland
+                     Erkennbar: "Steuerschuld geht auf Leistungsempfänger über",
+                     "§19 Abs 1a", "0,00 % UST", Bauarbeiten, Montage, Instandhaltung,
+                     Sanierung, Malerarbeiten, Elektriker, Klempner, Subunternehmer
+                     → vat_amount = 0, reverse_charge = true
+
+"reverse_charge_§19_sonstige"
+                   → §19 Abs 1 UStG: sonstige Leistungen von EU-Unternehmer an AT-Unternehmer
+                     Erkennbar: EU-Firma stellt Rechnung an AT-Firma, keine USt ausgewiesen,
+                     Hinweis auf "Reverse Charge", "Tax liability transfers to recipient"
+                     Typisch: Software-Abos (GitHub, Adobe, Google, Microsoft aus EU)
+                     → vat_amount = 0, reverse_charge = true
+
+"reverse_charge_drittland"
+                   → Dienstleistung aus Nicht-EU-Land an AT-Unternehmer (§19 Abs 1 i.V.m. §3a)
+                     Erkennbar: US/UK/CH Firma, keine USt, B2B-Dienstleistung
+                     Typisch: GitHub (USA), AWS (USA), Stripe, diverse US-SaaS
+                     → vat_amount = 0, reverse_charge = true, currency oft USD
+
+"ig_lieferung"     → Innergemeinschaftliche Lieferung (§6 Abs 1 Z 6 UStG) — AUSGANGSFALL
+                     Aussteller liefert Ware in EU-Mitgliedsstaat, 0% AT-USt
+                     Erkennbar: AT-Firma liefert an EU-Firma mit UID, "steuerfreie IGL"
+
+"ig_erwerb"        → Innergemeinschaftlicher Erwerb (§1 Abs 1 Z 1 UStG) — EINGANGSFALL
+                     AT-Firma kauft Ware von EU-Firma, Erwerbsteuer in AT
+                     Erkennbar: EU-Firma ohne AT-USt-Ausweis, UID des EU-Lieferanten sichtbar
+                     → vat_amount = 0 auf Rechnung, aber Eigenberechnung durch Empfänger
+
+"export_drittland" → Ausfuhr in Drittland, steuerfrei (§7 UStG)
+                     Erkennbar: Empfänger außerhalb EU, "steuerfreie Ausfuhr", 0% USt
+
+"steuerfrei_§6"    → Steuerfreie Umsätze ohne Vorsteuerabzug (§6 UStG)
+                     Erkennbar: Versicherungsprämien, Bankgebühren, Arztleistungen,
+                     Pflegeleistungen, Grundstücksverkauf — KEIN Vorsteuerabzug möglich!
+                     Hinweis: warnings hinzufügen "Kein Vorsteuerabzug möglich (§6 UStG)"
+
+"eust_import"      → Einfuhrumsatzsteuer — Import aus Drittland über Zoll
+                     Erkennbar: Zollbescheid, Speditionsrechnung mit EUSt, "Einfuhrumsatzsteuer"
+
+"pauschalierung"   → Land-/Forstwirtschaft §22 UStG oder Reiseleistungen §23 UStG
+                     Sehr selten, nur wenn explizit erwähnt
+
+"unknown"          → Kann nicht sicher zugeordnet werden → confidence < 0.6 setzen
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EINGANG vs. AUSGANG — PERSPEKTIVE DES HOCHLADENDEN UNTERNEHMERS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EINGANG (invoice_type_guess = "eingang"):
+→ Eine ANDERE Firma hat uns diese Rechnung gestellt
+→ WIR stehen im "An:"-Feld / "Empfänger" / "BILL TO"
+→ Wir müssen ZAHLEN
+→ Vorsteuerabzug ggf. möglich (außer bei §6, Bewirtung 50%, KFZ-Beschränkungen)
+→ Typisch: Lieferantenrechnung, Kassenbon, Tankbeleg, Software-Abo, Subunternehmer
+→ Beispiele: GitHub→ uns, Infocom→ PKE FM, Shell-Tankbeleg, Würth-Rechnung
+
+AUSGANG (invoice_type_guess = "ausgang"):
+→ UNSERE Firma hat diese Rechnung an einen Kunden gestellt
+→ Unser Logo/Name steht im Briefkopf als Aussteller
+→ Wir EMPFANGEN den Zahlungseingang
+→ USt schulden wir dem Finanzamt (außer Reverse Charge, Steuerfrei)
+→ Typisch: Rechnung an Kunden, Ausgangslieferung
+
+ENTSCHEIDUNGSLOGIK:
+1. ATU/UID des Ausstellers = user_company_uid → AUSGANG (unsere Rechnung)
+2. Firmenname Aussteller = user_company_name → AUSGANG
+3. Kassenbon / Tankbeleg / Kartenzahlungsbeleg → immer EINGANG (Einkauf)
+4. Aussteller ist erkennbar eine fremde Firma → EINGANG
+5. Im Zweifel → EINGANG (häufigerer Fall)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ÖSTERREICHISCHE STEUERBESONDERHEITEN FÜR warnings[]:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ Bewirtung: "Bewirtungsaufwand nur 50% abzugsfähig (§20 Abs 1 Z 3 EStG)"
+→ PKW/Kombi: "Vorsteuer für PKW/Kombi nicht abzugsfähig — außer Ausnahmen (§12 Abs 2 Z 2 UStG)"
+→ Reverse Charge §19: "Eigenberechnung erforderlich — USt in UVA KZ 057 und Vorsteuer KZ 066"
+→ IG-Erwerb: "Erwerbsteuer in UVA erfassen — KZ 070 und ggf. Vorsteuer KZ 065"
+→ Fehlende Pflichtangaben Vollrechnung (>400€): "Rechnungsnummer fehlt" / "ATU des Ausstellers fehlt"
+→ Steuerfrei §6: "Kein Vorsteuerabzug möglich"
+→ USD/Fremdwährung: "Umrechnung in EUR zum Tageskurs erforderlich (§20 UStG)"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BETRAGSREGELN:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Dezimalpunkt verwenden (964.73 nicht 964,73)
+- Bei Reverse Charge: net_amount = gross_amount, vat_amount = 0
+- Bei Kleinbetragsrechnung (≤400€ brutto): is_kleinbetrag = true, vereinfachte Pflichtangaben OK
+- Bei Kassenbon ohne Steueraufschlüsselung: vat_rate nach Branche schätzen, confidence senken
+- Niemals null für vendor oder gross_amount — Notfall: vendor = "Unbekannt", confidence = 0.2
+- Mehrseitige PDFs: Rechnungsdaten von Seite 1, IBAN von letzter Seite`;
+
 
 // Neue Funktion: Klassifiziert basierend auf User-Company-Daten
 interface InvoiceClassificationResult {
@@ -53,64 +159,96 @@ interface InvoiceClassificationResult {
   reason: string;
 }
 
+function normalizeUid(uid: string): string {
+  return uid.replace(/\s/g, "").toUpperCase();
+}
+
 function classifyInvoiceType(
   ocrGuess: string,
   vendor: string,
   vendorUid: string | null,
+  customerUid: string | null,
   receiptType: string,
   userCompanyName?: string,
   userCompanyUid?: string
 ): InvoiceClassificationResult {
-  let confidence = 0.5;
-  let reason = "";
 
-  // Schritt 1: UID-Match prüfen
-  if (vendorUid && userCompanyUid && vendorUid === userCompanyUid) {
+  const userUid = userCompanyUid ? normalizeUid(userCompanyUid) : null;
+
+  // ══ STUFE 1: ATU-Match — 100% sicher, keine Annahmen ══
+  // Vendor-UID = unsere ATU → WIR haben die Rechnung ausgestellt → AUSGANG
+  if (userUid && vendorUid && normalizeUid(vendorUid) === userUid) {
     return {
       invoice_type: "ausgang",
       is_vendor_match: true,
-      vendor_identifier_confidence: 0.95,
-      reason: "Vendor-UID stimmt mit Unternehmens-UID überein → Ausgangsrechnung",
+      vendor_identifier_confidence: 0.99,
+      reason: `Aussteller-ATU (${vendorUid}) = Unternehmens-ATU → Ausgangsrechnung`,
     };
   }
 
-  // Schritt 2: Firmenwortlaut-Match
-  if (userCompanyName && vendor.toLowerCase().includes(userCompanyName.toLowerCase())) {
+  // Customer-UID = unsere ATU → WIR sind der Empfänger → EINGANG
+  if (userUid && customerUid && normalizeUid(customerUid) === userUid) {
     return {
-      invoice_type: "ausgang",
-      is_vendor_match: true,
-      vendor_identifier_confidence: 0.85,
-      reason: "Firmenwortlaut enthält Unternehmens-Name → Ausgangsrechnung",
+      invoice_type: "eingang",
+      is_vendor_match: false,
+      vendor_identifier_confidence: 0.99,
+      reason: `Empfänger-ATU (${customerUid}) = Unternehmens-ATU → Eingangsrechnung`,
     };
   }
 
-  // Schritt 3: Receipt-Type Heuristik
+  // ══ STUFE 2: Firmenwortlaut-Match ══
+  if (userCompanyName && userCompanyName.length >= 3) {
+    const vendorLower = vendor.toLowerCase();
+    const nameLower = userCompanyName.toLowerCase();
+    // Ersten signifikanten Teil des Firmennamens nehmen (vor GmbH/KG/OG etc.)
+    const nameCore = nameLower.replace(/\s*(gmbh|kg|og|ag|eg|nfg|gbr|ug|se|inc|ltd|llc)\.?\s*$/i, "").trim();
+    if (nameCore.length >= 3 && vendorLower.includes(nameCore)) {
+      return {
+        invoice_type: "ausgang",
+        is_vendor_match: true,
+        vendor_identifier_confidence: 0.88,
+        reason: `Firmenname "${userCompanyName}" im Briefkopf erkannt → Ausgangsrechnung`,
+      };
+    }
+  }
+
+  // ══ STUFE 3: Belegart-Heuristik (unabhängig von Firma) ══
+  // Kassenbons, Tankbelege etc. sind IMMER Eingang (eigener Einkauf)
   if (["Kassenbon", "Tankbeleg", "Kartenzahlungsbeleg"].includes(receiptType)) {
     return {
       invoice_type: "eingang",
       is_vendor_match: false,
-      vendor_identifier_confidence: 0.7,
-      reason: `${receiptType}-Format → typischer Einkaufsbeleg (Eingang)`,
+      vendor_identifier_confidence: 0.90,
+      reason: `${receiptType} → immer Einkaufsbeleg (Eingang)`,
     };
   }
 
-  // Schritt 4: OCR-Guess verwenden
+  // ══ STUFE 4: OCR-Guess — niedrige Konfidenz, Benutzer muss prüfen ══
+  if (!userUid && !userCompanyName) {
+    // KEIN Firmenprofil hinterlegt → kann nicht automatisch entscheiden
+    return {
+      invoice_type: "unknown",
+      is_vendor_match: false,
+      vendor_identifier_confidence: 0.0,
+      reason: "ATU-Nummer nicht in Einstellungen hinterlegt — Eingang/Ausgang bitte manuell prüfen",
+    };
+  }
+
+  // Mit Firmenprofil aber kein Match → OCR-Guess mit niedrigerer Konfidenz
   if (ocrGuess === "ausgang") {
-    confidence = 0.6;
-    reason = "OCR erkannte Ausgangsrechnung (Rechnungs-Format, Zahlungsziele, etc.)";
-  } else if (ocrGuess === "eingang") {
-    confidence = 0.65;
-    reason = "OCR erkannte Eingangsrechnung (Lieferanten-Beleg)";
-  } else {
-    confidence = 0.4;
-    reason = "Klassifizierung unklar — Benutzer sollte manuell prüfen";
+    return { invoice_type: "ausgang", is_vendor_match: false, vendor_identifier_confidence: 0.60,
+      reason: "OCR-Indizien: Rechnungsnummer + Kundennummer + Zahlungsziel — bitte prüfen" };
+  }
+  if (ocrGuess === "eingang") {
+    return { invoice_type: "eingang", is_vendor_match: false, vendor_identifier_confidence: 0.60,
+      reason: "OCR-Indizien: Lieferantenbeleg, Zahlungsaufforderung — bitte prüfen" };
   }
 
   return {
-    invoice_type: ocrGuess === "ausgang" ? "ausgang" : ocrGuess === "eingang" ? "eingang" : "unknown",
+    invoice_type: "unknown",
     is_vendor_match: false,
-    vendor_identifier_confidence: confidence,
-    reason,
+    vendor_identifier_confidence: 0.0,
+    reason: "Konnte Eingang/Ausgang nicht bestimmen — bitte manuell prüfen",
   };
 }
 
@@ -136,16 +274,23 @@ async function callClaudeVision(imageUrl: string): Promise<any> {
     };
   }
 
-  // Bild als Base64 laden (Twilio-URLs brauchen Auth, http(s)-URLs frei)
+  // Bild/PDF als Base64 — PDFs als "document", Bilder als "image"
   let imageBlock: any;
   if (imageUrl.startsWith("data:")) {
     const [, mediaType, base64] = imageUrl.match(/^data:([^;]+);base64,(.+)$/) || [];
-    imageBlock = {
-      type: "image",
-      source: { type: "base64", media_type: mediaType, data: base64 },
-    };
+    if (mediaType === "application/pdf") {
+      // Claude 3.5+ unterstützt PDFs nativ als document-Block
+      imageBlock = {
+        type: "document",
+        source: { type: "base64", media_type: "application/pdf", data: base64 },
+      };
+    } else {
+      imageBlock = {
+        type: "image",
+        source: { type: "base64", media_type: mediaType, data: base64 },
+      };
+    }
   } else {
-    // Versuch: Direkt-URL (Claude unterstützt source.type=url)
     imageBlock = { type: "image", source: { type: "url", url: imageUrl } };
   }
 
@@ -157,8 +302,8 @@ async function callClaudeVision(imageUrl: string): Promise<any> {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
-      max_tokens: 1200,
+      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
+      max_tokens: 2000,
       messages: [
         {
           role: "user",
@@ -187,6 +332,24 @@ async function callClaudeVision(imageUrl: string): Promise<any> {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate-Limit prüfen: 20 Requests / 60 s pro IP (Sliding Window)
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rl = checkRateLimit(`ocr:${ip}`, 20, 60_000);
+  if (!rl.ok) {
+    const retryAfterSec = Math.ceil(rl.retryAfterMs / 1000);
+    return NextResponse.json(
+      { error: `Rate-Limit erreicht — bitte in ${retryAfterSec}s erneut versuchen.`, code: "RATE_LIMIT" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(retryAfterSec),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": String(Date.now() + rl.retryAfterMs),
+        },
+      }
+    );
+  }
+
   try {
     const ct = req.headers.get("content-type") || "";
     let imageUrl = "";
@@ -214,17 +377,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "imageUrl oder file fehlt" }, { status: 400 });
     }
 
-    const ocrResult = await callClaudeVision(imageUrl);
+    // Semaphore: max 6 gleichzeitige Claude-Aufrufe (ThreadPoolExecutor-Äquivalent)
+    const ocrResult = await ocrSemaphore.run(() => callClaudeVision(imageUrl));
 
     if (ocrResult._error) {
       return NextResponse.json(ocrResult, { status: 500 });
     }
 
     // Klassifizierung: Eingangs- vs. Ausgangsrechnung
+    // Zusatz: Wenn customer_uid mit userCompanyUid übereinstimmt → definitiv Eingang
+    const isCustomerMatch =
+      ocrResult.customer_uid && userCompanyUid &&
+      ocrResult.customer_uid.replace(/\s/g, "") === userCompanyUid.replace(/\s/g, "");
+
     const classification = classifyInvoiceType(
       ocrResult.invoice_type_guess || "unknown",
       ocrResult.vendor || "Unbekannt",
       ocrResult.vendor_uid || null,
+      ocrResult.customer_uid || null,
       ocrResult.receipt_type || "Quittung",
       userCompanyName,
       userCompanyUid

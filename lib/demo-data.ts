@@ -188,12 +188,19 @@ export function generateDemoReceipts(): Receipt[] {
         if (paid <= new Date()) paidAt = paid.toISOString().slice(0, 10);
       }
 
+      // Direction: Infocom GmbH ist Dienstleistungsunternehmen
+      // → die meisten Belege sind Eingangsrechnungen (Kosten)
+      // → ~20% sind Ausgangsrechnungen (eigene Leistungen an Kunden)
+      const isAusgang = cat === "Wareneinkauf" && rand() < 0.25;
+      const direction = isAusgang ? "ausgang" : "eingang";
+      const invoice_type = direction;
+
       const receipt: Receipt = {
         id: `r_${String(id).padStart(4, "0")}`,
         user_id: DEMO_USER_ID,
         file_url: null,
         file_name: `beleg_${id}.pdf`,
-        supplier_name: supplier,
+        supplier_name: isAusgang ? pick(["PKE FM GmbH", "Bau GmbH Muster", "Firma Huber KG", "Kundenauftrag GmbH"]) : supplier,
         receipt_date: date.toISOString().slice(0, 10),
         category: cat,
         receipt_type: pick(TYPES),
@@ -202,6 +209,8 @@ export function generateDemoReceipts(): Receipt[] {
         vat_amount: vat,
         gross_amount: gross,
         currency: "EUR",
+        direction,
+        invoice_type,
         confidence_score: round2(confidence),
         status,
         warnings,
@@ -223,8 +232,9 @@ export function generateDemoReceipts(): Receipt[] {
 }
 
 export const DEMO_COMPANY = {
-  company_name: "Thomas Bau & Montage",
-  owner_name: "Thomas Wagner",
+  company_name: "Infocom GmbH",
+  owner_name: "Ibrahim Sistek",
   tax_advisor_email: "kanzlei@beispiel-steuerberater.at",
-  company_type: "Einzelunternehmen",
+  company_type: "GmbH",
+  atu_nummer: "ATU70447037",
 };

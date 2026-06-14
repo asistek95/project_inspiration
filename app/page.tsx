@@ -129,7 +129,111 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <MagicMoment />
+      {/* MagicMoment deaktiviert — Flow-Sektion ersetzt es */}
+
+      {/* APP-VORSCHAU */}
+      <section className="py-16 lg:py-24 bg-gradient-to-b from-white to-slate-50 border-t border-border">
+        <div className="max-w-6xl mx-auto px-4 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">So sieht Klarblick aus</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Das Dashboard — auf einen Blick</h2>
+            <p className="mt-3 text-slate-600 max-w-xl mx-auto">Alle Belege, KPIs und der Monatsstatus in einer Ansicht. Kein Buchhaltungswissen nötig.</p>
+          </div>
+
+          {/* Browser-Frame Mock */}
+          <div className="rounded-2xl shadow-2xl ring-1 ring-slate-200 overflow-hidden">
+            {/* Browser Chrome */}
+            <div className="bg-slate-800 px-4 py-2.5 flex items-center gap-3">
+              <div className="flex gap-1.5 shrink-0">
+                <span className="h-3 w-3 rounded-full bg-red-400" />
+                <span className="h-3 w-3 rounded-full bg-yellow-400" />
+                <span className="h-3 w-3 rounded-full bg-emerald-400" />
+              </div>
+              <div className="flex-1 max-w-xs bg-slate-700 rounded px-3 py-1 text-xs text-slate-400 text-center mx-auto">
+                app.klarblick.at/dashboard
+              </div>
+            </div>
+
+            {/* App UI */}
+            <div className="bg-slate-50 flex min-h-[420px]">
+              {/* Sidebar */}
+              <div className="w-44 bg-white border-r border-slate-200 p-3 flex-col gap-1 hidden md:flex shrink-0">
+                <div className="flex items-center gap-2 px-2 py-2 mb-2">
+                  <div className="h-7 w-7 rounded-lg bg-brand-600 shrink-0" />
+                  <span className="font-bold text-sm text-slate-900">Klarblick</span>
+                </div>
+                {["Dashboard","Sammelstelle","Eingang","Belege","Auswertung","UVA","Übergabe","Einstellungen"].map((label, i) => (
+                  <div key={label} className={`px-2.5 py-2 rounded-lg text-xs font-medium ${i === 0 ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
+                    {label}
+                  </div>
+                ))}
+              </div>
+
+              {/* Dashboard Main */}
+              <div className="flex-1 p-5 min-w-0 overflow-hidden">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-5 gap-2">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-0.5">Monatsabschluss</p>
+                    <h3 className="font-bold text-slate-900 text-lg">Mai 2025</h3>
+                    <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" /> 3 Belege noch ausstehend
+                    </p>
+                  </div>
+                  <span className="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                    In Bearbeitung
+                  </span>
+                </div>
+
+                {/* KPI Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+                  {[
+                    { label: "Umsatz (netto)", value: "12.400 €", sub: "+8 % vs. April", color: "text-emerald-600" },
+                    { label: "Ausgaben", value: "4.280 €", sub: "Eingangsrechnungen", color: "text-slate-800" },
+                    { label: "Vorsteuer §12", value: "856 €", sub: "abzugsfähig", color: "text-brand-700" },
+                    { label: "Belege", value: "23 / 26", sub: "3 fehlen noch", color: "text-amber-600" },
+                  ].map(({ label, value, sub, color }) => (
+                    <div key={label} className="bg-white rounded-xl border border-slate-200 p-3 lg:p-3.5">
+                      <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">{label}</p>
+                      <p className={`text-base font-bold mt-1 tabular-nums ${color}`}>{value}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recent Receipts */}
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700">Letzte Belege</span>
+                    <span className="text-xs text-brand-600 cursor-pointer hover:underline">Alle anzeigen →</span>
+                  </div>
+                  {[
+                    { supplier: "Shell Tankstelle Wien", date: "14.05.", amount: "87,40 €", cat: "KFZ", ok: true },
+                    { supplier: "Würth GmbH", date: "12.05.", amount: "234,00 €", cat: "Material", ok: true },
+                    { supplier: "Unbekannter Lieferant", date: "10.05.", amount: "???", cat: "–", ok: false },
+                    { supplier: "Amazon Business", date: "08.05.", amount: "156,80 €", cat: "Büro", ok: true },
+                  ].map(({ supplier, date, amount, cat, ok }) => (
+                    <div key={supplier} className="px-4 py-2.5 flex items-center gap-3 text-xs border-b border-slate-50 last:border-0">
+                      <span className={`h-2 w-2 rounded-full shrink-0 ${ok ? "bg-emerald-400" : "bg-amber-400"}`} />
+                      <span className="flex-1 font-medium text-slate-800 truncate">{supplier}</span>
+                      <span className="text-slate-400 tabular-nums shrink-0">{date}</span>
+                      <span className="w-16 text-right tabular-nums font-medium text-slate-700 shrink-0">{amount}</span>
+                      <span className="hidden lg:block w-16 text-right text-slate-400 shrink-0">{cat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 text-center">
+            <Link href="/dashboard" className="btn-primary btn-lg">
+              Demo live testen <ArrowRight className="h-4 w-4" />
+            </Link>
+            <p className="text-xs text-slate-400 mt-3">Kein Login nötig — Testdaten bereits geladen</p>
+          </div>
+        </div>
+      </section>
 
       <PartnersStrip />
 
@@ -149,7 +253,7 @@ export default function LandingPage() {
               "Steuerberater fragt jeden Monat dieselben Belege nach",
               "Keine Übersicht, was wirklich übrig bleibt",
               "UVA-Vorbereitung kostet stundenlang Nerven",
-              "Niemand weiß, ob der Monat „fertig“ ist oder nicht",
+              "Niemand weiß, ob der Monat fertig ist oder nicht",
             ].map((t, i) => (
               <li key={i} className="card p-4 flex items-start gap-3">
                 <span className="h-7 w-7 rounded-md bg-danger-soft text-danger grid place-content-center shrink-0">
@@ -201,7 +305,7 @@ export default function LandingPage() {
           <div className="text-center max-w-2xl mx-auto mb-10">
             <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Häufige Frage</p>
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              „Warum nicht einfach sevdesk oder BMD?“
+              "Warum nicht einfach sevdesk oder BMD?"
             </h2>
             <p className="mt-3 text-slate-600">
               Kurze Antwort: Buchhaltungssoftware ist für Buchhalter gebaut. Klarblick ist für den Chef gebaut —
@@ -221,7 +325,7 @@ export default function LandingPage() {
                 {[
                   ["Beleg per WhatsApp hochladen", "no", "yes"],
                   ["Monatsstatus auf einen Blick", "part", "yes"],
-                  ["Klare Antwort: „Ist mein Monat bereit?“", "no", "yes"],
+                  ["Klare Antwort: Ist mein Monat bereit?", "no", "yes"],
                   ["Fehlende Belege automatisch finden", "part", "yes"],
                   ["UVA-Vorbereitung verständlich", "part", "yes"],
                   ["Gewinn & Kosten in Chef-Sprache", "no", "yes"],
@@ -261,7 +365,7 @@ export default function LandingPage() {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { Icon: Send, title: "WhatsApp-Upload", desc: "Beleg per WhatsApp senden — Bot bestätigt Eingang. Antwortet auf „Was fehlt noch?“ und „Ist mein Monat bereit?“.", tag: "Einfach" },
+              { Icon: Send, title: "WhatsApp-Upload", desc: "Beleg per WhatsApp senden — Bot bestätigt Eingang. Antwortet auf Was fehlt noch? und Ist mein Monat bereit?.", tag: "Einfach" },
               { Icon: Receipt, title: "Eingangs- & Ausgangsbelege", desc: "Klarblick trennt Lieferanten- und Kundenrechnungen automatisch. Sauber für UVA und DATEV.", tag: "Sortiert" },
               { Icon: AlertTriangle, title: "Fehlende Belege", desc: "Doppelte erkennen, unsichere markieren, Zahlungen ohne Beleg anzeigen. To-do-Liste mit offenen Punkten.", tag: "Prüfung" },
               { Icon: FileBarChart2, title: "UVA-Vorbereitung", desc: "Umsatzsteuer aus Ausgangs-, Vorsteuer aus Eingangsbelegen. Monatsexport für Steuerberater.", tag: "UVA" },
@@ -283,60 +387,109 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="report" className="py-20 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">
-              Monatsabschluss-Vorschau
-            </p>
+      {/* DER KLARBLICK-FLUSS */}
+      <section id="fluss" className="py-20 lg:py-28 bg-slate-50 border-t border-border">
+        <div className="max-w-6xl mx-auto px-4 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Der Klarblick-Fluss</p>
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              So sieht dein Monat aus — verständlich auf einer Seite.
+              Vom ersten Beleg bis zum fertigen Steuerberater-Paket.
             </h2>
             <p className="mt-3 text-slate-600">
-              Gewinn, Kosten, offene Punkte und UVA-Status. Eine Seite, alles dabei.
+              Sechs Schritte. Einmal einrichten. Danach läuft der Monat von selbst.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <PreviewKpi label="Ausgaben" value="12.480 €" />
-            <PreviewKpi label="Vorsteuer" value="1.996 €" />
-            <PreviewKpi label="Belege geprüft" value="33" accent="accent" />
-            <PreviewKpi label="Unsicher" value="2" accent="warn" />
-          </div>
+          <div className="relative">
+            {/* Verbindungslinie */}
+            <div className="hidden lg:block absolute top-8 left-[8.33%] right-[8.33%] h-0.5 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
 
-          <div className="grid lg:grid-cols-3 gap-4 mt-4">
-            <PreviewInsight
-              tone="brand"
-              title="Größter Kostenblock"
-              text="Material"
-              sub="38 % deiner Ausgaben"
-            />
-            <PreviewInsight
-              tone="warn"
-              title="Fehlende Belege"
-              text="3 offen"
-              sub="Zahlungen ohne Beleg"
-            />
-            <PreviewInsight
-              tone="accent"
-              title="UVA-Vorbereitung"
-              text="bereit"
-              sub="Vorsteuer 1.996 €"
-            />
-          </div>
-
-          <div className="mt-4 card-soft p-6 flex items-center justify-between flex-col sm:flex-row gap-4">
-            <div className="flex items-center gap-3">
-              <span className="h-12 w-12 rounded-lg bg-brand-600 text-white grid place-content-center">
-                <Send className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="font-semibold">Steuerberater-Paket: bereit</p>
-                <p className="text-sm text-slate-600">33 geprüfte Belege · UVA · Gewinn/Kosten · DATEV-CSV</p>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[
+                {
+                  step: "01",
+                  icon: <Receipt className="h-6 w-6" />,
+                  title: "Sammelstelle",
+                  subtitle: "Alle Kanäle",
+                  desc: "WhatsApp-Foto, E-Mail-Weiterleitung, PDF-Upload oder Kamera — alle Belege landen an einem Ort. Nichts geht verloren.",
+                  tag: "Eingang",
+                  color: "blue",
+                },
+                {
+                  step: "02",
+                  icon: <Brain className="h-6 w-6" />,
+                  title: "OCR-Erkennung",
+                  subtitle: "Claude AI liest",
+                  desc: "Lieferant, Datum, Betrag, MwSt-Satz und ob es eine Eingangs- oder Ausgangsrechnung ist — erkannt in Sekunden. Reverse Charge §19 inklusive.",
+                  tag: "KI",
+                  color: "brand",
+                },
+                {
+                  step: "03",
+                  icon: <CheckCircle2 className="h-6 w-6" />,
+                  title: "Belegverarbeitung",
+                  subtitle: "Prüfen & ergänzen",
+                  desc: "Kategorie bestätigen, Notiz hinzufügen, Vorsteuerabzug automatisch erkannt (PKW nein, Kastenwagen ja). GoBD-konforme Nummerierung.",
+                  tag: "Pflicht",
+                  color: "slate",
+                },
+                {
+                  step: "04",
+                  icon: <FileBarChart2 className="h-6 w-6" />,
+                  title: "Auswertung",
+                  subtitle: "Dashboard",
+                  desc: "Eingangs- und Ausgangsrechnungen getrennt, Quartal- und Monatsansicht, Vorsteuer vs. USt-Schuld auf einen Blick.",
+                  tag: "KPIs",
+                  color: "indigo",
+                },
+                {
+                  step: "05",
+                  icon: <Calculator className="h-6 w-6" />,
+                  title: "UVA-Vorerfassung",
+                  subtitle: "Formular U30",
+                  desc: "KZ 010–096 automatisch berechnet nach österreichischem UStG 1994. Reverse Charge, innergem. Erwerb, Einfuhrumsatzsteuer — alles dabei.",
+                  tag: "§21 UStG",
+                  color: "emerald",
+                },
+                {
+                  step: "06",
+                  icon: <Send className="h-6 w-6" />,
+                  title: "Übergabe",
+                  subtitle: "Bis zum 15.",
+                  desc: "PDF-Report, DATEV-CSV, SEPA-Sammelüberweisung und UVA-Entwurf — alles per Klick an den Steuerberater. Übergabe mit Zeitstempel im Audit-Log (§132 BAO).",
+                  tag: "Fertig",
+                  color: "orange",
+                },
+              ].map((s) => {
+                const colorMap: Record<string, string> = {
+                  blue: "bg-blue-50 text-blue-700 border-blue-100",
+                  brand: "bg-brand-50 text-brand-700 border-brand-100",
+                  slate: "bg-slate-100 text-slate-700 border-slate-200",
+                  indigo: "bg-indigo-50 text-indigo-700 border-indigo-100",
+                  emerald: "bg-emerald-50 text-emerald-700 border-emerald-100",
+                  orange: "bg-orange-50 text-orange-700 border-orange-100",
+                };
+                return (
+                  <div key={s.step} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition relative">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${colorMap[s.color]}`}>
+                        {s.icon}
+                      </div>
+                      <span className="text-2xl font-black text-slate-100 tabular-nums">{s.step}</span>
+                    </div>
+                    <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${colorMap[s.color].split(" ")[1]}`}>{s.subtitle}</p>
+                    <h3 className="font-bold text-base text-slate-900 mb-2">{s.title}</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed">{s.desc}</p>
+                    <span className={`inline-block mt-3 text-[10px] font-semibold px-2 py-0.5 rounded border ${colorMap[s.color]}`}>{s.tag}</span>
+                  </div>
+                );
+              })}
             </div>
-            <Link href="/dashboard" className="btn-primary">
-              Demo-Dashboard ansehen <ArrowRight className="h-4 w-4" />
+          </div>
+
+          <div className="mt-10 text-center">
+            <Link href="/dashboard" className="btn-primary btn-lg">
+              Demo starten — kostenlos <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -357,23 +510,23 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-5">
             <div className="card p-6">
               <FileSearch className="h-8 w-8 text-brand-600 mb-3" />
-              <h3 className="font-bold">Beleg-Erkennung</h3>
+              <h3 className="font-bold">Eingang/Ausgang — automatisch</h3>
               <p className="text-sm text-slate-600 mt-1.5">
-                Foto, PDF oder WhatsApp-Bild rein — Lieferant, Datum, Betrag, USt automatisch erkannt. Kategorie inklusive.
+                Claude Vision erkennt ob ein Beleg eine Eingangs- oder Ausgangsrechnung ist — via ATU-Nummer, Firmenwortlaut und Rechnungsmerkmale. Reverse Charge §19 wird erkannt.
               </p>
             </div>
             <div className="card p-6">
               <Brain className="h-8 w-8 text-brand-600 mb-3" />
-              <h3 className="font-bold">Betriebs-Kontext</h3>
+              <h3 className="font-bold">Stammlieferanten-Gedächtnis</h3>
               <p className="text-sm text-slate-600 mt-1.5">
-                Klarblick merkt sich Gewerbe, Stammlieferanten, wiederkehrende Belege — weniger Rückfragen jeden Monat.
+                Lieferanten werden gespeichert — beim nächsten Beleg von Shell, Würth oder Amazon stimmt die Kategorie sofort. Je mehr Belege, desto präziser.
               </p>
             </div>
             <div className="card p-6">
-              <Bot className="h-8 w-8 text-brand-600 mb-3" />
-              <h3 className="font-bold">WhatsApp-Antworten</h3>
+              <Scale className="h-8 w-8 text-brand-600 mb-3" />
+              <h3 className="font-bold">Österreichisches Steuerrecht</h3>
               <p className="text-sm text-slate-600 mt-1.5">
-                Frag den Bot: „Ist mein Monat bereit?“, „Was fehlt noch?“, „Welche Belege sind unsicher?“. Sensible Details bleiben in der App.
+                20%/13%/10% USt, §19 Reverse Charge, §12 Vorsteuerausschluss (PKW vs. Kastenwagen), §132 BAO Aufbewahrung — alles nach AT-UStG 1994 hinterlegt.
               </p>
             </div>
           </div>
@@ -554,47 +707,46 @@ export default function LandingPage() {
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Faire Preise. Monatlich kündbar.</h2>
             <p className="mt-3 text-slate-600">Pilot-Phase für 3 Monate. Danach regulärer Tarif. Alle Preise inkl. 20 % USt.</p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
             <PricingCard
-              name="Pilot"
-              price="49"
-              tagline="3 Monate begleitet"
-              features={["3 Monate Pilotphase", "voller Funktionsumfang", "persönliches Onboarding", "limitierte Plätze"]}
-            />
-            <PricingCard
-              name="Starter"
-              price="49"
+              name="Basic"
+              price="20"
               tagline="Einzelunternehmer"
-              features={["bis 30 Belege/Monat", "Monatsstatus", "Gewinn & Kosten", "einfache UVA-Vorbereitung"]}
+              features={[
+                "bis 30 Belege/Monat",
+                "Dashboard & Monatsstatus",
+                "Belegliste & Upload",
+                "Einstellungen",
+              ]}
             />
             <PricingCard
               name="Betrieb"
-              price="99"
+              price="35"
               featured
               tagline="Bis 5 Mitarbeiter"
               features={[
                 "bis 100 Belege/Monat",
-                "WhatsApp-Upload",
-                "fehlende Belege erkennen",
-                "Steuerberater-Paket",
+                "WhatsApp & E-Mail Eingang",
+                "Auswertung & UVA",
+                "Steuerberater-Übergabe",
                 "DATEV / RZL-Export",
               ]}
             />
             <PricingCard
-              name="Plus"
-              price="199"
-              tagline="Bis 20 Mitarbeiter"
+              name="Pro"
+              price="50"
+              tagline="Unbegrenzt"
               features={[
-                "persönliche Monatsprüfung",
-                "Priorität bis zum 15.",
-                "Support direkt",
-                "Steuerberater-Abstimmung",
-                "Rollen & Kostenstellen",
+                "unbegrenzte Belege",
+                "KI-Pro-Analyse",
+                "Steuerfälle",
+                "Rollen & Team",
+                "Priority-Support",
               ]}
             />
           </div>
           <div className="mt-8 text-center">
-            <Link href="/pricing" className="btn-secondary">Alle Details &amp; Pilot anfragen <ArrowRight className="h-4 w-4" /></Link>
+            <Link href="/#kontakt" className="btn-secondary">Pilot anfragen &amp; Tarif besprechen <ArrowRight className="h-4 w-4" /></Link>
           </div>
         </div>
       </section>
@@ -636,7 +788,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-8 text-center">
-            <Link href="/pricing" className="btn-secondary">Preise &amp; Pakete ansehen <ArrowRight className="h-4 w-4" /></Link>
+            <Link href="/#preise" className="btn-secondary">Preise &amp; Pakete ansehen <ArrowRight className="h-4 w-4" /></Link>
           </div>
         </div>
       </section>
@@ -769,7 +921,7 @@ export default function LandingPage() {
               <p className="font-medium text-foreground">Produkt</p>
               <Link href="/dashboard" className="block hover:text-foreground">Dashboard</Link>
               <Link href="/upload" className="block hover:text-foreground">Upload</Link>
-              <Link href="/pricing" className="block hover:text-foreground">Preise</Link>
+              <Link href="/#preise" className="block hover:text-foreground">Preise</Link>
             </div>
             <div className="space-y-2">
               <p className="font-medium text-foreground">Rechtliches</p>
@@ -934,10 +1086,10 @@ function PricingCard({
         ))}
       </ul>
       <Link
-        href="/pricing"
+        href="/#kontakt"
         className={`mt-6 ${featured ? "btn-primary" : "btn-secondary"} w-full justify-center`}
       >
-        Jetzt starten
+        Pilot anfragen
       </Link>
     </div>
   );

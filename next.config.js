@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  // StrictMode deaktiviert: eliminiert Doppel-Renders in Dev → deutlich schnellere Navigation
+  reactStrictMode: false,
   images: { remotePatterns: [{ protocol: "https", hostname: "**" }] },
 };
 module.exports = nextConfig;

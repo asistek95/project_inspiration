@@ -179,302 +179,95 @@ export default function MonatsabschlussPaketPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 max-w-3xl">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Steuerberater-Übergabe</h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {from && to ? `${from} – ${to}` : "Zeitraum"} ·{" "}
+            {checkedReceipts.length} Belege bereit · {stats.unchecked + stats.uncertain} offen
+          </p>
+        </div>
+        <button
+          onClick={release}
+          disabled={checkedReceipts.length === 0}
+          className="btn-primary"
+        >
+          <CheckCircle2 className="h-4 w-4" />
+          {checkedReceipts.length} Belege übergeben
+        </button>
+      </div>
+
+      {/* Fortschrittsbalken */}
       <div>
-        <div className="flex items-center gap-2 text-xs font-medium text-brand-700 mb-2">
-          <PackageCheck className="h-3.5 w-3.5" />
-          Monatsabschluss
-          <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-brand-600 to-accent text-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
-            Premium
-          </span>
+        <div className="flex justify-between text-xs text-slate-500 mb-1">
+          <span>{doneCount} von {totalCount} Schritten erledigt</span>
+          <span>{progressPct}%</span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Monatsabschluss-Paket</h1>
-        <p className="text-muted-foreground mt-1 max-w-2xl">
-          Alles, was dein Steuerberater für den Monatsabschluss braucht — in einem
-          Klick. Belege, Report, Buchhaltungs-CSV und SEPA-Datei in einem Paket.
-        </p>
-      </div>
-
-      {/* Wie funktioniert die Übergabe? */}
-      <div className="card-soft p-5 border border-brand-100 bg-gradient-to-br from-brand-50/60 to-accent-soft/40">
-        <div className="flex items-start gap-3">
-          <Mail className="h-5 w-5 text-brand-700 shrink-0 mt-0.5" />
-          <div className="text-sm space-y-2">
-            <p className="font-semibold text-brand-800">
-              Wie bekommt der Steuerberater die Belege?
-            </p>
-            <ol className="list-decimal pl-4 space-y-1 text-slate-700">
-              <li>Du klickst oben rechts auf <strong>„Jetzt übergeben“</strong>.</li>
-              <li>
-                Klarblick schickt eine E-Mail an{" "}
-                <strong>{advisorEmail || "deinen Steuerberater"}</strong> mit einem{" "}
-                <strong>sicheren Download-Link</strong> (gültig 7 Tage).
-                Darin: alle geprüften Belege als PDF, eine CSV-Liste und die
-                Buchhaltungs-Datei (DATEV).
-              </li>
-              <li>
-                Dein Steuerberater lädt das Paket runter — ohne extra Account, ohne
-                Software-Installation.
-              </li>
-              <li>
-                Die Übergabe wird mit <strong>Zeitstempel im Audit-Log</strong>
-                {" "}gespeichert. Belege werden gesperrt und sind 7 Jahre archiviert (§ 132 BAO).
-              </li>
-            </ol>
-            <p className="text-xs text-slate-600 pt-1">
-              Tipp: Wenn dein Steuerberater eigenen Zugang möchte (statt nur Download-Link), kannst du ihn unter{" "}
-              <Link href="/settings#team" className="underline font-semibold">
-                Einstellungen → Team
-              </Link>{" "}
-              als „Steuerberater (Leserechte)“ einladen.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Fortschritt + Übergabe */}
-      <div className="card-soft p-6">
-        <div className="flex items-center justify-between gap-4 flex-col lg:flex-row">
-          <div className="flex items-center gap-4">
-            <span className="h-14 w-14 rounded-xl bg-brand-600 text-white grid place-content-center">
-              <PackageCheck className="h-6 w-6" />
-            </span>
-            <div>
-              <p className="text-2xl font-bold">
-                {doneCount} von {totalCount} Schritten erledigt
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {stats.checked} Belege geprüft · {stats.uncertain} unsicher ·{" "}
-                {stats.unchecked} ungeprüft
-              </p>
-            </div>
-          </div>
-          <button onClick={release} className="btn-primary btn-lg">
-            <CheckCircle2 className="h-5 w-5" /> Jetzt übergeben
-          </button>
-        </div>
-        <div className="mt-5 h-2.5 bg-slate-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-brand-600 to-accent transition-all"
-            style={{ width: `${progressPct}%` }}
-          />
+        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-full bg-slate-800 transition-all" style={{ width: `${progressPct}%` }} />
         </div>
       </div>
 
       {/* Checkliste */}
-      <div className="card p-5">
-        <h2 className="font-semibold mb-3">Übergabe-Checkliste</h2>
-        <ul className="space-y-2">
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 className="text-sm font-semibold text-slate-700 mb-3">Checkliste</h2>
+        <ul className="divide-y divide-slate-100">
           {checklist.map((item) => (
             <ChecklistRow key={item.id} item={item} />
           ))}
         </ul>
       </div>
 
-      {/* Zeitraum & E-Mail */}
-      <div className="card p-5 grid sm:grid-cols-3 gap-4">
+      {/* Zeitraum + E-Mail */}
+      <div className="rounded-lg border border-slate-200 bg-white p-4 grid sm:grid-cols-3 gap-3">
         <div>
           <label className="label">Von</label>
-          <input
-            type="date"
-            className="input"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-          />
+          <input type="date" className="input" value={from} onChange={(e) => setFrom(e.target.value)} />
         </div>
         <div>
           <label className="label">Bis</label>
-          <input
-            type="date"
-            className="input"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-          />
+          <input type="date" className="input" value={to} onChange={(e) => setTo(e.target.value)} />
         </div>
         <div>
           <label className="label">E-Mail Steuerberater</label>
-          <input
-            type="email"
-            className="input"
-            value={advisorEmail || ""}
-            onChange={(e) => setAdvisorEmail(e.target.value)}
-            placeholder="kanzlei@beispiel.at"
-          />
+          <input type="email" className="input" value={advisorEmail || ""}
+            onChange={(e) => setAdvisorEmail(e.target.value)} placeholder="kanzlei@beispiel.at" />
         </div>
       </div>
 
-      {/* Datenschutz-Block */}
-      <div className="card p-5 border border-brand-100 bg-brand-50/40">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="h-5 w-5 text-brand-700 shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="font-semibold text-brand-800">
-              Aufbewahrung & dokumentierte Übergabe
-            </p>
-            <ul className="mt-1.5 space-y-1 text-slate-700">
-              <li>
-                Belege werden <strong>7 Jahre archiviert</strong> (§ 132 BAO,
-                gesetzliche Aufbewahrungsfrist).
-              </li>
-              <li>
-                Bei „Jetzt übergeben" wird ein <strong>Zeitstempel im Audit-Log</strong>{" "}
-                gespeichert — wer wann was an welchen Steuerberater übergeben hat.
-              </li>
-              <li>
-                Übergabe-Link: zeitlich begrenzt (7 Tage), Ende-zu-Ende-verschlüsselt,
-                EU-Server. Details in den{" "}
-                <Link href="/settings#datenschutz" className="underline">
-                  Einstellungen → Datenschutz
-                </Link>
-                .
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Status-Karten */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <StatusCard
-          tone="accent"
-          Icon={CheckCircle2}
-          title={`${checkedReceipts.length} Belege können übergeben werden`}
-          subtitle="Geprüft & vollständig"
-        />
-        <StatusCard
-          tone="warn"
-          Icon={AlertTriangle}
-          title={`${uncertain.length} Belege sind unsicher`}
-          subtitle="Bitte prüfen oder separat markieren"
-        />
-        <StatusCard
-          tone="muted"
-          Icon={FileText}
-          title={`${unchecked.length} Belege müssen geprüft werden`}
-          subtitle="Noch keine Bestätigung"
-        />
-      </div>
-
-      {/* Aktionen */}
-      <div className="card p-5">
-        <h2 className="font-semibold">Paket-Aktionen</h2>
-        <p className="text-sm text-muted-foreground">
-          PDF, CSV oder sicherer Link für deinen Steuerberater — alles aus einem
-          Stapel.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button onClick={downloadPdf} className="btn-primary">
-            <Download className="h-4 w-4" /> PDF-Report erzeugen
+      {/* Downloads */}
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 className="text-sm font-semibold text-slate-700 mb-3">Downloads</h2>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={downloadPdf} className="btn-secondary">
+            <Download className="h-4 w-4" /> PDF-Report
           </button>
-          <button
-            onClick={() => exportCSV(checkedReceipts, `monatsabschluss_${from}_${to}.csv`)}
-            className="btn-secondary"
-          >
-            <FileSpreadsheet className="h-4 w-4" /> CSV erzeugen
+          <button onClick={() => exportCSV(checkedReceipts, `belege_${from}_${to}.csv`)} className="btn-secondary">
+            <FileSpreadsheet className="h-4 w-4" /> CSV
           </button>
-          <button
-            onClick={() =>
-              downloadCSV(
-                `klarblick_datev_${from}_${to}.csv`,
-                buildDatevCSV(checkedReceipts, `${from} — ${to}`),
-              )
-            }
-            className="btn-secondary"
-          >
+          <button onClick={() => downloadCSV(`datev_${from}_${to}.csv`, buildDatevCSV(checkedReceipts, `${from} — ${to}`))} className="btn-secondary">
             <Database className="h-4 w-4" /> DATEV-CSV
           </button>
-          <button
-            onClick={() => {
-              if (unpaidInvoices.length === 0) {
-                alert("Keine offenen Rechnungen zum Bezahlen.");
-                return;
-              }
-              const xml = buildSepaXML({
-                debtorName: DEMO_COMPANY.company_name,
-                debtorIban: "DE89370400440532013000",
-                receipts: unpaidInvoices,
-              });
-              downloadXML(`klarblick_sepa_${from}_${to}.xml`, xml);
-            }}
-            className="btn-secondary"
-          >
-            <Landmark className="h-4 w-4" /> SEPA-Sammelüberweisung
+          <button onClick={() => {
+            if (!unpaidInvoices.length) { alert("Keine offenen Rechnungen."); return; }
+            downloadXML(`sepa_${from}_${to}.xml`, buildSepaXML({ debtorName: DEMO_COMPANY.company_name, debtorIban: "AT63201118278479 5500", receipts: unpaidInvoices }));
+          }} className="btn-secondary">
+            <Landmark className="h-4 w-4" /> SEPA
+          </button>
+          <button onClick={() => (window.location.href = `mailto:${advisorEmail}?subject=Belege%20${from}%20bis%20${to}`)} className="btn-secondary">
+            <Mail className="h-4 w-4" /> E-Mail
           </button>
           <Link href="/uva" className="btn-secondary">
-            <Calculator className="h-4 w-4" /> UVA-Vorerfassung
-            <ArrowRight className="h-4 w-4" />
+            <Calculator className="h-4 w-4" /> UVA
           </Link>
-          <button
-            onClick={() =>
-              (window.location.href = `mailto:${advisorEmail}?subject=Belege%20${from}%20bis%20${to}&body=Hallo%2C%0A%0Aanbei%20mein%20Monatsabschluss-Paket%20aus%20Klarblick.%0AGepr%C3%BCfte%20Belege%3A%20${checkedReceipts.length}%0AUnsicher%3A%20${uncertain.length}`)
-            }
-            className="btn-secondary"
-          >
-            <Mail className="h-4 w-4" /> E-Mail vorbereiten
-          </button>
-          <button
-            className="btn-secondary"
-            onClick={() =>
-              alert(
-                "Sicherer Link erstellt (Demo). In Produktion: zeitlich begrenzter Supabase-Link mit Audit-Trail.",
-              )
-            }
-          >
-            <FolderArchive className="h-4 w-4" /> Sicheren Link erstellen
-          </button>
         </div>
+        <p className="text-xs text-slate-400 mt-2">
+          Übergabe wird mit Zeitstempel im Audit-Log gespeichert (§ 132 BAO, 7 Jahre Aufbewahrung).
+        </p>
       </div>
 
-      {/* ZIP-Struktur Vorschau */}
-      <div className="card p-5">
-        <h2 className="font-semibold mb-3">Paket-Struktur (Vorschau)</h2>
-        <div className="font-mono text-sm bg-slate-50 border border-border rounded-lg p-4 space-y-1">
-          <Tree
-            icon={<Folder className="h-4 w-4 text-brand-600" />}
-            label={`Klarblick_${from}_${to}/`}
-          />
-          <Tree
-            level={1}
-            icon={<FileText className="h-4 w-4 text-slate-500" />}
-            label="monatsabschluss.pdf"
-          />
-          <Tree
-            level={1}
-            icon={<FileSpreadsheet className="h-4 w-4 text-slate-500" />}
-            label="belege.csv"
-          />
-          <Tree
-            level={1}
-            icon={<FileSpreadsheet className="h-4 w-4 text-slate-500" />}
-            label="uva-entwurf.csv"
-          />
-          <Tree
-            level={1}
-            icon={<Folder className="h-4 w-4 text-brand-600" />}
-            label="belege-geprueft/"
-          />
-          <Tree
-            level={2}
-            icon={<FileText className="h-4 w-4 text-slate-400" />}
-            label={`(${checkedReceipts.length} PDFs)`}
-          />
-          <Tree
-            level={1}
-            icon={<Folder className="h-4 w-4 text-warn" />}
-            label="belege-unsicher/"
-          />
-          <Tree
-            level={2}
-            icon={<FileText className="h-4 w-4 text-slate-400" />}
-            label={`(${uncertain.length} PDFs)`}
-          />
-          <Tree
-            level={1}
-            icon={<FileText className="h-4 w-4 text-slate-500" />}
-            label="audit-log.txt"
-          />
-        </div>
-      </div>
     </div>
   );
 }

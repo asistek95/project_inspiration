@@ -96,9 +96,9 @@ function LoginInner() {
       </div>
 
       <p className="mt-6 text-sm text-slate-600">
-        Noch kein Konto?{" "}
+        Noch kein Zugang?{" "}
         <Link href="/register" className="text-brand-600 font-medium hover:underline">
-          Jetzt registrieren
+          Pilot anfragen →
         </Link>
       </p>
     </div>

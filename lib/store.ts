@@ -13,18 +13,24 @@ function audit(entry: Omit<AuditEntry, "ts" | "by">, user = "demo-user"): AuditE
   return { ts: new Date().toISOString(), by: user, ...entry };
 }
 
+function isRealUser(): boolean {
+  return isBrowser() && localStorage.getItem("klarblick.realUser") === "1";
+}
+
 export function loadReceipts(): Receipt[] {
   if (!isBrowser()) return generateDemoReceipts();
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) {
+      // Eingeloggter Supabase-User startet mit leerer Liste
+      if (isRealUser()) return [];
       const demo = generateDemoReceipts();
       localStorage.setItem(KEY, JSON.stringify(demo));
       return demo;
     }
     return JSON.parse(raw) as Receipt[];
   } catch {
-    return generateDemoReceipts();
+    return isRealUser() ? [] : generateDemoReceipts();
   }
 }
 

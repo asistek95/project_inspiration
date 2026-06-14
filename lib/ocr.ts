@@ -11,18 +11,26 @@ export interface ExtractedReceipt {
   net_amount: number;
   vat_amount: number;
   gross_amount: number;
-  currency: "EUR";
+  currency: string;
   confidence_score: number;
   warnings: string[];
   payment_terms?: { skonto_pct: number; days: number; net_days: number } | null;
   is_recurring?: boolean;
   fingerprint?: string;
-  
-  // ── NEU: Eingangs-/Ausgangsrechnung-Erkennung ──
+
+  // ── Eingangs-/Ausgangsrechnung ──
   invoice_type?: "eingang" | "ausgang" | "unknown";
   vendor_uid?: string | null;
   vendor_identifier_confidence?: number;
   is_vendor_match?: boolean;
+
+  // ── Österr. Steuerrecht ──
+  vat_treatment?: string | null;        // z.B. "reverse_charge_§19_bauleistung", "normal_20", ...
+  reverse_charge?: boolean;
+  reverse_charge_law?: string | null;   // z.B. "§19 Abs 1a UStG 1994"
+  period?: string | null;               // Leistungszeitraum, z.B. "Mai 2026"
+  invoice_number?: string | null;       // Rechnungsnummer vom Aussteller
+  iban?: string | null;                 // IBAN für Zahlung
 }
 
 // Handwerker-Fokus: Werkzeug, Material, Großhandel, Sanitär, Elektro, KFZ
@@ -139,13 +147,23 @@ export function detectRechnungSubtyp(
  * — Kassenbon / Tankbeleg / Quittung / Bewirtungsbeleg → "neutral" (Material/Spesen)
  * — Rechnung → default "eingang". Dateiname-Hinweise wie "ausgang", "rechnung-an",
  *   "kunde", "AR-" → "ausgang".
+ * ── NEU: invoice_type aus OCR berücksichtigen (höchste Priorität) ──
  */
 export function detectDirection(
   receiptType: ReceiptType,
   fileName: string,
   supplier: string,
   ownCompany?: string | null,
+  invoiceTypeFromOcr?: string | null,
 ): ReceiptDirection {
+  // ── Schritt 0: OCR invoice_type hat höchste Priorität ──
+  if (invoiceTypeFromOcr === "ausgang") {
+    return "ausgang";
+  }
+  if (invoiceTypeFromOcr === "eingang") {
+    return "eingang";
+  }
+  
   const lower = `${fileName} ${supplier}`.toLowerCase();
   if (receiptType === "Rechnung") {
     if (
@@ -180,12 +198,18 @@ export function detectDirection(
  * Regelvalidierung (Brutto = Netto + MwSt, Datum plausibel, Lieferant
  * im Stammdaten-Index, MwSt-Satz konsistent).
  */
-export async function extractReceiptData(file: File): Promise<ExtractedReceipt> {
+export async function extractReceiptData(
+  file: File,
+  userCompanyName?: string,
+  userCompanyUid?: string
+): Promise<ExtractedReceipt> {
   // ── Versuche zuerst echte Claude-Vision OCR via /api/ocr ──
   if (file.type.startsWith("image/") || file.type === "application/pdf") {
     try {
       const form = new FormData();
       form.append("file", file);
+      if (userCompanyName) form.append("userCompanyName", userCompanyName);
+      if (userCompanyUid) form.append("userCompanyUid", userCompanyUid);
       const res = await fetch("/api/ocr", { method: "POST", body: form });
       if (res.ok) {
         const data = await res.json();
@@ -211,21 +235,32 @@ export async function extractReceiptData(file: File): Promise<ExtractedReceipt> 
           const payment: PaymentMethod = suggest?.payment || "Karte";
           const receiptType: ReceiptType =
             (data.receipt_type as ReceiptType) || "Rechnung";
-          const direction = detectDirection(receiptType, file.name, String(data.vendor));
-          const rechnung_subtyp = detectRechnungSubtyp(receiptType, file.name, gross);
-          const warnings: string[] = [];
-          if (Math.abs(net + vat - gross) > 0.05) {
-            warnings.push("Brutto ≠ Netto + MwSt — bitte prüfen");
-          }
-          const confidence = typeof data.confidence === "number" ? data.confidence : 0.92;
           
+          // ── Confidence + Warnungen aus OCR ──
+          const confidence = typeof data.confidence === "number" ? data.confidence : 0.88;
+          const warnings: string[] = Array.isArray(data.warnings) ? [...data.warnings] : [];
+          if (confidence < 0.7) warnings.push("Prüfung empfohlen — niedrige OCR-Konfidenz");
+          if (data.reverse_charge && !warnings.some((w: string) => w.includes("Reverse"))) {
+            warnings.push(`Reverse Charge (${data.reverse_charge_law || "§19 UStG"}): Steuerschuld geht auf Empfänger über — Eigenberechnung in UVA KZ 057 + KZ 066`);
+          }
+
           // ── NEU: Eingangs/Ausgangsrechnung-Felder aus OCR ──
           const invoiceType = data.invoice_type || "unknown";
           const vendorUid = data.vendor_uid || null;
-          const vendorIdentifierConfidence = typeof data.vendor_identifier_confidence === "number" 
-            ? data.vendor_identifier_confidence 
+          const vendorIdentifierConfidence = typeof data.vendor_identifier_confidence === "number"
+            ? data.vendor_identifier_confidence
             : 0.5;
           const isVendorMatch = !!data.is_vendor_match;
+          
+          // ── WICHTIG: invoice_type aus OCR an detectDirection() übergeben! ──
+          const direction = detectDirection(
+            receiptType, 
+            file.name, 
+            String(data.vendor),
+            undefined,
+            invoiceType
+          );
+          const rechnung_subtyp = detectRechnungSubtyp(receiptType, file.name, gross);
           
           return {
             supplier_name: String(data.vendor),
@@ -248,6 +283,12 @@ export async function extractReceiptData(file: File): Promise<ExtractedReceipt> 
             vendor_uid: vendorUid,
             vendor_identifier_confidence: round2(vendorIdentifierConfidence),
             is_vendor_match: isVendorMatch,
+            vat_treatment: data.vat_treatment || null,
+            reverse_charge: !!data.reverse_charge,
+            reverse_charge_law: data.reverse_charge_law || null,
+            period: data.period || null,
+            invoice_number: data.invoice_number || null,
+            iban: data.iban || null,
           };
         }
       }

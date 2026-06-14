@@ -48,6 +48,9 @@ const TABS: { id: TabId; label: string; Icon: any }[] = [
 
 export default function ReportPage() {
   const [all, setAll] = useState<Receipt[]>([]);
+  const [selYear, setSelYear] = useState(new Date().getFullYear());
+  const [selQ, setSelQ] = useState<number | null>(null); // null = ganzes Jahr
+  const [selMonth, setSelMonth] = useState<number | null>(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "checked">("all");
@@ -58,6 +61,24 @@ export default function ReportPage() {
     company_name: DEMO_COMPANY.company_name,
     tax_advisor_email: DEMO_COMPANY.tax_advisor_email || undefined,
   });
+
+  // Berechne from/to aus Jahr/Quartal/Monat
+  useEffect(() => {
+    let f: string, t: string;
+    if (selMonth !== null) {
+      f = new Date(selYear, selMonth - 1, 1).toISOString().slice(0, 10);
+      t = new Date(selYear, selMonth, 0).toISOString().slice(0, 10);
+    } else if (selQ !== null) {
+      const startM = (selQ - 1) * 3;
+      f = new Date(selYear, startM, 1).toISOString().slice(0, 10);
+      t = new Date(selYear, startM + 3, 0).toISOString().slice(0, 10);
+    } else {
+      f = `${selYear}-01-01`;
+      t = `${selYear}-12-31`;
+    }
+    setFrom(f);
+    setTo(t);
+  }, [selYear, selQ, selMonth]);
 
   useEffect(() => {
     const r = loadReceipts();
@@ -73,17 +94,6 @@ export default function ReportPage() {
           });
         }
       } catch {}
-    }
-    if (r.length > 0) {
-      const dates = r.map((x) => x.receipt_date).sort();
-      setFrom(dates[0]);
-      setTo(dates[dates.length - 1]);
-    } else {
-      const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const end = new Date(now.getFullYear(), now.getMonth(), 0);
-      setFrom(start.toISOString().slice(0, 10));
-      setTo(end.toISOString().slice(0, 10));
     }
   }, []);
 
@@ -163,40 +173,49 @@ export default function ReportPage() {
         </div>
       </div>
 
-      {/* STICKY FILTERBAR */}
+      {/* FILTERBAR — Jahr/Quartal/Monat wie Dashboard */}
       <div className="sticky top-0 z-10 -mx-4 px-4 lg:mx-0 lg:px-0 py-2 bg-background/80 backdrop-blur border-b border-border">
         <div className="flex flex-wrap items-center gap-2">
-          {/* Quick-Range */}
-          <div className="inline-flex rounded-lg border border-border bg-white p-0.5 text-xs">
-            {[
-              { l: "1M", m: 1 },
-              { l: "3M", m: 3 },
-              { l: "6M", m: 6 },
-              { l: "12M", m: 12 },
-            ].map((q) => (
-              <button
-                key={q.l}
-                onClick={() => quickRange(q.m)}
-                className="px-3 py-1.5 rounded-md font-medium text-slate-600 hover:bg-slate-100"
-              >
-                {q.l}
+
+          {/* Jahr */}
+          <div className="flex items-center gap-1 border border-slate-200 rounded-lg bg-white px-2 py-1">
+            <button onClick={() => { setSelYear(y => y - 1); setSelQ(null); setSelMonth(null); }}
+              className="px-1.5 py-1 text-slate-500 hover:text-slate-800 font-bold text-sm">‹</button>
+            <span className="font-semibold text-sm w-12 text-center">{selYear}</span>
+            <button onClick={() => { setSelYear(y => y + 1); setSelQ(null); setSelMonth(null); }}
+              className="px-1.5 py-1 text-slate-500 hover:text-slate-800 font-bold text-sm"
+              disabled={selYear >= new Date().getFullYear()}>›</button>
+          </div>
+
+          {/* Quartale */}
+          <div className="flex gap-1 p-0.5 bg-slate-100 rounded-lg">
+            <button onClick={() => { setSelQ(null); setSelMonth(null); }}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${selQ === null && selMonth === null ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-800"}`}>
+              Jahr
+            </button>
+            {[1, 2, 3, 4].map(q => (
+              <button key={q} onClick={() => { setSelQ(q); setSelMonth(null); }}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${selQ === q && selMonth === null ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-800"}`}>
+                Q{q}
               </button>
             ))}
           </div>
 
-          <input
-            type="date"
-            className="input h-9 text-sm w-auto"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-          />
-          <span className="text-slate-400 text-sm">–</span>
-          <input
-            type="date"
-            className="input h-9 text-sm w-auto"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-          />
+          {/* Monate (nur wenn Quartal gewählt) */}
+          {selQ !== null && (
+            <div className="flex gap-1 p-0.5 bg-slate-100 rounded-lg">
+              {[0, 1, 2].map(offset => {
+                const m = (selQ - 1) * 3 + 1 + offset;
+                const name = new Date(selYear, m - 1).toLocaleString("de-AT", { month: "short" });
+                return (
+                  <button key={m} onClick={() => setSelMonth(selMonth === m ? null : m)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${selMonth === m ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-800"}`}>
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <select
             className="input h-9 text-sm w-auto"

@@ -63,7 +63,13 @@ export default function ReceiptsListPage() {
     }
     const direction = sp.get("direction");
     if (direction === "eingang" || direction === "ausgang" || direction === "neutral") {
-      setFilterDirection(direction);
+      setFilterDirection(direction as ReceiptDirection);
+      setShowFilters(true);
+    }
+    // ?filter=ungeprueft aus Dashboard-Kacheln
+    const filterParam = sp.get("filter");
+    if (filterParam === "ungeprueft" || filterParam === "unsicher") {
+      setFilterStatus(filterParam);
       setShowFilters(true);
     }
   }, []);
@@ -274,18 +280,17 @@ export default function ReceiptsListPage() {
         </div>
       )}
 
-      {/* Direction-Tabs — Hauptfilter */}
+      {/* Direction-Tabs — nur Eingang/Ausgang, Material ist immer Eingang */}
       <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl w-full sm:w-fit">
-        {(["all", "eingang", "ausgang", "neutral"] as const).map((d) => {
+        {(["all", "eingang", "ausgang"] as const).map((d) => {
           const count =
             d === "all"
               ? all.length
-              : all.filter((r) => (r.direction || "eingang") === d).length;
+              : all.filter((r) => (r.invoice_type || r.direction || "eingang") === d).length;
           const labels: Record<typeof d, string> = {
             all: "Alle",
             eingang: "Eingangsrechnungen",
             ausgang: "Ausgangsrechnungen",
-            neutral: "Material / Spesen",
           };
           return (
             <button
@@ -513,8 +518,13 @@ export default function ReceiptsListPage() {
               >
                 <span className="truncate">{r.supplier_name}</span>
                 <DirectionPill direction={r.direction} />
+                {r.vorsteuerabzug === true && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200 font-semibold shrink-0">VSt</span>
+                )}
               </Link>
-              <span className="text-sm text-slate-600 truncate">{r.category}</span>
+              <span className="text-sm text-slate-600 truncate" title={r.custom_category || r.category}>
+                {r.custom_category || r.category}
+              </span>
               <span className="text-right font-semibold text-sm">{formatEUR(r.gross_amount)}</span>
               <span className="text-right text-sm text-slate-500">{formatEUR(r.vat_amount)}</span>
               <span><StatusBadge status={r.status} /></span>
@@ -528,8 +538,18 @@ export default function ReceiptsListPage() {
             </div>
           ))}
           {filtered.length === 0 ? (
-            <div className="p-14 text-center text-muted-foreground">
-              <p className="text-sm">Keine Belege gefunden.</p>
+            <div className="p-14 text-center text-muted-foreground space-y-3">
+              {all.length === 0 ? (
+                <>
+                  <p className="text-base font-semibold text-slate-700">Noch keine Belege vorhanden</p>
+                  <p className="text-sm">Lade deinen ersten Beleg hoch — per Datei, Foto, WhatsApp oder E-Mail.</p>
+                  <Link href="/upload" className="btn-primary inline-flex mt-2">
+                    <UploadIcon className="h-4 w-4" /> Ersten Beleg hinzufügen
+                  </Link>
+                </>
+              ) : (
+                <p className="text-sm">Keine Belege für diesen Filter gefunden.</p>
+              )}
             </div>
           ) : null}
         </div>
@@ -562,7 +582,19 @@ export default function ReceiptsListPage() {
           </Link>
         ))}
         {filtered.length === 0 ? (
-          <div className="card p-10 text-center text-muted-foreground">Keine Belege gefunden.</div>
+          <div className="card p-10 text-center text-muted-foreground space-y-3">
+            {all.length === 0 ? (
+              <>
+                <p className="font-semibold text-slate-700">Noch keine Belege</p>
+                <p className="text-sm">Jetzt ersten Beleg hochladen.</p>
+                <Link href="/upload" className="btn-primary inline-flex mt-1">
+                  <UploadIcon className="h-4 w-4" /> Hochladen
+                </Link>
+              </>
+            ) : (
+              <p className="text-sm">Keine Belege für diesen Filter.</p>
+            )}
+          </div>
         ) : null}
       </div>
     </div>

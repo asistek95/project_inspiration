@@ -27,17 +27,19 @@
   .btn-secondary { @apply btn bg-white border border-border text-foreground hover:bg-muted; }
   .btn-ghost { @apply btn text-foreground hover:bg-muted; }
   .btn-lg { @apply px-5 py-3 text-base rounded-lg; }
+  .btn-sm { @apply !px-3 !py-1.5 !text-xs !rounded-md; }
   .input {
     @apply w-full rounded-lg border border-input bg-white px-3 py-2.5 text-sm shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100;
   }
-  /* Native Selects modernisieren – eigener Chevron, kein Browser-Default */
+  /* Native Selects — modernes Styling mit eigenem Chevron */
   select.input {
-    @apply appearance-none pr-9 cursor-pointer bg-no-repeat;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    @apply appearance-none pr-9 cursor-pointer bg-no-repeat font-medium;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
     background-position: right 0.65rem center;
-    background-size: 1.1rem;
+    background-size: 1rem;
   }
-  select.input:hover { @apply border-slate-300 bg-slate-50; }
+  select.input:hover { @apply border-brand-200 bg-slate-50; }
+  select.input:focus { @apply border-brand-500; }
   /* Date/Time-Inputs aufhübschen */
   input.input[type="date"],
   input.input[type="time"],

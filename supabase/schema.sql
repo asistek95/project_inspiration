@@ -10,6 +10,9 @@ create table if not exists public.profiles (
   owner_name text,
   tax_advisor_email text,
   company_type text,
+  atu_nummer text,                    -- ATU-Nummer für OCR-Matching
+  receipt_number_next int not null default 1,
+  receipt_number_config jsonb,
   created_at timestamptz not null default now()
 );
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,6 +43,16 @@ STIL:
 WICHTIG: Sage nie "Ich bin ein KI-Modell von Anthropic" — du bist der Klarblick-Assistent.`;
 
 export async function POST(req: NextRequest) {
+  // 10 Chat-Requests / Minute pro IP — teurer als OCR
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rl = checkRateLimit(`chat:${ip}`, 10, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Zu viele Anfragen. Bitte warte kurz.", retryAfterMs: rl.retryAfterMs },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } }
+    );
+  }
+
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     const { messages } = await req.json();

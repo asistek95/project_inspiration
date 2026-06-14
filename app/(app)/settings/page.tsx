@@ -2,11 +2,32 @@
 
 import { useState, useEffect } from "react";
 import * as React from "react";
-import { Save, RefreshCw, Trash2, Mail, Copy, CheckCircle2, Shield, KeyRound, Hash, ShieldCheck, Database as DbIcon, Users, Crown, UserPlus, Eye, X as XIcon, Send as SendIcon, Lock, Unlock } from "lucide-react";
+import { Save, RefreshCw, Trash2, Mail, Copy, CheckCircle2, Shield, KeyRound, Hash, ShieldCheck, Database as DbIcon, Users, Crown, UserPlus, Eye, X as XIcon, Send as SendIcon, Lock, Unlock, MessageCircle, Phone, ExternalLink, Info } from "lucide-react";
+import { PhoneVerificationCard } from "@/components/PhoneVerificationCard";
+import { RestartTourButton } from "@/components/OnboardingTour";
+import { loadErrorLogs, clearErrorLogs } from "@/components/ErrorBoundary";
 import { resetToDemo, saveReceipts } from "@/lib/store";
 import { DEMO_COMPANY } from "@/lib/demo-data";
 import { loadNumbering, saveNumbering, formatNumber, DEFAULT_PREFIXES, type NumberingConfig } from "@/lib/numbering";
 import { RECEIPT_TYPES, type ReceiptType } from "@/lib/types";
+import { Select } from "@/components/Select";
+
+const COMPANY_TYPES = [
+  "GmbH",
+  "AG",
+  "GmbH & Co KG",
+  "AG & Co KG",
+  "KG",
+  "OG",
+  "GesbR",
+  "Einzelunternehmen / e.U.",
+  "Freiberufler",
+  "SE (Societas Europaea)",
+  "PartG (Partnerschaftsgesellschaft)",
+  "Verein",
+  "Stiftung",
+  "Sonstiges",
+];
 
 export default function SettingsPage() {
   const [form, setForm] = useState({
@@ -14,6 +35,7 @@ export default function SettingsPage() {
     owner_name: DEMO_COMPANY.owner_name,
     tax_advisor_email: DEMO_COMPANY.tax_advisor_email,
     company_type: DEMO_COMPANY.company_type,
+    atu_nummer: "",
   });
   const [saved, setSaved] = useState(false);
   const [locked, setLocked] = useState(true);
@@ -58,7 +80,7 @@ export default function SettingsPage() {
     <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Einstellungen</h1>
-        <p className="text-muted-foreground mt-1">Firma, Steuerberater und Demo-Daten verwalten.</p>
+        <p className="text-muted-foreground mt-1">Firmenprofil, WhatsApp-Eingang, E-Mail-Forwarding und Team verwalten.</p>
       </div>
 
       <form onSubmit={save} className="card p-6 space-y-4">
@@ -112,13 +134,24 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="label">Rechtsform</label>
-            <input
-              className="input disabled:bg-slate-50 disabled:cursor-not-allowed"
+            <Select
               value={form.company_type || ""}
+              onChange={(v) => setForm({ ...form, company_type: v })}
+              options={COMPANY_TYPES}
+              placeholder="Bitte wählen …"
               disabled={locked}
-              onChange={(e) => setForm({ ...form, company_type: e.target.value })}
-              placeholder="GmbH, Einzelunternehmen ..."
             />
+          </div>
+          <div>
+            <label className="label">ATU-Nummer</label>
+            <input
+              className="input font-mono disabled:bg-slate-50 disabled:cursor-not-allowed"
+              value={form.atu_nummer || ""}
+              disabled={locked}
+              onChange={(e) => setForm({ ...form, atu_nummer: e.target.value.toUpperCase() })}
+              placeholder="ATU12345678"
+            />
+            <p className="text-xs text-slate-500 mt-1">Wird für OCR-Erkennung Eingangs-/Ausgangsrechnung verwendet.</p>
           </div>
           <div>
             <label className="label">E-Mail Steuerberater</label>
@@ -140,6 +173,20 @@ export default function SettingsPage() {
 
       <EmailForwarding />
 
+      {/* Steuerfälle — Kurzlink */}
+      <a href="/steuerfaelle" className="card p-5 flex items-center gap-4 hover:shadow-md transition group">
+        <span className="h-10 w-10 rounded-xl bg-brand-50 text-brand-700 grid place-content-center shrink-0">
+          <ShieldCheck className="h-5 w-5" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold group-hover:text-brand-700 transition">Abgedeckte Steuerfälle</p>
+          <p className="text-sm text-muted-foreground">Welche österreichischen Steuergesetze Klarblick automatisch erkennt — §12, §19, §132 BAO u.v.m.</p>
+        </div>
+        <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-brand-600 shrink-0 transition" />
+      </a>
+
+      <WhatsAppSection />
+
       <NumberingSection />
 
       <TeamSection />
@@ -147,6 +194,36 @@ export default function SettingsPage() {
       <DataPrivacySection />
 
       <SecuritySection />
+
+      <div className="card p-4 space-y-3">
+        <h2 className="font-semibold text-sm">Hilfe & Diagnose</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm">Onboarding-Tour</p>
+            <p className="text-xs text-muted-foreground">Einführung beim nächsten Seitenaufruf erneut anzeigen.</p>
+          </div>
+          <RestartTourButton />
+        </div>
+        <div className="flex items-center justify-between border-t pt-3">
+          <div>
+            <p className="text-sm">Fehler-Log</p>
+            <p className="text-xs text-muted-foreground">Lokal gespeicherte Fehlermeldungen für Support.</p>
+          </div>
+          <div className="flex gap-2">
+            <button className="btn-secondary btn-sm" onClick={() => {
+              const logs = loadErrorLogs();
+              const blob = new Blob([JSON.stringify(logs, null, 2)], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a"); a.href = url;
+              a.download = `klarblick_errors_${new Date().toISOString().slice(0,10)}.json`; a.click();
+              URL.revokeObjectURL(url);
+            }}>Exportieren</button>
+            <button className="btn-ghost text-xs text-danger" onClick={() => { clearErrorLogs(); alert("Fehler-Log geleert."); }}>
+              Leeren
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="card p-6 space-y-3">
         <h2 className="font-semibold">Demo-Daten</h2>
@@ -182,17 +259,117 @@ export default function SettingsPage() {
   );
 }
 
+// ── WhatsApp-Eingang Setup ─────────────────────────────────────────────────────
+
+function WhatsAppSection() {
+  const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "+43 XXX XXX XXXX";
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <div className="card p-6 space-y-4">
+      <div className="flex items-start gap-3">
+        <span className="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-700 grid place-content-center shrink-0">
+          <MessageCircle className="h-5 w-5" />
+        </span>
+        <div>
+          <h2 className="font-semibold">WhatsApp-Eingang</h2>
+          <p className="text-sm text-muted-foreground">
+            Belege per WhatsApp einschicken — Foto schießen, an unsere Nummer senden, fertig.
+          </p>
+        </div>
+      </div>
+
+      {/* Klarblick WhatsApp-Nummer */}
+      <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <p className="text-xs text-emerald-700 mb-0.5">Klarblick WhatsApp-Nummer</p>
+          <p className="font-mono font-bold text-lg text-emerald-900">{waNumber}</p>
+          <p className="text-xs text-emerald-700/70 mt-1">
+            Sende Fotos von Belegen, Kassenbons oder Rechnungs-PDFs an diese Nummer.
+          </p>
+        </div>
+        <button
+          className="btn-secondary shrink-0 border-emerald-300"
+          onClick={() => { navigator.clipboard.writeText(waNumber); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+        >
+          {copied ? <CheckCircle2 className="h-4 w-4 text-accent" /> : <Copy className="h-4 w-4" />}
+          {copied ? "Kopiert" : "Kopieren"}
+        </button>
+      </div>
+
+      {/* Setup-Schritte */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Einrichtung (3 Schritte)</p>
+        <ol className="space-y-2">
+          {[
+            { step: "1", text: "Deine Handynummer unter Team → WhatsApp-Verknüpfung verifizieren", done: false },
+            { step: "2", text: "Speichere die Klarblick-Nummer in deinen WhatsApp-Kontakten", done: false },
+            { step: "3", text: `Schicke ein Beleg-Foto an ${waNumber} — erscheint automatisch unter Eingang`, done: false },
+          ].map(({ step, text }) => (
+            <li key={step} className="flex items-start gap-3 text-sm">
+              <span className="h-5 w-5 rounded-full bg-slate-200 text-slate-600 text-xs font-bold grid place-content-center shrink-0 mt-0.5">
+                {step}
+              </span>
+              <span className="text-slate-700">{text}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {/* Info */}
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 flex gap-2 text-xs text-slate-600">
+        <Info className="h-4 w-4 shrink-0 mt-0.5 text-slate-400" />
+        <div className="space-y-0.5">
+          <p>Kollegen können dieselbe Nummer nutzen — Belege erscheinen dann zur Freigabe im Eingang.</p>
+          <p>
+            Technisch via <strong>Twilio WhatsApp Business API</strong> — Eingehende Bilder/PDFs werden automatisch via OCR erkannt.
+            Einstellbar in <code className="bg-white px-1 rounded">.env.local</code> (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN).
+          </p>
+        </div>
+      </div>
+
+      <a href="/inbox" className="btn-secondary inline-flex">
+        <ExternalLink className="h-4 w-4" /> WhatsApp-Eingang öffnen
+      </a>
+    </div>
+  );
+}
+
+// ── E-Mail-Forwarding ──────────────────────────────────────────────────────────
+
 function EmailForwarding() {
   const [copied, setCopied] = useState(false);
-  // In Produktion: user-spezifische Adresse aus DB
-  const inboxAddr = "amin.sistek20+klarblick@gmail.com";
+  const [inbox, setInbox] = useState<{ from: string; subject: string; amount: number | null; date: string; status: string }[]>([]);
+  const [inboxAddr, setInboxAddr] = useState("amin.sistek20+klarblick@gmail.com");
+  const [isDemo, setIsDemo] = useState(true);
 
-  // Mock-Inbox — simulierte Belege, die per Mail reinkamen
-  const mockMails = [
-    { from: "noreply@amazon.de", subject: "Ihre Bestellung 405-1234567", amount: 67.9, date: "vor 2 Stunden", status: "Verarbeitet" },
-    { from: "rechnung@datev.de", subject: "Rechnung 2026-05-001", amount: 89.0, date: "gestern", status: "Verarbeitet" },
-    { from: "billing@adobe.com", subject: "Creative Cloud Invoice", amount: 35.69, date: "vor 3 Tagen", status: "Verarbeitet" },
-  ];
+  useEffect(() => {
+    // Inbox-Adresse aus Profil ableiten
+    try {
+      const profile = JSON.parse(localStorage.getItem("klarblick.profile") || "{}");
+      const base = profile.tax_advisor_email || "amin.sistek20@gmail.com";
+      const [user, domain] = base.split("@");
+      if (user && domain) setInboxAddr(`${user}+klarblick@${domain}`);
+    } catch {}
+
+    // Aus localStorage gespeicherte E-Mail-Eingänge laden (echte werden vom Webhook dort gespeichert)
+    try {
+      const stored = JSON.parse(localStorage.getItem("klarblick.email_inbox") || "[]");
+      if (stored.length > 0) {
+        setInbox(stored);
+        setIsDemo(false);
+        return;
+      }
+    } catch {}
+
+    // Demo-Fallback mit klarer Markierung
+    setIsDemo(true);
+    setInbox([
+      { from: "noreply@amazon.de", subject: "Ihre Bestellung 405-1234567", amount: 67.9, date: "vor 2 Stunden", status: "Verarbeitet" },
+      { from: "rechnung@datev.de", subject: "Rechnung 2026-05-001", amount: 89.0, date: "gestern", status: "Verarbeitet" },
+      { from: "billing@adobe.com", subject: "Creative Cloud Invoice", amount: 35.69, date: "vor 3 Tagen", status: "Verarbeitet" },
+    ]);
+  }, []);
 
   return (
     <div className="card p-6 space-y-4">
@@ -203,52 +380,71 @@ function EmailForwarding() {
         <div>
           <h2 className="font-semibold">E-Mail-Forwarding</h2>
           <p className="text-sm text-muted-foreground">
-            Leite Online-Rechnungen automatisch an deine Klarblick-Adresse weiter — sie werden
-            erkannt, gebucht und im Report aufgenommen. Kein manueller Upload mehr.
+            Online-Rechnungen an deine Klarblick-Adresse weiterleiten — automatisch erkannt, gebucht, kein Upload nötig.
           </p>
         </div>
       </div>
 
+      {/* Inbox-Adresse */}
       <div className="rounded-lg bg-slate-50 border border-border p-4 flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <p className="text-xs text-slate-500">Deine Klarblick-Inbox</p>
+          <p className="text-xs text-slate-500 mb-0.5">Deine Klarblick-Inbox-Adresse</p>
           <p className="font-mono font-semibold text-foreground">{inboxAddr}</p>
+          <p className="text-xs text-slate-400 mt-1">
+            Leite Rechnungen an diese Adresse weiter — z.B. in Gmail unter Einstellungen → Weiterleitung
+          </p>
         </div>
-        <button
-          className="btn-secondary"
-          onClick={() => {
-            navigator.clipboard.writeText(inboxAddr);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-          }}
-        >
+        <button className="btn-secondary shrink-0"
+          onClick={() => { navigator.clipboard.writeText(inboxAddr); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>
           {copied ? <CheckCircle2 className="h-4 w-4 text-accent" /> : <Copy className="h-4 w-4" />}
           {copied ? "Kopiert" : "Kopieren"}
         </button>
       </div>
 
+      {/* Letzte Eingänge */}
       <div>
-        <p className="text-sm font-medium mb-2">Letzte automatische Eingänge</p>
-        <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
-          {mockMails.map((m, i) => (
-            <li key={i} className="flex items-center justify-between p-3 text-sm">
-              <div className="min-w-0">
-                <p className="font-medium truncate">{m.subject}</p>
-                <p className="text-xs text-slate-500 truncate">{m.from} · {m.date}</p>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="font-semibold">{m.amount.toFixed(2)} €</span>
-                <span className="pill bg-accent-soft text-accent border border-emerald-200 text-xs">
-                  {m.status}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <p className="text-xs text-slate-500 mt-2">
-          In Produktion: Eingehende E-Mails werden via IMAP/Webhook empfangen, Anhänge per OCR
-          verarbeitet und nur Belege des authentifizierten Senders akzeptiert (SPF/DKIM-Check).
-        </p>
+        <div className="flex items-center gap-2 mb-2">
+          <p className="text-sm font-medium">Letzte automatische Eingänge</p>
+          {isDemo && (
+            <span className="text-[10px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded font-semibold">
+              Demo-Daten
+            </span>
+          )}
+        </div>
+        {inbox.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-slate-400 text-sm">
+            Noch keine E-Mails eingegangen. Leite deine ersten Rechnungen weiter!
+          </div>
+        ) : (
+          <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
+            {inbox.map((m, i) => (
+              <li key={i} className="flex items-center justify-between p-3 text-sm hover:bg-slate-50 transition">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{m.subject}</p>
+                  <p className="text-xs text-slate-500 truncate">{m.from} · {m.date}</p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {m.amount != null && <span className="font-semibold">{m.amount.toFixed(2)} €</span>}
+                  <span className={`pill text-xs ${
+                    m.status === "Verarbeitet" || m.status === "processed"
+                      ? "bg-accent-soft text-accent border border-emerald-200"
+                      : m.status === "pending"
+                      ? "bg-amber-50 text-amber-700 border border-amber-200"
+                      : "bg-slate-100 text-slate-600 border border-slate-200"
+                  }`}>
+                    {m.status === "processed" ? "Verarbeitet" : m.status === "pending" ? "Ausstehend" : m.status}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {isDemo && (
+          <p className="text-xs text-slate-400 mt-2">
+            In Produktion: E-Mails via IMAP/Webhook empfangen, Anhänge per OCR verarbeitet,
+            nur Absender mit SPF/DKIM-Check akzeptiert. Ergebnisse werden in Supabase <code>email_inbox</code> gespeichert.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -582,6 +778,45 @@ function TeamSection() {
           Eingeladene Personen erhalten eine E-Mail mit Magic-Link. Sie können erst nach Bestätigung zugreifen.
         </p>
       </form>
+
+      {/* E-Mail Eingang */}
+      <div className="card p-6 space-y-3">
+        <div className="flex items-center gap-3">
+          <span className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 grid place-content-center">
+            <Mail className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="font-semibold">E-Mail Eingang</h2>
+            <p className="text-xs text-muted-foreground">Rechnungen per E-Mail weiterleiten</p>
+          </div>
+        </div>
+        <div className="rounded-lg border border-brand-100 bg-brand-50 p-3 text-xs text-brand-800">
+          Leite Rechnungs-E-Mails an diese Adresse weiter — Anhänge werden automatisch ausgelesen und erscheinen im Beleg-Check.
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <code className="text-xs font-mono text-slate-700 flex-1 break-all">
+            {process.env.NEXT_PUBLIC_INBOUND_EMAIL ?? "bb56165d7679eb5edc7320bd5d1e5439@inbound.postmarkapp.com"}
+          </code>
+          <button
+            type="button"
+            onClick={() => {
+              navigator.clipboard.writeText(
+                process.env.NEXT_PUBLIC_INBOUND_EMAIL ?? "bb56165d7679eb5edc7320bd5d1e5439@inbound.postmarkapp.com"
+              );
+            }}
+            className="btn-ghost !p-1.5 shrink-0"
+            title="Kopieren"
+          >
+            <Copy className="h-4 w-4" />
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Tipp: Richte in deinem E-Mail-Programm eine automatische Weiterleitung für Absender wie <strong>rechnungen@lieferant.at</strong> ein.
+        </p>
+      </div>
+
+      {/* WhatsApp-Verknüpfung */}
+      <PhoneVerificationCard />
 
       {/* Mitglieder-Liste */}
       {team.length > 0 && (

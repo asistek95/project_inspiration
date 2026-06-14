@@ -1,11 +1,15 @@
+import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Schützt alle App-Routen: nur Nutzer mit gültiger Klarblick-Session
- * (gesetzt nach Login/Register im Browser) kommen rein. Sonst → /login.
+ * Middleware: Schützt alle App-Routen.
  *
- * Hinweis: Die echte Auth-Validierung passiert über Supabase (RLS).
- * Dieses Cookie ist nur der "Türsteher", der Unangemeldete früh wegschickt.
+ * Validierung in zwei Stufen:
+ *   1. Supabase JWT — prüft den echten Session-Token, refresht ihn wenn nötig.
+ *   2. Legacy-Cookie (klarblick_session) — Fallback für Demo-Modus ohne Supabase.
+ *
+ * Die echte Datensicherheit kommt weiterhin aus Supabase RLS —
+ * die Middleware ist der "Türsteher", der Unangemeldete früh wegschickt.
  */
 
 const PROTECTED_PREFIXES = [
@@ -18,18 +22,36 @@ const PROTECTED_PREFIXES = [
   "/uva",
   "/settings",
   "/savings",
+  "/steuerfaelle",
+  "/inbox",
 ];
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isProtected = PROTECTED_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(p + "/"),
+    (p) => pathname === p || pathname.startsWith(p + "/")
   );
   if (!isProtected) return NextResponse.next();
 
-  const session = req.cookies.get("klarblick_session")?.value;
-  if (session) return NextResponse.next();
+  const res = NextResponse.next();
 
+  // Supabase-Session prüfen (refresht den Token automatisch und setzt neue Cookies)
+  try {
+    const supabase = createMiddlewareClient({ req, res });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session) return res; // gültige Supabase-Session → weiter
+  } catch {
+    // Supabase nicht konfiguriert (Demo-Modus) → Legacy-Cookie-Check
+  }
+
+  // Legacy-Fallback: einfacher Cookie-Check für Demo-Modus
+  const legacyCookie = req.cookies.get("klarblick_session")?.value;
+  if (legacyCookie) return res;
+
+  // Nicht eingeloggt → weiterleiten
   const url = req.nextUrl.clone();
   url.pathname = "/login";
   url.searchParams.set("next", pathname);
@@ -47,5 +69,7 @@ export const config = {
     "/uva/:path*",
     "/settings/:path*",
     "/savings/:path*",
+    "/steuerfaelle/:path*",
+    "/inbox/:path*",
   ],
 };

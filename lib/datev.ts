@@ -1,22 +1,62 @@
 import type { Receipt } from "./types";
 
 /**
- * DATEV-Kontenrahmen SKR03 (vereinfachtes Mapping für MVP).
- * Für echte Buchhaltung muss der Steuerberater diese Konten konfigurieren.
+ * DATEV Buchungsstapel-Export (Format EXTF)
+ *
+ * Österreich-spezifische Anpassungen:
+ * - SKR04 (Österreich) statt SKR03 (Deutschland)
+ * - BU-Schlüssel nach österr. Kontenrahmen:
+ *     BU 10 = 20% USt (AT-Normalsteuersatz)
+ *     BU 08 = 10% USt (ermäßigt AT)
+ *     BU 13 = 13% USt (Sonder AT)
+ *     BU 90 = steuerfrei / Reverse Charge
+ *     ""    = kein Steuerschlüssel (Versicherungen, etc.)
+ *
+ * WICHTIG: Dieses Mapping ist ein Vorschlag — der Steuerberater
+ * muss die Kontonummern an seinen spezifischen Kontenrahmen anpassen.
  */
-const SKR03_MAP: Record<string, string> = {
-  Wareneinkauf: "3400",
-  "Werkzeug & Material": "4985",
-  Fahrtkosten: "4530",
-  Bewirtung: "4650",
-  "Werbung & Marketing": "4610",
-  Bürobedarf: "4930",
-  "Telefon & Internet": "4920",
-  Software: "4940",
-  Miete: "4210",
-  Versicherungen: "4360",
-  Sonstiges: "4900",
+
+// Österreich SKR04 — Aufwandskonten
+const SKR04_AT: Record<string, string> = {
+  "Wareneinkauf":          "5100",  // Wareneinsatz
+  "Werkzeug & Material":   "5600",  // Materialaufwand
+  "Fahrtkosten":           "7320",  // Reise- und Fahrtkosten
+  "Bewirtung":             "7650",  // Bewirtungsaufwand (50% steuerlich)
+  "Werbung & Marketing":   "7200",  // Werbeaufwand
+  "Bürobedarf":            "7400",  // Büro- und Verwaltungskosten
+  "Telefon & Internet":    "7410",  // Fernmeldegebühren
+  "Software":              "7430",  // EDV-Kosten, Lizenzen
+  "Miete":                 "7300",  // Raumkosten/Miete
+  "Versicherungen":        "7510",  // Versicherungen
+  "Sonstiges":             "7800",  // Sonstige betriebliche Aufwendungen
 };
+
+// Gegenkonten (Zahlung)
+const GEGENKONTO: Record<string, string> = {
+  "Bar":          "2700",  // Kasse (SKR04 AT)
+  "Karte":        "2800",  // Girokonten
+  "Überweisung":  "2800",  // Girokonten
+  "Lastschrift":  "2800",  // Girokonten
+  "PayPal":       "2810",  // Sonstige Zahlungsmittel
+};
+
+// BU-Schlüssel nach österr. USt-Satz
+function getBuKey(receipt: Receipt): string {
+  const vat = receipt.vat_amount || 0;
+  const net = receipt.net_amount || 0;
+  if (vat === 0) {
+    // Steuerfrei oder Reverse Charge
+    const t = (receipt as any).vat_treatment || "";
+    if (t.includes("reverse_charge")) return "90"; // RC §19
+    if (t.includes("steuerfrei")) return "";
+    return "";
+  }
+  const rate = net > 0 ? Math.round((vat / net) * 100) : 0;
+  if (rate >= 19 && rate <= 21) return "10"; // 20% AT
+  if (rate >= 9 && rate <= 11) return "08";  // 10% AT
+  if (rate >= 12 && rate <= 14) return "13"; // 13% AT
+  return "10"; // Fallback 20%
+}
 
 function csvEscape(v: string | number): string {
   const s = String(v);
@@ -30,61 +70,59 @@ function deNumber(n: number): string {
   return n.toFixed(2).replace(".", ",");
 }
 
-/**
- * Erzeugt DATEV-kompatiblen CSV-Buchungsstapel-Export (vereinfachtes Format).
- * Echtes DATEV-Format hat 116 Spalten + Header — dies ist eine
- * exportierbare CSV, die Steuerberater einlesen oder als Beleg-Liste nutzen können.
- */
+function datevDate(iso: string): string {
+  // DDMM (DATEV-Format ohne Jahr)
+  const [, m, d] = iso.split("-");
+  return `${d}${m}`;
+}
+
 export function buildDatevCSV(receipts: Receipt[], periodLabel: string): string {
-  const header = [
-    "Umsatz (ohne Soll/Haben-Kz)",
-    "Soll/Haben-Kennzeichen",
-    "WKZ Umsatz",
-    "Kurs",
-    "Basis-Umsatz",
-    "WKZ Basis-Umsatz",
-    "Konto",
-    "Gegenkonto (ohne BU-Schlüssel)",
-    "BU-Schlüssel",
-    "Belegdatum",
-    "Belegfeld 1",
-    "Belegfeld 2",
-    "Skonto",
-    "Buchungstext",
-    "Beleg-Link",
-  ].map(csvEscape).join(";");
+  // DATEV EXTF Header (vereinfacht)
+  const exportDate = new Date().toLocaleDateString("de-AT").replace(/\./g, "");
+  const metaHeader = [
+    `"EXTF";510;21;"Buchungsstapel";7;${exportDate};;;;"Klarblick";"";1;0;;;"";"EUR"`,
+    `"Umsatz (ohne Soll/Haben-Kz)";"Soll/Haben-Kennzeichen";"WKZ Umsatz";"Kurs";"Basis-Umsatz";"WKZ Basis-Umsatz";"Konto";"Gegenkonto (ohne BU-Schlüssel)";"BU-Schlüssel";"Belegdatum";"Belegfeld 1";"Belegfeld 2";"Skonto";"Buchungstext";"Postensperre";"Info 1";"Info 2"`,
+  ].join("\r\n");
 
-  const rows = receipts.map((r) => {
-    const konto = SKR03_MAP[r.category] || "4900";
-    const gegenkonto = r.payment_method === "Bar" ? "1000" : "1200"; // Kasse vs Bank
-    const buKey =
-      r.vat_amount === 0 ? "" : r.category === "Bewirtung" ? "8" : "9"; // 8=7%, 9=19%
-    const datum = r.receipt_date.split("-").reverse().join(""); // DDMMYYYY
-    return [
-      deNumber(r.gross_amount),
-      "S",
-      "EUR",
-      "",
-      "",
-      "",
-      konto,
-      gegenkonto,
-      buKey,
-      datum,
-      r.id.slice(0, 12),
-      "",
-      "",
-      `${r.supplier_name} - ${r.category}`,
-      r.file_url || "",
-    ].map(csvEscape).join(";");
-  });
+  const rows = receipts
+    .filter((r) => r.status === "geprueft" || r.status === "freigegeben")
+    .map((r) => {
+      const konto = SKR04_AT[r.category] || "7800";
+      const gegenkonto = GEGENKONTO[r.payment_method] || "2800";
+      const buKey = getBuKey(r);
+      const datum = datevDate(r.receipt_date);
+      const belegnr = r.receipt_number || r.id.slice(0, 12);
+      const buchungstext = `${r.supplier_name} - ${r.category}${r.notes ? ` - ${r.notes.slice(0, 30)}` : ""}`;
 
-  const meta = `# Klarblick DATEV-Export · ${periodLabel} · ${receipts.length} Belege · Erstellt ${new Date().toLocaleString("de-DE")}`;
-  return [meta, header, ...rows].join("\r\n");
+      return [
+        deNumber(r.gross_amount),   // Umsatz
+        "S",                         // Soll/Haben (S = Soll = Aufwand)
+        "EUR",                       // WKZ
+        "",                          // Kurs
+        "",                          // Basis-Umsatz
+        "",                          // WKZ Basis-Umsatz
+        konto,                       // Aufwandskonto SKR04 AT
+        gegenkonto,                  // Gegenkonto (Bank/Kasse)
+        buKey,                       // BU-Schlüssel (Steuer)
+        datum,                       // Belegdatum DDMM
+        belegnr,                     // Belegfeld 1
+        "",                          // Belegfeld 2
+        "",                          // Skonto
+        buchungstext.slice(0, 60),   // Buchungstext max 60 Zeichen
+        "0",                         // Postensperre
+        r.id,                        // Info 1 (interne ID)
+        "",                          // Info 2
+      ].map(csvEscape).join(";");
+    });
+
+  const footer = `# Klarblick DATEV-Export AT · ${periodLabel} · ${rows.length} Buchungen · SKR04 · ${new Date().toLocaleString("de-AT")}`;
+  const hint = `# HINWEIS: Kontenrahmen SKR04 AT (Vorschlag). Steuerberater muss Konten prüfen und ggf. anpassen.`;
+
+  return [metaHeader, ...rows, "", footer, hint].join("\r\n");
 }
 
 export function downloadCSV(filename: string, content: string) {
-  const blob = new Blob(["\ufeff" + content], { type: "text/csv;charset=utf-8" });
+  const blob = new Blob(["﻿" + content], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

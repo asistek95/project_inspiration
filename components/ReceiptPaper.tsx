@@ -44,7 +44,15 @@ export function ReceiptPaper({
         <div className="space-y-1">
           <Row label="Netto" value={formatEUR(receipt.net_amount)} />
           <Row
-            label={`MwSt. ${receipt.category === "Bewirtung" ? "7" : "19"} %`}
+            label={
+              receipt.vat_amount === 0 && receipt.net_amount > 0
+                ? "0% USt (§19 RC)"
+                : receipt.category === "Bewirtung"
+                ? "MwSt. 10 %"
+                : receipt.category === "Versicherungen"
+                ? "steuerfrei §6"
+                : "MwSt. 20 %"
+            }
             value={formatEUR(receipt.vat_amount)}
           />
           <Row label="SUMME" value={formatEUR(receipt.gross_amount)} bold />

@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Upload as UploadIcon,
   Camera,
@@ -11,13 +12,33 @@ import {
   Loader2,
   AlertTriangle,
   X,
-  ZoomIn,
+  MessageCircle,
+  Mail,
+  FolderOpen,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  Link2,
 } from "lucide-react";
 import { extractReceiptData, findDuplicate, suggestCategory } from "@/lib/ocr";
+import { Select } from "@/components/Select";
+import { detectVorsteuerabzug } from "@/lib/vorsteuer";
 import { upsertReceipt, loadReceipts } from "@/lib/store";
 import { loadNumbering, previewNext, reserveNextNumber } from "@/lib/numbering";
 import { ConfidenceBadge } from "@/components/Badges";
-import { CATEGORIES, RECEIPT_TYPES, PAYMENT_METHODS, DIRECTIONS, DIRECTION_LABEL, DIRECTION_FRIENDLY, DIRECTION_FRIENDLY_HINT, DIRECTION_EMOJI, RECHNUNG_SUBTYPEN, RECHNUNG_SUBTYP_LABEL, RECHNUNG_SUBTYP_HINT } from "@/lib/types";
+import {
+  CATEGORIES,
+  RECEIPT_TYPES,
+  PAYMENT_METHODS,
+  DIRECTIONS,
+  DIRECTION_LABEL,
+  DIRECTION_FRIENDLY,
+  DIRECTION_FRIENDLY_HINT,
+  DIRECTION_EMOJI,
+  RECHNUNG_SUBTYPEN,
+  RECHNUNG_SUBTYP_LABEL,
+  RECHNUNG_SUBTYP_HINT,
+} from "@/lib/types";
 import { formatEUR } from "@/lib/utils";
 import type { Receipt, ReceiptDirection } from "@/lib/types";
 
@@ -31,11 +52,35 @@ interface FileState {
   duplicate_of?: string;
 }
 
+// Lädt ATU + Firmennamen aus localStorage (gespeichert in Einstellungen)
+function loadCompanyProfile(): { company_name: string; atu_nummer: string } {
+  if (typeof window === "undefined") return { company_name: "", atu_nummer: "" };
+  try {
+    const raw = localStorage.getItem("klarblick.profile");
+    if (raw) {
+      const p = JSON.parse(raw);
+      return {
+        company_name: p.company_name || "",
+        atu_nummer: p.atu_nummer || "",
+      };
+    }
+  } catch {}
+  return { company_name: "", atu_nummer: "" };
+}
+
 export default function UploadPage() {
   const router = useRouter();
   const [items, setItems] = useState<FileState[]>([]);
+  const [activeChannel, setActiveChannel] = useState<"file" | "whatsapp" | "email" | "folder" | null>(null);
+  const [hasAtu, setHasAtu] = useState(true);
+
+  useEffect(() => {
+    const profile = loadCompanyProfile();
+    setHasAtu(!!profile.atu_nummer);
+  }, []);
 
   const onDrop = useCallback(async (accepted: File[]) => {
+    const profile = loadCompanyProfile();
     const newItems: FileState[] = accepted.map((file) => ({
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       file,
@@ -46,15 +91,14 @@ export default function UploadPage() {
 
     for (const item of newItems) {
       try {
-        const extracted = await extractReceiptData(item.file);
-        // Dubletten-Check
+        const extracted = await extractReceiptData(item.file, profile.company_name, profile.atu_nummer);
         const existing = loadReceipts();
         const dupe = findDuplicate(extracted, existing);
         if (dupe) {
           setItems((prev) =>
             prev.map((p) =>
-              p.id === item.id ? { ...p, status: "duplicate", duplicate_of: dupe.id, extracted } : p,
-            ),
+              p.id === item.id ? { ...p, status: "duplicate", duplicate_of: dupe.id, extracted } : p
+            )
           );
           continue;
         }
@@ -84,25 +128,21 @@ export default function UploadPage() {
           fingerprint: extracted.fingerprint,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          // ── NEU: Eingangs/Ausgangsrechnung-Felder ──
           invoice_type: extracted.invoice_type || "unknown",
           vendor_uid: extracted.vendor_uid || null,
           vendor_identifier_confidence: extracted.vendor_identifier_confidence || 0,
           is_vendor_match: extracted.is_vendor_match || false,
-          ocr_filename: null, // Wird später beim Speichern generiert
+          ocr_filename: null,
           user_custom_name: null,
+          vorsteuerabzug: extracted.direction === "eingang" ? true : null,
         };
         (draft as any).direction = extracted.direction;
         (draft as any).rechnung_subtyp = extracted.rechnung_subtyp;
         setItems((prev) =>
-          prev.map((p) =>
-            p.id === item.id ? { ...p, status: "ready", extracted, draft } : p
-          )
+          prev.map((p) => (p.id === item.id ? { ...p, status: "ready", extracted, draft } : p))
         );
       } catch {
-        setItems((prev) =>
-          prev.map((p) => (p.id === item.id ? { ...p, status: "ready" } : p))
-        );
+        setItems((prev) => prev.map((p) => (p.id === item.id ? { ...p, status: "ready" } : p)));
       }
     }
   }, []);
@@ -122,29 +162,29 @@ export default function UploadPage() {
       prev.map((p) => {
         if (p.id !== id || !p.draft) return p;
         let next = { ...p.draft, ...patch };
-        // Auto-Kategorisierung wenn Lieferant geändert
         if (patch.supplier_name && patch.supplier_name !== p.draft.supplier_name) {
           const sug = suggestCategory(patch.supplier_name);
-          if (sug) {
-            next = { ...next, category: sug.category, payment_method: sug.payment };
-          }
+          if (sug) next = { ...next, category: sug.category, payment_method: sug.payment };
         }
         return { ...p, draft: next };
-      }),
+      })
     );
   }
 
   function saveDraft(id: string, status: Receipt["status"]) {
     const item = items.find((p) => p.id === id);
     if (!item || !item.draft) return;
-    // Wenn die Nummer noch der Auto-Vorschlag ist (oder leer), echte Nummer reservieren.
     const cfg = loadNumbering();
     const autoPreview = previewNext(cfg);
     let receipt_number = item.draft.receipt_number || null;
     if (cfg.enabled && (!receipt_number || receipt_number === autoPreview)) {
       receipt_number = reserveNextNumber(item.draft.receipt_type);
     }
-    const final = { ...item.draft, status, receipt_number };
+    // OCR-Dateiname generieren: B_<nummer>_<lieferant>
+    const ocr_filename = receipt_number
+      ? `${receipt_number}_${item.draft.supplier_name.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 20)}`
+      : null;
+    const final = { ...item.draft, status, receipt_number, ocr_filename };
     upsertReceipt(final);
     setItems((prev) => prev.map((p) => (p.id === id ? { ...p, status: "saved" } : p)));
   }
@@ -153,57 +193,138 @@ export default function UploadPage() {
     setItems((prev) =>
       prev.map((p) => {
         if (p.id !== id || !p.draft) return p;
-        // Belegnummer neu vorschlagen wenn Richtung wechselt (ER- ↔ AR-)
         const newNumber = previewNext(undefined, p.draft.receipt_type, direction);
-        return { ...p, draft: { ...p.draft, direction, receipt_number: newNumber } };
-      }),
+        const vorsteuerabzug = direction === "eingang" ? true : direction === "ausgang" ? false : null;
+        return { ...p, draft: { ...p.draft, direction, receipt_number: newNumber, vorsteuerabzug } };
+      })
     );
   }
 
   return (
     <div className="space-y-6 max-w-5xl">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Beleg hochladen</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Gib mir deinen Beleg</h1>
         <p className="text-muted-foreground mt-1">
-          Foto, PDF oder Drag & Drop. Klarblick liest Lieferant, Betrag, MwSt. und Kategorie.
+          Alle Belege an einem Ort — hochladen, fotografieren, per WhatsApp oder E-Mail senden.
         </p>
       </div>
 
+      {/* ATU-Warnung — kritisch für Eingang/Ausgang-Erkennung */}
+      {!hasAtu && (
+        <div className="rounded-xl border-2 border-red-300 bg-red-50 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-bold text-red-700">ATU-Nummer fehlt — Eingang/Ausgang kann nicht automatisch erkannt werden</p>
+            <p className="text-sm text-red-600 mt-1">
+              Ohne deine ATU-Nummer kann das System nicht unterscheiden ob du der Aussteller oder Empfänger einer Rechnung bist.
+              Du musst dann bei jedem Beleg manuell wählen.
+            </p>
+          </div>
+          <a href="/settings" className="btn-primary shrink-0 !bg-red-600 hover:!bg-red-700">
+            ATU eintragen →
+          </a>
+        </div>
+      )}
+
+      {/* Kanal-Auswahl */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <ChannelCard
+          icon={<UploadIcon className="h-6 w-6" />}
+          label="Datei hochladen"
+          sublabel="PDF, JPG, PNG"
+          color="brand"
+          active={activeChannel === "file"}
+          onClick={() => setActiveChannel(activeChannel === "file" ? null : "file")}
+        />
+        <ChannelCard
+          icon={<Camera className="h-6 w-6" />}
+          label="Foto machen"
+          sublabel="Kamera / Handy"
+          color="brand"
+          active={activeChannel === "file"}
+          onClick={() => { setActiveChannel("file"); open(); }}
+        />
+        <ChannelCard
+          icon={<MessageCircle className="h-6 w-6" />}
+          label="WhatsApp"
+          sublabel="Bild senden"
+          color="green"
+          active={activeChannel === "whatsapp"}
+          onClick={() => setActiveChannel(activeChannel === "whatsapp" ? null : "whatsapp")}
+        />
+        <ChannelCard
+          icon={<Mail className="h-6 w-6" />}
+          label="E-Mail"
+          sublabel="Weiterleiten"
+          color="blue"
+          active={activeChannel === "email"}
+          onClick={() => setActiveChannel(activeChannel === "email" ? null : "email")}
+        />
+      </div>
+
+      {/* Kanal-Detail-Panels — immer gemounted, kein Re-Mount-Delay */}
+      <div className={activeChannel === "whatsapp" ? "" : "hidden"}>
+        <WhatsAppPanel />
+      </div>
+      <div className={activeChannel === "email" ? "" : "hidden"}>
+        <EmailPanel />
+      </div>
+
+      {/* Drag & Drop Zone — aktiv wenn "file" oder nichts ausgewählt */}
       <div
         {...getRootProps()}
-        className={`card border-2 border-dashed p-10 text-center transition cursor-pointer ${
-          isDragActive ? "border-brand-500 bg-brand-50" : "border-border hover:border-brand-300"
+        className={`border-2 border-dashed rounded-xl p-10 text-center transition ${
+          isDragActive
+            ? "border-brand-500 bg-brand-50"
+            : "border-border hover:border-brand-300 bg-white"
         }`}
-        onClick={open}
       >
-        <input {...getInputProps()} capture="environment" />
+        <input {...getInputProps()} />
         <span className="h-14 w-14 mx-auto rounded-2xl bg-brand-50 text-brand-700 grid place-content-center">
           <UploadIcon className="h-6 w-6" />
         </span>
-        <p className="mt-4 font-semibold">Belege hierher ziehen</p>
-        <p className="text-sm text-muted-foreground">oder klicken zum Auswählen · PDF, JPG, PNG, HEIC · mehrere gleichzeitig</p>
-        <div className="mt-5 flex justify-center gap-2">
-          <button type="button" onClick={open} className="btn-primary">
-            Datei auswählen
+        <p className="mt-4 font-semibold text-lg">Belege hier ablegen</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          oder klicken zum Auswählen · PDF, JPG, PNG, HEIC · mehrere gleichzeitig
+        </p>
+        <div className="mt-5 flex justify-center gap-2 flex-wrap">
+          <button type="button" onClick={(e) => { e.stopPropagation(); open(); }} className="btn-primary">
+            <FolderOpen className="h-4 w-4" /> Dateien auswählen
           </button>
-          <label className="btn-secondary cursor-pointer">
-            <Camera className="h-4 w-4" /> Foto vom Handy
+          <label className="btn-secondary cursor-pointer" onClick={(e) => e.stopPropagation()}>
+            <Camera className="h-4 w-4" /> Kamera
             <input
               type="file"
               accept="image/*"
               capture="environment"
               hidden
               multiple
-              onChange={(e) => {
-                if (e.target.files) onDrop(Array.from(e.target.files));
-              }}
+              onChange={(e) => { if (e.target.files) onDrop(Array.from(e.target.files)); }}
             />
           </label>
         </div>
       </div>
-{items.length > 0 ? (
+
+      {/* Erkannte Belege */}
+      {items.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-bold tracking-tight">Erkannte Belege</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold tracking-tight">
+              Erkannte Belege
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({items.filter((i) => i.status !== "saved").length} ausstehend)
+              </span>
+            </h2>
+            {items.some((i) => i.status === "saved") && (
+              <button
+                onClick={() => setItems((prev) => prev.filter((p) => p.status !== "saved"))}
+                className="btn-ghost text-xs"
+              >
+                Gespeicherte ausblenden
+              </button>
+            )}
+          </div>
           {items.map((item) => (
             <ItemCard
               key={item.id}
@@ -216,8 +337,59 @@ export default function UploadPage() {
             />
           ))}
         </div>
-      ) : null}
+      )}
+
+      {/* Hinweis Vorsteuer */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex gap-3 text-sm">
+        <Info className="h-4 w-4 mt-0.5 text-slate-400 shrink-0" />
+        <p className="text-slate-600">
+          <span className="font-semibold">Österreichisches Steuerrecht:</span> Klarblick erkennt
+          automatisch ob ein Beleg eine Eingangs- oder Ausgangsrechnung ist (über Firmenwortlaut,
+          ATU-Nummer und Rechnungsmerkmale). Die Vorsteuer-Zuordnung erfolgt entsprechend automatisch.
+        </p>
+      </div>
     </div>
+  );
+}
+
+function ChannelCard({
+  icon,
+  label,
+  sublabel,
+  color,
+  active,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  sublabel: string;
+  color: "brand" | "green" | "blue";
+  active: boolean;
+  onClick: () => void;
+}) {
+  const colors = {
+    brand: active
+      ? "border-brand-500 bg-brand-50 text-brand-700"
+      : "border-border bg-white text-slate-700 hover:border-brand-300",
+    green: active
+      ? "border-green-500 bg-green-50 text-green-700"
+      : "border-border bg-white text-slate-700 hover:border-green-300",
+    blue: active
+      ? "border-blue-500 bg-blue-50 text-blue-700"
+      : "border-border bg-white text-slate-700 hover:border-blue-300",
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl border-2 p-4 text-left transition flex flex-col gap-2 ${colors[color]}`}
+    >
+      {icon}
+      <div>
+        <p className="font-semibold text-sm">{label}</p>
+        <p className="text-xs opacity-70">{sublabel}</p>
+      </div>
+    </button>
   );
 }
 
@@ -236,13 +408,15 @@ function ItemCard({
   onSetDirection: (d: ReceiptDirection) => void;
 }) {
   const [lightbox, setLightbox] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
   if (item.status === "reading") {
     return (
-      <div className="card p-5 flex items-center gap-4">
-        <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
+      <div className="rounded-xl border bg-white p-5 flex items-center gap-4">
+        <Loader2 className="h-5 w-5 animate-spin text-brand-600 shrink-0" />
         <div className="flex-1">
           <p className="font-medium">{item.file.name}</p>
-          <p className="text-sm text-muted-foreground">Beleg wird gelesen …</p>
+          <p className="text-sm text-muted-foreground">OCR läuft — Beleg wird gelesen …</p>
         </div>
       </div>
     );
@@ -250,30 +424,25 @@ function ItemCard({
 
   if (item.status === "duplicate") {
     return (
-      <div className="card p-5 flex items-start gap-3 bg-warn-soft border-amber-200">
-        <AlertTriangle className="h-5 w-5 text-warn mt-0.5" />
+      <div className="rounded-xl border bg-amber-50 border-amber-200 p-5 flex items-start gap-3">
+        <AlertTriangle className="h-5 w-5 text-warn mt-0.5 shrink-0" />
         <div className="flex-1">
-          <p className="font-medium text-warn">Dublette erkannt — Beleg existiert bereits</p>
+          <p className="font-medium text-warn">Dublette — Beleg existiert bereits</p>
           <p className="text-sm text-warn/90 mt-0.5">
-            {item.file.name} hat denselben Lieferant, Datum und Betrag wie ein vorhandener Beleg
-            ({item.extracted?.supplier_name} · {item.extracted?.gross_amount?.toFixed(2)} €).
+            {item.file.name} — {item.extracted?.supplier_name} · {item.extracted?.gross_amount?.toFixed(2)} €
           </p>
         </div>
-        <button onClick={onRemove} className="btn-ghost !p-2">
-          <X className="h-4 w-4" />
-        </button>
+        <button onClick={onRemove} className="btn-ghost !p-2"><X className="h-4 w-4" /></button>
       </div>
     );
   }
 
   if (item.status === "saved") {
     return (
-      <div className="card p-5 flex items-center gap-3 bg-accent-soft border-emerald-200">
-        <CheckCircle2 className="h-5 w-5 text-accent" />
+      <div className="rounded-xl border bg-emerald-50 border-emerald-200 p-5 flex items-center gap-3">
+        <CheckCircle2 className="h-5 w-5 text-accent shrink-0" />
         <span className="font-medium">Beleg gespeichert.</span>
-        <button onClick={onRemove} className="ml-auto btn-ghost !p-2">
-          <X className="h-4 w-4" />
-        </button>
+        <button onClick={onRemove} className="ml-auto btn-ghost !p-2"><X className="h-4 w-4" /></button>
       </div>
     );
   }
@@ -281,270 +450,606 @@ function ItemCard({
   const draft = item.draft;
   if (!draft) return null;
 
+  const direction = (draft as any).direction || "eingang";
+  const invoiceType = draft.invoice_type || "unknown";
+  const invoiceConfidence = draft.vendor_identifier_confidence || 0;
+  const isConfirmed = invoiceType !== "unknown" && invoiceConfidence >= 0.85;
+
   return (
-    <div className="card p-5">
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="flex items-center gap-3 min-w-0">
+    <div className="rounded-lg border border-slate-200 bg-white">
+
+      {/* Kopfzeile — Datei + Status */}
+      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
+        <div className="flex items-center gap-2.5 min-w-0">
           {item.preview ? (
-            <button
-              type="button"
-              onClick={() => setLightbox(true)}
-              className="relative h-14 w-14 rounded-lg border overflow-hidden group shrink-0"
-              aria-label="Beleg vergrößern"
-            >
+            <button type="button" onClick={() => setLightbox(true)}
+              className="h-9 w-9 rounded border overflow-hidden shrink-0 hover:opacity-80">
               <img src={item.preview} alt="" className="h-full w-full object-cover" />
-              <span className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center">
-                <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition" />
-              </span>
             </button>
           ) : (
-            <span className="h-14 w-14 rounded-lg bg-slate-100 grid place-content-center shrink-0">
-              <FileText className="h-6 w-6 text-slate-500" />
+            <span className="h-9 w-9 rounded bg-slate-100 grid place-content-center shrink-0">
+              <FileText className="h-4 w-4 text-slate-400" />
             </span>
           )}
-          <div className="min-w-0">
-            <p className="font-semibold truncate">{item.file.name}</p>
-            <div className="mt-1 flex items-center gap-2 flex-wrap">
-              <ConfidenceBadge value={draft.confidence_score} />
-              {draft.warnings.length > 0 ? (
-                <span className="pill bg-warn-soft text-warn border border-amber-200">
-                  <AlertTriangle className="h-3 w-3" /> {draft.warnings.length} Warnung
-                </span>
-              ) : null}
-            </div>
-          </div>
+          <span className="text-sm text-slate-500 truncate">{item.file.name}</span>
         </div>
-        <button onClick={onRemove} className="btn-ghost !p-2" aria-label="Entfernen">
-          <X className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <ConfidenceBadge value={draft.confidence_score} />
+          {draft.vendor_uid && (
+            <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+              {draft.vendor_uid}
+            </span>
+          )}
+          <button onClick={onRemove} className="btn-ghost !p-1.5"><X className="h-4 w-4" /></button>
+        </div>
       </div>
 
-      <p className="text-sm font-medium mb-3">Bitte kurz prüfen: Stimmen diese Daten?</p>
+      <div className="p-4 space-y-4">
 
-      {/* MAGIC MOMENT — handwerker-freundlich: groß, klar, wenig */}
-      <div className="mb-4 rounded-xl border-2 border-brand-200 bg-gradient-to-br from-brand-50/70 to-white p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
+        {/* Kerninfos — tabellarisch, klar */}
+        <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-brand-700 mb-1">
-              Klarblick hat erkannt
-            </div>
-            <div className="text-2xl sm:text-3xl font-extrabold leading-tight truncate">
-              {draft.supplier_name}
-            </div>
-            <div className="text-3xl sm:text-4xl font-black text-brand-700 mt-1 leading-none">
-              {formatEUR(draft.gross_amount)}
-            </div>
-            <div className="text-xs text-slate-500 mt-1.5">
-              {new Date(draft.receipt_date).toLocaleDateString("de-AT")} · {draft.category}
-            </div>
+            <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Aussteller</p>
+            <p className="text-xl font-bold text-slate-900 truncate">{draft.supplier_name}</p>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {new Date(draft.receipt_date).toLocaleDateString("de-AT")}
+              {draft.custom_category || draft.category ? ` · ${draft.custom_category || draft.category}` : ""}
+            </p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Brutto</p>
+            <p className="text-2xl font-bold text-slate-900">{formatEUR(draft.gross_amount)}</p>
+            <p className="text-xs text-slate-400">Netto {formatEUR(draft.net_amount)} · USt {formatEUR(draft.vat_amount)}</p>
+            {draft.receipt_number && (
+              <p className="text-[11px] font-mono text-slate-400 mt-1">{draft.receipt_number}</p>
+            )}
           </div>
         </div>
 
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-          Was ist das für ein Beleg?
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {DIRECTIONS.map((d) => {
-            const current = (draft.direction || "eingang") === d;
-            const ringMap: Record<ReceiptDirection, string> = {
-              eingang: current ? "bg-blue-600 text-white border-blue-700" : "bg-white text-blue-900 border-slate-200 hover:border-blue-300",
-              ausgang: current ? "bg-emerald-600 text-white border-emerald-700" : "bg-white text-emerald-900 border-slate-200 hover:border-emerald-300",
-              neutral: current ? "bg-slate-700 text-white border-slate-800" : "bg-white text-slate-800 border-slate-200 hover:border-slate-400",
-            };
-            return (
-              <button
-                key={d}
-                type="button"
-                onClick={() => onSetDirection(d)}
-                className={`px-3 py-3 rounded-xl border-2 text-left transition shadow-sm min-h-[64px] ${ringMap[d]}`}
-              >
-                <div className="text-xl leading-none mb-1">{DIRECTION_EMOJI[d]}</div>
-                <div className="text-sm font-bold leading-tight">{DIRECTION_FRIENDLY[d]}</div>
+        {/* Eingang / Ausgang — bestätigt oder Auswahl */}
+        {isConfirmed ? (
+          /* Bestätigt → kompaktes Banner */
+          <div className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 border ${
+            direction === "ausgang"
+              ? "bg-slate-50 border-slate-200"
+              : direction === "eingang"
+              ? "bg-slate-50 border-slate-200"
+              : "bg-slate-50 border-slate-200"
+          }`}>
+            <div className="flex items-center gap-2">
+              <span className={`h-2 w-2 rounded-full ${
+                direction === "ausgang" ? "bg-emerald-500" :
+                direction === "eingang" ? "bg-blue-500" : "bg-slate-400"
+              }`} />
+              <span className="text-sm font-semibold text-slate-700">
+                {direction === "ausgang" ? "Ausgangsrechnung" :
+                 direction === "eingang" ? "Eingangsrechnung" : "Quittung / Spesen"}
+              </span>
+              <span className="text-xs text-slate-400">
+                {direction === "ausgang" ? "· Umsatz, USt-Schuld" :
+                 direction === "eingang" ? "· Kosten, Vorsteuer" : "· Betriebsausgabe"}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => onSetDirection(direction === "eingang" ? "ausgang" : "eingang")}
+              className="text-xs text-slate-400 hover:text-slate-700 underline"
+            >
+              Ändern
+            </button>
+          </div>
+        ) : (
+          /* Unbekannt → dezente Radio-Auswahl */
+          <div className="rounded-md border border-red-200 bg-red-50 p-3">
+            <p className="text-xs font-semibold text-red-700 mb-2">Bitte wählen — Pflichtfeld</p>
+            <div className="flex gap-2">
+              {DIRECTIONS.map((d) => {
+                const current = direction === d;
+                const labels: Record<ReceiptDirection, string> = {
+                  eingang: "Eingangsrechnung (Kosten)",
+                  ausgang: "Ausgangsrechnung (Umsatz)",
+                  neutral: "Quittung / Spesen",
+                };
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => onSetDirection(d)}
+                    className={`flex-1 py-2 px-3 rounded text-xs font-semibold border transition ${
+                      current
+                        ? "bg-slate-800 text-white border-slate-800"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                    }`}
+                  >
+                    {labels[d]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Vorsteuerabzug — mit Auto-Detection */}
+        <VorsteuerRow
+          draft={draft}
+          onUpdate={onUpdate}
+          direction={direction}
+        />
+
+        {/* Details collapsible */}
+        <button
+          type="button"
+          onClick={() => setDetailsOpen((v) => !v)}
+          className="w-full mt-3 flex items-center justify-between text-sm font-semibold text-slate-600 hover:text-foreground py-2"
+        >
+          <span>Details ändern (Lieferant, Beträge, Kategorie …)</span>
+          {detailsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+
+        {detailsOpen && (
+          <div className="space-y-4 mt-2 border-t pt-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <Field label="Lieferant">
+                <input className="input" value={draft.supplier_name} onChange={(e) => onUpdate({ supplier_name: e.target.value })} />
+              </Field>
+              <Field label="Datum">
+                <input type="date" className="input" value={draft.receipt_date} onChange={(e) => onUpdate({ receipt_date: e.target.value })} />
+              </Field>
+              <Field label="Kategorie">
+                <Select value={draft.category} onChange={(v) => onUpdate({ category: v as any })} options={[...CATEGORIES]} />
+              </Field>
+              <Field label="Eigene Kategorie (optional)">
+                <input
+                  className="input"
+                  value={draft.custom_category || ""}
+                  onChange={(e) => {
+                    const val = e.target.value || null;
+                    const vst = detectVorsteuerabzug(e.target.value, direction, draft.category);
+                    onUpdate({
+                      custom_category: val,
+                      ...(vst.berechtigt !== null ? { vorsteuerabzug: vst.berechtigt } : {}),
+                    });
+                  }}
+                  placeholder="z.B. Caddy Kastenwagen, BMW 5er, Firmenwagen"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Tipp: „Caddy Kastenwagen" → Vorsteuer ✓ · „5er BMW" → kein Vorsteuer ✗
+                </p>
+              </Field>
+              <Field label="Interne Notiz">
+                <input
+                  className="input"
+                  value={draft.notes || ""}
+                  onChange={(e) => onUpdate({ notes: e.target.value || null })}
+                  placeholder="z.B. 7er BMW — kein Vorsteuerabzug"
+                />
+              </Field>
+              <Field label="Belegart">
+                <Select value={draft.receipt_type} onChange={(v) => onUpdate({ receipt_type: v as any })} options={[...RECEIPT_TYPES]} />
+              </Field>
+              <Field label="Belegnummer">
+                <input
+                  className="input font-mono"
+                  value={draft.receipt_number || ""}
+                  onChange={(e) => onUpdate({ receipt_number: e.target.value })}
+                  placeholder={previewNext()}
+                />
+              </Field>
+              <Field label="Zahlungsart">
+                <div className="flex flex-wrap gap-1 p-1 bg-slate-100 rounded-lg">
+                  {PAYMENT_METHODS.map((p) => {
+                    const current = draft.payment_method === p;
+                    return (
+                      <button key={p} type="button" onClick={() => onUpdate({ payment_method: p })}
+                        className={`px-2.5 py-1.5 rounded-md text-xs font-semibold transition flex-1 min-w-fit ${current ? "bg-white shadow-sm text-foreground" : "text-slate-600 hover:text-foreground"}`}>
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+              <Field label="Brutto">
+                <input type="number" step="0.01" className="input" value={draft.gross_amount}
+                  onChange={(e) => onUpdate({ gross_amount: parseFloat(e.target.value) || 0 })} />
+              </Field>
+              <Field label="Netto">
+                <input type="number" step="0.01" className="input" value={draft.net_amount}
+                  onChange={(e) => onUpdate({ net_amount: parseFloat(e.target.value) || 0 })} />
+              </Field>
+              <Field label="MwSt. (USt.)">
+                <input type="number" step="0.01" className="input" value={draft.vat_amount}
+                  onChange={(e) => onUpdate({ vat_amount: parseFloat(e.target.value) || 0 })} />
+              </Field>
+            </div>
+
+            {draft.receipt_type === "Rechnung" && (
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Rechnungs-Art</div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-lg">
+                  {RECHNUNG_SUBTYPEN.map((s) => {
+                    const current = ((draft as any).rechnung_subtyp || "standard") === s;
+                    const label = s === "standard"
+                      ? direction === "ausgang" ? "Ausgangsrechnung" : direction === "eingang" ? "Eingangsrechnung" : "Standardrechnung"
+                      : RECHNUNG_SUBTYP_LABEL[s];
+                    return (
+                      <button key={s} type="button" onClick={() => onUpdate({ rechnung_subtyp: s } as any)}
+                        className={`px-2 py-2 rounded-md text-xs font-semibold transition ${current ? "bg-brand-600 text-white shadow-sm" : "text-slate-700 hover:bg-white"}`}>
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Warnungen — klein, sachlich */}
+        {draft.warnings.length > 0 && (
+          <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600 space-y-1">
+            {draft.warnings.map((w, i) => (
+              <p key={i} className="flex items-start gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                {w}
+              </p>
+            ))}
+          </div>
+        )}
+
+
+        {/* Aktionen */}
+        <div className="flex gap-2 pt-2 border-t border-slate-100">
+          {invoiceType === "unknown" ? (
+            <p className="text-xs text-red-600 font-medium py-2">
+              Bitte oben Eingang oder Ausgang wählen um zu speichern.
+            </p>
+          ) : (
+            <>
+              <button className="btn-primary flex-1" onClick={() => onSave("geprueft")}>
+                <CheckCircle2 className="h-4 w-4" /> Speichern
               </button>
-            );
-          })}
+              <button className="btn-secondary" onClick={() => onSave("unsicher")}>
+                Später prüfen
+              </button>
+            </>
+          )}
         </div>
-        <p className="text-xs text-slate-500 mt-2 leading-snug">
-          {DIRECTION_FRIENDLY_HINT[(draft.direction || "eingang") as ReceiptDirection]}
+      </div>
+
+      {lightbox && item.preview && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm grid place-content-center p-4"
+          onClick={() => setLightbox(false)}
+        >
+          <button onClick={() => setLightbox(false)}
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white grid place-content-center">
+            <X className="h-5 w-5" />
+          </button>
+          <img src={item.preview} alt={item.file.name}
+            className="max-h-[90vh] max-w-[92vw] object-contain rounded-xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()} />
+          <p className="text-center text-white/70 text-xs mt-3">{item.file.name}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VorsteuerRow({
+  draft,
+  onUpdate,
+  direction,
+}: {
+  draft: Receipt;
+  onUpdate: (p: Partial<Receipt>) => void;
+  direction: string;
+}) {
+  const detected = detectVorsteuerabzug(
+    draft.custom_category || draft.notes || "",
+    direction,
+    draft.category,
+  );
+  const isChecked = draft.vorsteuerabzug === true;
+  const isAuto = detected.berechtigt !== null;
+
+  return (
+    <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2.5">
+      <label className="flex items-center gap-2.5 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={isChecked}
+          onChange={(e) => onUpdate({ vorsteuerabzug: e.target.checked })}
+          className="h-4 w-4 rounded border-slate-300"
+        />
+        <span className="text-sm font-medium text-slate-800">
+          Vorsteuerabzugsberechtigt
+          <span className="text-slate-400 font-normal text-xs ml-1">§ 12 UStG</span>
+        </span>
+        {isAuto && (
+          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ml-auto ${
+            detected.berechtigt
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-red-100 text-red-700"
+          }`}>
+            Auto-erkannt
+          </span>
+        )}
+      </label>
+      {detected.hinweis && (
+        <p className="text-[11px] text-slate-500 mt-1.5 ml-6">{detected.hinweis}</p>
+      )}
+    </div>
+  );
+}
+
+// ── WhatsApp-Panel ─────────────────────────────────────────────────────────────
+
+function WhatsAppPanel() {
+  const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "+43 XXX XXX XXXX";
+  const waLink = `https://wa.me/${waNumber.replace(/[\s+]/g, "")}`;
+  const [copiedWa, setCopiedWa] = useState(false);
+  const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
+  const [step, setStep] = useState<"idle" | "entering" | "otp" | "done">("idle");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [devCode, setDevCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem("klarblick.profile") || "{}");
+      if (p.whatsapp_phone) { setVerifiedPhone(p.whatsapp_phone); setStep("done"); }
+    } catch {}
+  }, []);
+
+  async function sendOtp() {
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch("/api/phone/send-otp", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Fehler beim Senden");
+      if (data.dev_code) setDevCode(data.dev_code);
+      setStep("otp");
+    } catch (e: any) { setError(e.message); }
+    finally { setLoading(false); }
+  }
+
+  async function verifyOtp() {
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch("/api/phone/verify-otp", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phone, code }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Falscher Code");
+      try {
+        const p = JSON.parse(localStorage.getItem("klarblick.profile") || "{}");
+        localStorage.setItem("klarblick.profile", JSON.stringify({ ...p, whatsapp_phone: phone }));
+      } catch {}
+      setVerifiedPhone(phone); setStep("done");
+    } catch (e: any) { setError(e.message); }
+    finally { setLoading(false); }
+  }
+
+  return (
+    <div className="rounded-xl border border-green-200 bg-green-50 p-5 space-y-4">
+      <div className="flex items-center gap-2 font-semibold text-green-800">
+        <MessageCircle className="h-5 w-5" /> WhatsApp-Eingang einrichten
+      </div>
+
+      {/* Schritt 1: Nummernverifizierung */}
+      {step === "done" ? (
+        <div className="flex items-center gap-2.5 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2.5">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+          <span className="text-sm font-medium text-emerald-800">Verifiziert:</span>
+          <span className="font-mono text-sm font-bold text-emerald-900">{verifiedPhone}</span>
+          <button onClick={() => { setStep("entering"); setVerifiedPhone(null); }}
+            className="ml-auto text-xs text-slate-400 hover:text-slate-700 underline shrink-0">Ändern</button>
+        </div>
+      ) : (
+        <div className="rounded-lg bg-white border border-green-200 p-4 space-y-3">
+          <p className="text-sm font-medium text-slate-700">
+            Schritt 1 — Deine Handynummer bestätigen
+          </p>
+          <p className="text-xs text-slate-500">
+            Einmalig nötig, damit eingehende WhatsApp-Fotos deinem Konto zugeordnet werden.
+          </p>
+
+          {step === "idle" && (
+            <button onClick={() => setStep("entering")}
+              className="btn bg-green-600 text-white hover:bg-green-700 w-full justify-center">
+              <MessageCircle className="h-4 w-4" /> Nummer jetzt verifizieren
+            </button>
+          )}
+
+          {step === "entering" && (
+            <div className="space-y-2">
+              <input
+                type="tel" className="input" placeholder="+43 664 123 456 7"
+                value={phone} onChange={(e) => setPhone(e.target.value)}
+                autoFocus
+              />
+              <p className="text-[11px] text-slate-400">Format: +43 für Österreich, +49 für Deutschland</p>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              <div className="flex gap-2">
+                <button onClick={() => { setStep("idle"); setError(null); }}
+                  className="btn-secondary flex-1 text-sm">Abbrechen</button>
+                <button onClick={sendOtp} disabled={loading || !phone.trim()}
+                  className="btn bg-green-600 text-white hover:bg-green-700 flex-1 text-sm disabled:opacity-50">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Code senden
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === "otp" && (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-600">
+                Wir haben einen 6-stelligen Code per WhatsApp an <strong>{phone}</strong> geschickt.
+              </p>
+              <input
+                type="text" inputMode="numeric" maxLength={6}
+                className="input tracking-widest text-center text-xl font-mono"
+                placeholder="123456" value={devCode ?? code}
+                onChange={(e) => { setCode(e.target.value.replace(/\D/g, "")); setDevCode(null); }}
+                autoFocus
+              />
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              {devCode && <p className="text-xs text-amber-600 text-center">DEV-Modus: Code oben vorausgefüllt</p>}
+              <div className="flex gap-2">
+                <button onClick={() => { setStep("entering"); setCode(""); setError(null); setDevCode(null); }}
+                  className="btn-secondary flex-1 text-sm">Zurück</button>
+                <button onClick={verifyOtp} disabled={loading || (devCode ? false : code.length !== 6)}
+                  className="btn bg-green-600 text-white hover:bg-green-700 flex-1 text-sm disabled:opacity-50">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Bestätigen
+                </button>
+              </div>
+              <button onClick={sendOtp} className="text-xs text-green-700 underline w-full text-center">
+                Code nochmal senden
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Schritt 2: Klarblick-Nummer */}
+      <div className="rounded-lg bg-white border border-green-200 p-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-0.5">
+            Schritt 2 — Klarblick WhatsApp-Nummer
+          </p>
+          <p className="font-mono font-bold text-lg text-slate-900">{waNumber}</p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <button onClick={() => { navigator.clipboard.writeText(waNumber).catch(() => {}); setCopiedWa(true); setTimeout(() => setCopiedWa(false), 2000); }}
+            className="btn-secondary text-xs px-2.5 py-1.5 flex items-center gap-1">
+            {copiedWa ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : null}
+            {copiedWa ? "Kopiert" : "Kopieren"}
+          </button>
+          <a href={waLink} target="_blank" rel="noopener noreferrer"
+            className="btn text-xs px-2.5 py-1.5 bg-green-600 text-white hover:bg-green-700 flex items-center gap-1">
+            <Link2 className="h-3.5 w-3.5" /> Öffnen
+          </a>
+        </div>
+      </div>
+
+      <p className="text-xs text-green-700">
+        <strong>Schritt 3</strong> — Belegfoto (JPG, PNG, HEIC) oder PDF an diese Nummer schicken. Der Beleg landet sofort in deinem Eingang.
+      </p>
+
+      <Link href="/inbox" className="btn bg-green-700 text-white hover:bg-green-800 w-full justify-center flex items-center gap-2">
+        <MessageCircle className="h-4 w-4" /> Eingang öffnen
+      </Link>
+    </div>
+  );
+}
+
+// ── E-Mail-Panel ────────────────────────────────────────────────────────────────
+
+function EmailPanel() {
+  const [email, setEmail] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [copiedAddr, setCopiedAddr] = useState(false);
+
+  useEffect(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem("klarblick.profile") || "{}");
+      if (p.email) setEmail(p.email);
+    } catch {}
+  }, []);
+
+  const forwardAddr = (() => {
+    if (!email.includes("@")) return "belege@klarblick.at";
+    const [user, domain] = email.split("@");
+    return `${user}+klarblick@${domain}`;
+  })();
+
+  function saveEmail() {
+    try {
+      const p = JSON.parse(localStorage.getItem("klarblick.profile") || "{}");
+      localStorage.setItem("klarblick.profile", JSON.stringify({ ...p, email }));
+    } catch {}
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  function copyAddr() {
+    navigator.clipboard.writeText(forwardAddr).catch(() => {});
+    setCopiedAddr(true);
+    setTimeout(() => setCopiedAddr(false), 2000);
+  }
+
+  return (
+    <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 space-y-4">
+      <div className="flex items-center gap-2 font-semibold text-blue-800">
+        <Mail className="h-5 w-5" /> E-Mail-Eingang einrichten
+      </div>
+
+      {/* Schritt 1: E-Mail-Adresse eingeben */}
+      <div className="rounded-lg bg-white border border-blue-200 p-4 space-y-3">
+        <p className="text-sm font-medium text-slate-700">Schritt 1 — Deine E-Mail-Adresse</p>
+        <p className="text-xs text-slate-500">
+          Wir berechnen daraus deine persönliche Weiterleitungsadresse.
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="email" className="input flex-1" placeholder="dein.name@gmail.com"
+            value={email} onChange={(e) => { setEmail(e.target.value); setSaved(false); }}
+          />
+          <button onClick={saveEmail} disabled={!email.includes("@")}
+            className="btn bg-blue-600 text-white hover:bg-blue-700 text-sm px-3 disabled:opacity-50 shrink-0 flex items-center gap-1">
+            {saved ? <CheckCircle2 className="h-4 w-4" /> : null}
+            {saved ? "Gespeichert" : "Speichern"}
+          </button>
+        </div>
+      </div>
+
+      {/* Schritt 2: Weiterleitungsadresse */}
+      <div className="rounded-lg bg-white border border-blue-200 p-4 space-y-2">
+        <p className="text-sm font-medium text-slate-700">Schritt 2 — Deine Weiterleitungsadresse</p>
+        <div className="flex items-center justify-between gap-3 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2.5">
+          <span className="font-mono text-sm font-semibold text-slate-900 truncate">{forwardAddr}</span>
+          <button onClick={copyAddr} className="btn-secondary text-xs px-2.5 py-1.5 shrink-0 flex items-center gap-1">
+            {copiedAddr ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : null}
+            {copiedAddr ? "Kopiert" : "Kopieren"}
+          </button>
+        </div>
+        <p className="text-xs text-slate-500">
+          Trage diese Adresse als Weiterleitungsziel in deinem E-Mail-Konto ein.
         </p>
       </div>
 
-      {/* Details collapsible */}
-      <details className="mb-4 group">
-        <summary className="flex items-center justify-between cursor-pointer text-sm font-semibold text-slate-700 hover:text-foreground select-none">
-          <span className="flex items-center gap-1.5">
-            <span className="transition group-open:rotate-90">›</span>
-            Details ändern (Lieferant, Beträge, Belegart …)
-          </span>
-          <span className="text-xs text-slate-400 font-normal">Beleg-Nr. {draft.receipt_number}</span>
-        </summary>
-        <div className="mt-4 space-y-4">
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <Field label="Lieferant">
-          <input className="input" value={draft.supplier_name} onChange={(e) => onUpdate({ supplier_name: e.target.value })} />
-        </Field>
-        <Field label="Datum">
-          <input type="date" className="input" value={draft.receipt_date} onChange={(e) => onUpdate({ receipt_date: e.target.value })} />
-        </Field>
-        <Field label="Kategorie">
-          <select className="input" value={draft.category} onChange={(e) => onUpdate({ category: e.target.value as any })}>
-            {CATEGORIES.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Belegart">
-          <select className="input" value={draft.receipt_type} onChange={(e) => onUpdate({ receipt_type: e.target.value as any })}>
-            {RECEIPT_TYPES.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Belegnummer">
-          <input
-            className="input font-mono"
-            value={draft.receipt_number || ""}
-            onChange={(e) => onUpdate({ receipt_number: e.target.value })}
-            placeholder={previewNext()}
-          />
-        </Field>
-        <Field label="Zahlungsart">
-          <div className="flex flex-wrap gap-1 p-1 bg-slate-100 rounded-lg">
-            {PAYMENT_METHODS.map((p) => {
-              const current = draft.payment_method === p;
-              return (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => onUpdate({ payment_method: p })}
-                  className={`px-2.5 py-1.5 rounded-md text-xs font-semibold transition flex-1 min-w-fit ${
-                    current ? "bg-white shadow-sm text-foreground" : "text-slate-600 hover:text-foreground"
-                  }`}
-                >
-                  {p}
-                </button>
-              );
-            })}
+      {/* Gmail-Anleitung */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-blue-800 uppercase tracking-wide">Schritt 3 — Gmail-Weiterleitung</p>
+        {[
+          "Gmail → Einstellungen (Zahnrad) → Alle Einstellungen anzeigen",
+          "Tab \"Weiterleitung und POP/IMAP\" → \"Weiterleitungsadresse hinzufügen\"",
+          "Adresse von oben eintragen, Bestätigungslink klicken.",
+          "Fertig — Rechnungs-Mails landen automatisch im Eingang.",
+        ].map((s, i) => (
+          <div key={i} className="flex items-start gap-3 text-sm text-blue-800">
+            <span className="h-5 w-5 rounded-full bg-blue-600 text-white text-[11px] font-bold grid place-content-center shrink-0 mt-0.5">{i + 1}</span>
+            {s}
           </div>
-        </Field>
-        <Field label="Brutto">
-          <input
-            type="number"
-            step="0.01"
-            className="input"
-            value={draft.gross_amount}
-            onChange={(e) => onUpdate({ gross_amount: parseFloat(e.target.value) || 0 })}
-          />
-        </Field>
-        <Field label="Netto">
-          <input
-            type="number"
-            step="0.01"
-            className="input"
-            value={draft.net_amount}
-            onChange={(e) => onUpdate({ net_amount: parseFloat(e.target.value) || 0 })}
-          />
-        </Field>
-        <Field label="MwSt.">
-          <input
-            type="number"
-            step="0.01"
-            className="input"
-            value={draft.vat_amount}
-            onChange={(e) => onUpdate({ vat_amount: parseFloat(e.target.value) || 0 })}
-          />
-        </Field>
-        <Field label="Summe (aktuell)">
-          <div className="input bg-slate-50 font-semibold">{formatEUR(draft.gross_amount)}</div>
-        </Field>
+        ))}
       </div>
 
-      {draft.receipt_type === "Rechnung" ? (
-        <div className="mt-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-            Rechnungs-Art (Detail)
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-lg">
-            {RECHNUNG_SUBTYPEN.map((s) => {
-              const current = ((draft as any).rechnung_subtyp || "standard") === s;
-              const label =
-                s === "standard"
-                  ? draft.direction === "ausgang"
-                    ? "Ausgangsrechnung"
-                    : draft.direction === "eingang"
-                    ? "Eingangsrechnung"
-                    : "Standardrechnung"
-                  : RECHNUNG_SUBTYP_LABEL[s];
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => onUpdate({ rechnung_subtyp: s } as any)}
-                  className={`px-2 py-2 rounded-md text-xs font-semibold transition ${
-                    current ? "bg-brand-600 text-white shadow-sm" : "text-slate-700 hover:bg-white"
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-[11px] text-slate-500 mt-1.5">
-            {RECHNUNG_SUBTYP_HINT[(((draft as any).rechnung_subtyp || "standard") as keyof typeof RECHNUNG_SUBTYP_HINT)]}
-          </p>
-        </div>
-      ) : null}
-        </div>
-      </details>
+      <Link href="/inbox" className="btn bg-blue-700 text-white hover:bg-blue-800 w-full justify-center flex items-center gap-2">
+        <Mail className="h-4 w-4" /> Eingang öffnen
+      </Link>
 
-      {draft.warnings.length > 0 ? (
-        <div className="mt-3 rounded-lg bg-warn-soft border border-amber-200 p-3 text-sm">
-          <p className="font-medium text-warn flex items-center gap-1.5">
-            <AlertTriangle className="h-4 w-4" /> Hinweise der KI
-          </p>
-          <ul className="list-disc list-inside text-warn/90 mt-1 space-y-0.5">
-            {draft.warnings.map((w, i) => (
-              <li key={i}>{w}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button className="btn-primary btn-lg flex-1 min-w-[180px]" onClick={() => onSave("geprueft")}>
-          <CheckCircle2 className="h-5 w-5" /> Passt, speichern
-        </button>
-        <button className="btn-secondary btn-lg" onClick={() => onSave("unsicher")}>
-          <AlertTriangle className="h-5 w-5" /> Später prüfen
-        </button>
-      </div>
-
-      {lightbox && item.preview ? (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm grid place-content-center p-4 animate-in fade-in"
-          onClick={() => setLightbox(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <button
-            type="button"
-            onClick={() => setLightbox(false)}
-            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white grid place-content-center transition"
-            aria-label="Schließen"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={item.preview}
-            alt={item.file.name}
-            className="max-h-[90vh] max-w-[92vw] object-contain rounded-xl shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <p className="text-center text-white/70 text-xs mt-3">{item.file.name} — klicke zum Schließen</p>
-        </div>
-      ) : null}
+      <p className="text-[11px] text-slate-400 text-center">
+        Auch Outlook, GMX, Yahoo möglich · konfigurierbar unter{" "}
+        <a href="/settings" className="underline">Einstellungen → E-Mail</a>
+      </p>
     </div>
   );
 }

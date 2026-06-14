@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useRole } from "@/hooks/useRole";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -35,10 +36,12 @@ import {
 import type { Receipt, ReceiptStatus, ReceiptDirection, RechnungSubtyp } from "@/lib/types";
 import { ConfidenceBadge, StatusBadge } from "@/components/Badges";
 import { formatEUR, formatDate } from "@/lib/utils";
+import { Select } from "@/components/Select";
 export default function ReceiptDetail() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const { permissions } = useRole();
 
   useEffect(() => {
     const all = loadReceipts();
@@ -78,9 +81,11 @@ export default function ReceiptDetail() {
         <Link href="/receipts" className="btn-ghost !px-0">
           <ArrowLeft className="h-4 w-4" /> Zurück
         </Link>
-        <button onClick={remove} className="btn-ghost text-danger">
-          <Trash2 className="h-4 w-4" /> Löschen
-        </button>
+        {permissions.canDelete && (
+          <button onClick={remove} className="btn-ghost text-danger">
+            <Trash2 className="h-4 w-4" /> Löschen
+          </button>
+        )}
       </div>
 
       {receipt.confidence_score < 0.7 ? (
@@ -96,27 +101,67 @@ export default function ReceiptDetail() {
       ) : null}
 
       <div className="grid lg:grid-cols-2 gap-5">
-        {/* Vorschau */}
-        <div className="card p-5">
-          <h2 className="font-semibold mb-3">Belegvorschau</h2>
-          <div className="rounded-lg border border-border bg-gradient-to-br from-slate-100 to-slate-50 aspect-[3/4] grid place-content-center p-4 overflow-hidden">
-            {receipt.file_url ? (
-              <img src={receipt.file_url} alt="" className="max-h-full max-w-full object-contain" />
-            ) : (
-              <ReceiptPaper receipt={receipt} tilt={-1.5} />
+        {/* Vorschau — echter Beleg */}
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-sm text-slate-700">Belegvorschau</h2>
+            {receipt.receipt_number && (
+              <span className="font-mono text-xs font-bold text-brand-700 bg-brand-50 border border-brand-200 px-2 py-1 rounded">
+                {receipt.receipt_number}
+              </span>
             )}
           </div>
-          <div className="mt-3 flex items-center gap-2">
+
+          <div className="relative rounded-lg border border-slate-200 bg-slate-50 overflow-hidden" style={{ minHeight: "320px" }}>
+            {receipt.file_url ? (
+              receipt.file_name?.toLowerCase().endsWith(".pdf") ? (
+                <div className="flex flex-col h-full" style={{ minHeight: "400px" }}>
+                  <iframe
+                    src={`${receipt.file_url}#toolbar=0&navpanes=0&scrollbar=0`}
+                    title={receipt.file_name}
+                    className="w-full flex-1 rounded border-0"
+                    style={{ minHeight: "380px" }}
+                  />
+                  <a href={receipt.file_url} target="_blank" rel="noreferrer"
+                    className="text-xs text-center text-brand-600 hover:underline mt-1 py-1">
+                    PDF in neuem Tab öffnen →
+                  </a>
+                </div>
+              ) : (
+                <img
+                  src={receipt.file_url}
+                  alt={receipt.file_name || "Beleg"}
+                  className="w-full h-full object-contain"
+                  style={{ maxHeight: "480px" }}
+                />
+              )
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 gap-3 text-slate-400" style={{ minHeight: "280px" }}>
+                <FileText className="h-10 w-10" />
+                <p className="text-sm text-center">Kein Beleg hochgeladen</p>
+                <p className="text-xs text-center text-slate-300">{receipt.file_name}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
             <ConfidenceBadge value={receipt.confidence_score} />
             <StatusBadge status={receipt.status} />
+            {receipt.vendor_uid && (
+              <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded">{receipt.vendor_uid}</span>
+            )}
           </div>
-          {receipt.warnings.length > 0 ? (
-            <ul className="mt-3 text-sm text-warn space-y-1 list-disc list-inside">
+
+          {receipt.warnings.length > 0 && (
+            <div className="rounded border border-slate-200 bg-slate-50 p-2.5 space-y-1">
               {receipt.warnings.map((w, i) => (
-                <li key={i}>{w}</li>
+                <p key={i} className="text-xs text-slate-600 flex items-start gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                  {w}
+                </p>
               ))}
-            </ul>
-          ) : null}
+            </div>
+          )}
         </div>
 
         {/* Daten */}
@@ -145,33 +190,26 @@ export default function ReceiptDetail() {
             </div>
           </div>
 
-          {/* Direction-Toggle — groß, Klartext, das WICHTIGSTE Feld */}
-          <div>
-            <label className="label">Was ist das für ein Beleg?</label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {/* Direction — kompakt */}
+          <div className="flex items-center gap-2 p-3 rounded-lg border border-slate-200 bg-slate-50">
+            <span className="text-xs text-slate-500 font-medium shrink-0">Belegart:</span>
+            <div className="flex gap-1.5 flex-1">
               {DIRECTIONS.map((d) => {
                 const current = (receipt.direction || "eingang") === d;
-                const ringMap: Record<ReceiptDirection, string> = {
-                  eingang: current ? "bg-blue-600 text-white border-blue-700" : "bg-white text-blue-900 border-slate-200 hover:border-blue-300",
-                  ausgang: current ? "bg-emerald-600 text-white border-emerald-700" : "bg-white text-emerald-900 border-slate-200 hover:border-emerald-300",
-                  neutral: current ? "bg-slate-700 text-white border-slate-800" : "bg-white text-slate-800 border-slate-200 hover:border-slate-400",
-                };
                 return (
                   <button
                     key={d}
                     type="button"
                     onClick={() => update({ direction: d })}
-                    className={`px-3 py-3 rounded-xl border-2 text-left transition shadow-sm min-h-[64px] ${ringMap[d]}`}
+                    className={`flex-1 py-1.5 px-2 rounded text-xs font-semibold border transition ${
+                      current ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                    }`}
                   >
-                    <div className="text-xl leading-none mb-1">{DIRECTION_EMOJI[d]}</div>
-                    <div className="text-sm font-bold leading-tight">{DIRECTION_FRIENDLY[d]}</div>
+                    {DIRECTION_FRIENDLY[d]}
                   </button>
                 );
               })}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {DIRECTION_FRIENDLY_HINT[(receipt.direction || "eingang") as ReceiptDirection]}
-            </p>
           </div>
 
           <details className="group rounded-lg border border-slate-200 bg-slate-50/40">
@@ -188,18 +226,18 @@ export default function ReceiptDetail() {
               <input type="date" className="input" value={receipt.receipt_date} onChange={(e) => update({ receipt_date: e.target.value })} />
             </Field>
             <Field label="Kategorie">
-              <select className="input" value={receipt.category} onChange={(e) => update({ category: e.target.value as any })}>
-                {CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
+              <Select
+                value={receipt.category}
+                onChange={(v) => update({ category: v as any })}
+                options={[...CATEGORIES]}
+              />
             </Field>
             <Field label="Belegart">
-              <select className="input" value={receipt.receipt_type} onChange={(e) => update({ receipt_type: e.target.value as any })}>
-                {RECEIPT_TYPES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
+              <Select
+                value={receipt.receipt_type}
+                onChange={(v) => update({ receipt_type: v as any })}
+                options={[...RECEIPT_TYPES]}
+              />
             </Field>
             <Field label="Zahlungsart">
               <SegmentedControl
@@ -261,10 +299,38 @@ export default function ReceiptDetail() {
               <input type="number" step="0.01" className="input" value={receipt.gross_amount} onChange={(e) => update({ gross_amount: parseFloat(e.target.value) || 0 })} />
             </Field>
           </div>
-          <Field label="Projekt / Kostenstelle (optional)">
-            <input className="input" value={receipt.project || ""} onChange={(e) => update({ project: e.target.value || null })} />
+          <Field label="Eigene Kategorie (Freitext)">
+            <input
+              className="input"
+              value={receipt.custom_category || ""}
+              onChange={(e) => update({ custom_category: e.target.value || null })}
+              placeholder="z.B. Caddy Kastenwagen, BMW 5er, Kundenbewirtung …"
+            />
+            <p className="text-[11px] text-slate-400 mt-1">
+              Überschreibt die Kategorie in Auswertungen · Tipp: Fahrzeugbezeichnung → Vorsteuer auto-erkannt
+            </p>
           </Field>
-          <Field label="Notiz">
+
+          {/* Vorsteuerabzug */}
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={receipt.vorsteuerabzug === true}
+                onChange={(e) => update({ vorsteuerabzug: e.target.checked })}
+                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              />
+              <span className="text-sm font-medium text-slate-800">
+                Vorsteuerabzugsberechtigt
+                <span className="text-slate-400 font-normal text-xs ml-1">§ 12 UStG</span>
+              </span>
+            </label>
+            <p className="text-[11px] text-slate-500 mt-1.5 ml-6.5">
+              Aktivieren wenn die Vorsteuer aus diesem Beleg beim Finanzamt geltend gemacht werden kann.
+            </p>
+          </div>
+
+          <Field label="Notiz / Verwendungszweck">
             <textarea className="input" rows={3} value={receipt.notes || ""} onChange={(e) => update({ notes: e.target.value || null })} />
           </Field>
 
@@ -276,15 +342,28 @@ export default function ReceiptDetail() {
           </details>
 
           <div className="flex flex-wrap gap-2 pt-2 border-t border-border sticky bottom-0 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 -mx-5 px-5 py-3">
-            <button className="btn-primary btn-lg flex-1 min-w-[180px]" onClick={() => save("geprueft")}>
-              <CheckCircle2 className="h-4 w-4" /> Stimmt alles
-            </button>
-            <button className="btn-secondary btn-lg" onClick={() => save("unsicher")}>
-              <AlertTriangle className="h-4 w-4" /> Unsicher
-            </button>
-            <button className="btn-secondary btn-lg" onClick={() => save("freigegeben")}>
-              <Send className="h-4 w-4" /> An Steuerberater
-            </button>
+            {permissions.isReadOnly ? (
+              <div className="flex-1 flex items-center gap-2 text-sm text-slate-500 bg-slate-50 rounded-lg px-4 py-2.5">
+                <Lock className="h-4 w-4" />
+                Steuerberater-Modus — nur Lesen. Änderungen nicht möglich.
+              </div>
+            ) : (
+              <>
+                {permissions.canApprove && (
+                  <button className="btn-primary btn-lg flex-1 min-w-[180px]" onClick={() => save("geprueft")}>
+                    <CheckCircle2 className="h-4 w-4" /> Stimmt alles
+                  </button>
+                )}
+                <button className="btn-secondary btn-lg" onClick={() => save("unsicher")}>
+                  <AlertTriangle className="h-4 w-4" /> Unsicher
+                </button>
+                {permissions.canHandover && (
+                  <button className="btn-secondary btn-lg" onClick={() => save("freigegeben")}>
+                    <Send className="h-4 w-4" /> An Steuerberater
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

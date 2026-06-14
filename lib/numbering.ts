@@ -15,18 +15,20 @@ export type NumberingConfig = {
 
 const KEY = "klarblick.numbering";
 
+const Y = new Date().getFullYear();
+
 export const DEFAULT_PREFIXES: Record<ReceiptType, string> = {
-  Rechnung: "ER-2026-",
-  Quittung: "QT-2026-",
-  Kassenbon: "KB-2026-",
-  Tankbeleg: "TB-2026-",
-  Bewirtungsbeleg: "BW-2026-",
-  Sonstiges: "BL-2026-",
+  Rechnung: `ER-${Y}-`,
+  Quittung: `QT-${Y}-`,
+  Kassenbon: `KB-${Y}-`,
+  Tankbeleg: `TB-${Y}-`,
+  Bewirtungsbeleg: `BW-${Y}-`,
+  Sonstiges: `BL-${Y}-`,
 };
 
 export const DEFAULT_NUMBERING: NumberingConfig = {
   enabled: true,
-  prefix: "ER-2026-",
+  prefix: `ER-${Y}-`,
   next: 1,
   padding: 4,
   suffix: "",
