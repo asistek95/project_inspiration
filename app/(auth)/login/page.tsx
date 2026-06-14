@@ -47,13 +47,9 @@ function LoginInner() {
       <h1 className="text-3xl font-extrabold tracking-tight">Willkommen zurück</h1>
       <p className="mt-2 text-slate-600">Melde dich an, um deinen Monatsabschluss zu öffnen.</p>
 
-      {!supabaseEnabled ? (
+      {!supabaseEnabled && (
         <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           <strong>Hinweis:</strong> Konfiguration unvollständig — bitte Admin kontaktieren.
-        </div>
-      ) : (
-        <div className="mt-5 rounded-lg border border-brand-100 bg-brand-50 p-3 text-xs text-brand-800">
-          <strong>Private Beta:</strong> Aktuell nur für eingeladene Nutzer. Anmeldungen werden manuell freigeschaltet.
         </div>
       )}
 
@@ -96,9 +92,9 @@ function LoginInner() {
       </div>
 
       <p className="mt-6 text-sm text-slate-600">
-        Noch kein Zugang?{" "}
+        Noch kein Konto?{" "}
         <Link href="/register" className="text-brand-600 font-medium hover:underline">
-          Pilot anfragen →
+          Jetzt registrieren →
         </Link>
       </p>
     </div>

@@ -2,41 +2,44 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Mail, Phone, Building2, User, MessageSquare, CheckCircle2, ArrowRight } from "lucide-react";
+import { Mail, Building2, User, Eye, EyeOff, ArrowRight, CheckCircle2 } from "lucide-react";
+import { getSupabaseBrowser } from "@/lib/supabase";
 
-export default function PilotPage() {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    company: "",
-    phone: "",
-    message: "",
-  });
+export default function RegisterPage() {
+  const [form, setForm] = useState({ name: "", email: "", company: "", password: "" });
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
-    // Notify backend (fire-and-forget, no block if it fails)
-    fetch("/api/admin/notify-signup", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
+    try {
+      const sb = getSupabaseBrowser();
+      if (!sb) throw new Error("Konfigurationsfehler — bitte Administrator kontaktieren.");
+
+      const { error: signUpError } = await sb.auth.signUp({
         email: form.email,
-        company: form.company,
-        name: form.name,
-        phone: form.phone,
-        message: form.message,
-        source: "pilot-request",
-      }),
-    }).catch(() => {});
+        password: form.password,
+        options: {
+          data: {
+            name: form.name,
+            company: form.company,
+            plan: "basic",
+          },
+        },
+      });
 
-    // Kurze Verzögerung für UX
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-    setSent(true);
+      if (signUpError) throw signUpError;
+      setSent(true);
+    } catch (err: any) {
+      setError(err.message || "Registrierung fehlgeschlagen.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (sent) {
@@ -46,17 +49,17 @@ export default function PilotPage() {
           <CheckCircle2 className="h-8 w-8" />
         </span>
         <div>
-          <h1 className="text-2xl font-bold">Anfrage eingegangen!</h1>
+          <h1 className="text-2xl font-bold">Fast geschafft!</h1>
           <p className="text-slate-600 mt-2">
-            Danke, <strong>{form.name}</strong>. Wir melden uns innerhalb von 24 Stunden bei{" "}
-            <strong>{form.email}</strong>.
+            Wir haben eine Bestätigungs-E-Mail an <strong>{form.email}</strong> gesendet.
+            Bitte klicke auf den Link darin, um dein Konto zu aktivieren.
           </p>
         </div>
         <div className="rounded-xl border border-brand-100 bg-brand-50 p-4 text-sm text-brand-800 text-left space-y-1">
-          <p className="font-semibold">Was passiert als nächstes?</p>
-          <p>1. Kurzes Kennenlerngespräch (15 min, online)</p>
-          <p>2. Persönliches Onboarding mit deinen echten Belegen</p>
-          <p>3. 3 Monate gratis als Pilot-Kunde</p>
+          <p className="font-semibold">Nächste Schritte:</p>
+          <p>1. E-Mail öffnen &amp; Bestätigungslink klicken</p>
+          <p>2. Mit E-Mail &amp; Passwort einloggen</p>
+          <p>3. Ersten Beleg hochladen oder per WhatsApp schicken</p>
         </div>
         <Link href="/login" className="btn-primary inline-flex">
           Zum Login <ArrowRight className="h-4 w-4" />
@@ -67,18 +70,10 @@ export default function PilotPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-extrabold tracking-tight">Pilot anfragen</h1>
-      <p className="mt-2 text-slate-600">
-        Klarblick ist aktuell im geschlossenen Beta-Betrieb. Trag dich ein — wir melden uns persönlich.
-      </p>
-
-      <div className="mt-4 rounded-xl border border-brand-100 bg-brand-50 p-3 text-xs text-brand-800 space-y-1">
-        <p className="font-semibold">Pilot-Programm — erste 50 Kunden:</p>
-        <p>✓ 3 Monate gratis · ✓ Persönliches Onboarding · ✓ Direkter Draht zum Gründer</p>
-      </div>
+      <h1 className="text-3xl font-extrabold tracking-tight">Konto erstellen</h1>
+      <p className="mt-2 text-slate-600">Kostenlos starten — keine Kreditkarte nötig.</p>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="label">Dein Name <span className="text-danger">*</span></label>
@@ -90,78 +85,73 @@ export default function PilotPage() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
                 placeholder="Max Mustermann"
+                autoComplete="name"
               />
             </div>
           </div>
           <div>
-            <label className="label">E-Mail <span className="text-danger">*</span></label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="email"
-                className="input pl-9"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
-                placeholder="du@firma.at"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="label">Unternehmen <span className="text-danger">*</span></label>
+            <label className="label">Unternehmen <span className="text-slate-400 font-normal">(optional)</span></label>
             <div className="relative">
               <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 className="input pl-9"
                 value={form.company}
                 onChange={(e) => setForm({ ...form, company: e.target.value })}
-                required
                 placeholder="Muster GmbH"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="label">Telefon <span className="text-slate-400 font-normal">(optional)</span></label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="tel"
-                className="input pl-9"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="+43 664 123 456"
+                autoComplete="organization"
               />
             </div>
           </div>
         </div>
 
         <div>
-          <label className="label">Kurze Nachricht <span className="text-slate-400 font-normal">(optional)</span></label>
+          <label className="label">E-Mail <span className="text-danger">*</span></label>
           <div className="relative">
-            <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-            <textarea
-              className="input pl-9 pt-2.5 resize-none h-20"
-              value={form.message}
-              onChange={(e) => setForm({ ...form, message: e.target.value })}
-              placeholder="z.B. Wir sind Handwerker mit ca. 200 Belegen/Monat …"
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="email"
+              className="input pl-9"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              required
+              placeholder="du@firma.at"
+              autoComplete="email"
             />
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="btn-primary w-full"
-          disabled={loading}
-        >
-          {loading ? "Wird gesendet …" : "Pilot-Zugang anfragen"}
+        <div>
+          <label className="label">Passwort <span className="text-danger">*</span></label>
+          <div className="relative">
+            <input
+              type={showPw ? "text" : "password"}
+              className="input pr-10"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              required
+              minLength={8}
+              placeholder="Mindestens 8 Zeichen"
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              onClick={() => setShowPw(!showPw)}
+            >
+              {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-danger">{error}</p>}
+
+        <button type="submit" className="btn-primary w-full" disabled={loading}>
+          {loading ? "Konto wird erstellt …" : "Konto erstellen"}
           {!loading && <ArrowRight className="h-4 w-4" />}
         </button>
 
         <p className="text-xs text-muted-foreground text-center">
-          Keine Kreditkarte · Kein Abo · Nur eine kurze Anfrage
+          Mit der Registrierung stimmst du unseren Nutzungsbedingungen zu.
         </p>
       </form>
 
