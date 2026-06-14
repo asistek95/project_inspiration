@@ -1,20 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, Shield, LogIn } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase";
 import { setSessionCookie } from "@/lib/session-cookie";
 import { saveRole } from "@/lib/role";
 
-/**
- * Steuerberater-Login — separater Einstiegspunkt mit Leserechten.
- * URL: /advisor-login?company=<company_name>&token=<invite_token>
- *
- * In Produktion: Token validiert gegen Supabase team_members Tabelle.
- * In Demo: Setzt advisor-Rolle in localStorage und leitet zum Dashboard.
- */
 export default function AdvisorLoginPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Laden …</div>}>
+      <AdvisorLoginForm />
+    </Suspense>
+  );
+}
+
+function AdvisorLoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const [form, setForm] = useState({ email: "", password: "" });
