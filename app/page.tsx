@@ -228,10 +228,10 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-8 text-center">
-            <Link href="/dashboard" className="btn-primary btn-lg">
-              Demo live testen <ArrowRight className="h-4 w-4" />
+            <Link href="/register" className="btn-primary btn-lg">
+              Jetzt kostenlos starten <ArrowRight className="h-4 w-4" />
             </Link>
-            <p className="text-xs text-slate-400 mt-3">Kein Login nötig — Testdaten bereits geladen</p>
+            <p className="text-xs text-slate-400 mt-3">Keine Kreditkarte · Kein Abo · Sofort loslegen</p>
           </div>
         </div>
       </section>
@@ -267,38 +267,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* LÖSUNG */}
-      <section id="loesung" className="py-20 lg:py-24 bg-slate-50 border-y border-border">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">So funktioniert es</p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              Vom Beleg bis zum Steuerberater-Paket — in vier Schritten.
-            </h2>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              { n: 1, t: "Belege hochladen", d: "Per App, Web oder WhatsApp — Foto reicht. Eingangs- und Ausgangsbelege getrennt.", Icon: Camera },
-              { n: 2, t: "Klarblick prüft & sortiert", d: "Lieferant, Datum, Betrag, USt automatisch erkannt. Doppelte und unsichere Belege markiert.", Icon: Sparkles },
-              { n: 3, t: "Offene Punkte klären", d: "To-do-Liste zeigt, was noch fehlt. Steuerberater muss nicht mehr nachfragen.", Icon: CheckCircle2 },
-              { n: 4, t: "Steuerberater-Paket", d: "Ein Klick — alle Belege, UVA-Vorbereitung, Gewinn/Kosten, CSV/DATEV-Export. Bis 15. bereit.", Icon: FileBarChart2 },
-            ].map(({ n, t, d, Icon }) => (
-              <div key={n} className="card-soft p-6">
-                <div className="flex items-center justify-between">
-                  <span className="h-10 w-10 rounded-lg bg-brand-50 text-brand-700 grid place-content-center">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <span className="text-2xl font-bold text-slate-200">0{n}</span>
-                </div>
-                <h3 className="font-semibold mt-4">{t}</h3>
-                <p className="text-sm text-slate-600 mt-1">{d}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <Testimonials />
 
       {/* WARUM NICHT KLASSISCHE BUCHHALTUNG */}
       <section className="py-20 lg:py-24 border-t border-border">
@@ -353,6 +321,8 @@ export default function LandingPage() {
           </p>
         </div>
       </section>
+
+      <Testimonials />
 
       {/* PROFI-FEATURES */}
       <section id="features" className="py-20 lg:py-24 border-t border-border">
@@ -489,8 +459,8 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-10 text-center">
-            <Link href="/dashboard" className="btn-primary btn-lg">
-              Demo starten — kostenlos <ArrowRight className="h-4 w-4" />
+            <Link href="/register" className="btn-primary btn-lg">
+              Jetzt starten — kostenlos <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -747,7 +717,7 @@ export default function LandingPage() {
             />
           </div>
           <div className="mt-8 text-center">
-            <Link href="/#kontakt" className="btn-secondary">Pilot anfragen &amp; Tarif besprechen <ArrowRight className="h-4 w-4" /></Link>
+            <Link href="/register" className="btn-secondary">Jetzt kostenlos starten <ArrowRight className="h-4 w-4" /></Link>
           </div>
         </div>
       </section>
@@ -1087,10 +1057,10 @@ function PricingCard({
         ))}
       </ul>
       <Link
-        href="/#kontakt"
+        href="/register"
         className={`mt-6 ${featured ? "btn-primary" : "btn-secondary"} w-full justify-center`}
       >
-        Pilot anfragen
+        Jetzt starten
       </Link>
     </div>
   );

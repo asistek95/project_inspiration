@@ -152,7 +152,8 @@ export default function RegisterPage() {
         </button>
 
         <p className="text-xs text-muted-foreground text-center">
-          Mit der Registrierung stimmst du unseren Nutzungsbedingungen zu.
+          Mit der Registrierung stimmst du unseren{" "}
+          <Link href="/agb" className="underline hover:text-slate-700">AGB</Link> zu.
         </p>
       </form>
 
