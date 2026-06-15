@@ -25,6 +25,7 @@ export default function RegisterPage() {
         email: form.email,
         password: form.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
           data: {
             name: form.name,
             company: form.company,
