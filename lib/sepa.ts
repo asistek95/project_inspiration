@@ -62,9 +62,14 @@ export function buildSepaXML(p: SepaParams): string {
     .map((r, i) => {
       const iban = r.iban || demoIban(r.supplier_name);
       const purpose = `${r.supplier_name} · Beleg ${r.id.slice(0, 8)} · ${r.receipt_date}`;
+      const bic = (r as any).supplier_bic || "NOTPROVIDED";
       return `      <CdtTrfTxInf>
-        <PmtId><EndToEndId>KB-${r.id.slice(0, 20)}</EndToEndId></PmtId>
+        <PmtId>
+          <InstrId>KB-${String(i + 1).padStart(4, "0")}</InstrId>
+          <EndToEndId>KB-${r.id.slice(0, 20)}</EndToEndId>
+        </PmtId>
         <Amt><InstdAmt Ccy="EUR">${r.gross_amount.toFixed(2)}</InstdAmt></Amt>
+        <CdtrAgt><FinInstnId><BIC>${xmlEscape(bic)}</BIC></FinInstnId></CdtrAgt>
         <Cdtr><Nm>${xmlEscape(r.supplier_name)}</Nm></Cdtr>
         <CdtrAcct><Id><IBAN>${iban}</IBAN></Id></CdtrAcct>
         <RmtInf><Ustrd>${xmlEscape(purpose)}</Ustrd></RmtInf>
@@ -92,7 +97,11 @@ export function buildSepaXML(p: SepaParams): string {
       <BtchBookg>true</BtchBookg>
       <NbOfTxs>${count}</NbOfTxs>
       <CtrlSum>${total.toFixed(2)}</CtrlSum>
-      <PmtTpInf><SvcLvl><Cd>SEPA</Cd></SvcLvl></PmtTpInf>
+      <PmtTpInf>
+        <SvcLvl><Cd>SEPA</Cd></SvcLvl>
+        <LclInstrm><Cd>CORE</Cd></LclInstrm>
+        <CtgyPurp><Cd>SUPP</Cd></CtgyPurp>
+      </PmtTpInf>
       <ReqdExctnDt>${exec}</ReqdExctnDt>
       <Dbtr><Nm>${xmlEscape(p.debtorName)}</Nm></Dbtr>
       <DbtrAcct><Id><IBAN>${p.debtorIban.replace(/\s/g, "")}</IBAN></Id></DbtrAcct>

@@ -190,10 +190,19 @@ export default function LandingPage() {
                   <div className="h-7 w-7 rounded-lg bg-brand-600 shrink-0" />
                   <span className="font-bold text-sm text-slate-900">Klarblick</span>
                 </div>
-                {["Dashboard","Sammelstelle","Eingang","Belege","Auswertung","UVA","Übergabe","Einstellungen"].map((label, i) => (
-                  <div key={label} className={`px-2.5 py-2 rounded-lg text-xs font-medium ${i === 0 ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
+                {[
+                  { label: "Dashboard",    href: "/dashboard" },
+                  { label: "Sammelstelle", href: "/upload" },
+                  { label: "Eingang",      href: "/inbox" },
+                  { label: "Belege",       href: "/receipts" },
+                  { label: "Auswertung",   href: "/report" },
+                  { label: "UVA",          href: "/uva" },
+                  { label: "Übergabe",     href: "/tax-advisor" },
+                  { label: "Einstellungen",href: "/settings" },
+                ].map(({ label, href }, i) => (
+                  <Link key={label} href={href} className={`block px-2.5 py-2 rounded-lg text-xs font-medium transition ${i === 0 ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"}`}>
                     {label}
-                  </div>
+                  </Link>
                 ))}
               </div>
 
@@ -791,7 +800,7 @@ export default function LandingPage() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">E-Mail</label>
-                  <input name="email" type="email" required className="input mt-1.5" placeholder="max@firma.de" />
+                  <input name="email" type="email" required className="input mt-1.5" placeholder="max@firma.at" />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Telefon (optional)</label>
@@ -819,22 +828,22 @@ export default function LandingPage() {
                     <Building2 className="h-3 w-3" /> Hauptsitz
                   </span>
                   <h3 className="mt-3 text-2xl lg:text-3xl font-bold tracking-tight leading-tight">
-                    Icon Tower Wien<span className="text-brand-300">.</span>
+                    THE ICON VIENNA<span className="text-brand-300">.</span>
                   </h3>
                   <p className="mt-1 text-slate-300 text-sm">
-                    Wienerbergstraße 11 · 1100 Wien · <span className="text-white font-medium">16. Stock</span>
+                    Gertrude-Fröhlich-Sandner-Str. 2 · 1100 Wien · <span className="text-white font-medium">16. Stock</span>
                   </p>
-                  <p className="mt-0.5 text-xs text-slate-400">cohub Coworking · Österreich</p>
+                  <p className="mt-0.5 text-xs text-slate-400">Regus Icon Tower · Österreich</p>
 
                   <div className="mt-5 grid grid-cols-2 gap-2.5">
                     <a
-                      href="mailto:amin.sistek20@gmail.com"
+                      href="mailto:office@klarblick.at"
                       className="rounded-lg bg-white/10 hover:bg-white/15 transition p-3 flex items-start gap-2.5 ring-1 ring-white/10"
                     >
                       <Mail className="h-4 w-4 text-brand-300 mt-0.5 shrink-0" />
                       <div className="min-w-0">
                         <p className="text-[10px] uppercase tracking-wider text-slate-400">E-Mail</p>
-                        <p className="text-xs font-medium truncate">amin.sistek20@gmail.com</p>
+                        <p className="text-xs font-medium truncate">office@klarblick.at</p>
                       </div>
                     </a>
                     <div className="rounded-lg bg-white/10 p-3 flex items-start gap-2.5 ring-1 ring-white/10">
@@ -847,7 +856,7 @@ export default function LandingPage() {
                   </div>
 
                   <a
-                    href="https://www.google.com/maps?q=Icon+Tower+Wienerbergstra%C3%9Fe+11+1100+Wien"
+                    href="https://www.google.com/maps/place/THE+ICON+VIENNA/@48.1861391,16.3742893,17z/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-4 inline-flex items-center gap-1.5 text-xs text-brand-300 font-medium hover:text-white transition"
@@ -861,8 +870,8 @@ export default function LandingPage() {
               {/* Map */}
               <div className="card overflow-hidden">
                 <iframe
-                  title="Klarblick Standort — Icon Tower Wien, 16. Stock (cohub Coworking)"
-                  src="https://www.google.com/maps?q=Icon+Tower+Wienerbergstra%C3%9Fe+11+1100+Wien&z=16&output=embed"
+                  title="Klarblick Standort — THE ICON VIENNA, 1100 Wien"
+                  src="https://www.google.com/maps?q=48.1861391,16.3742893&z=17&output=embed"
                   className="w-full h-64 border-0"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"

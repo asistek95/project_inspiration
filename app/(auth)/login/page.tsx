@@ -63,7 +63,7 @@ function LoginInner() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            placeholder="du@firma.de"
+            placeholder="du@firma.at"
           />
         </div>
         <div>
