@@ -32,6 +32,7 @@ import {
   Clock,
   HardHat,
   Link2,
+  LogIn,
 } from "lucide-react";
 import { Disclaimer } from "@/components/Disclaimer";
 import { DemoVideo } from "@/components/DemoVideo";
@@ -61,8 +62,8 @@ export default function LandingPage() {
             <Link href="/login" className="hover:text-foreground">Login</Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Link href="/dashboard" className="btn-secondary hidden sm:inline-flex">Demo ansehen</Link>
-            <Link href="/#kontakt" className="btn-primary">Pilot anfragen</Link>
+            <Link href="/login" className="btn-secondary hidden sm:inline-flex">Einloggen</Link>
+            <Link href="/register" className="btn-primary">Jetzt starten</Link>
           </div>
         </div>
       </header>
@@ -86,11 +87,11 @@ export default function LandingPage() {
               Kein Buchhaltungswissen nötig.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              <Link href="/dashboard" className="btn-primary btn-lg">
-                Demo ansehen <ArrowRight className="h-4 w-4" />
+              <Link href="/register" className="btn-primary btn-lg">
+                Jetzt starten <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href="#kontakt" className="btn-secondary btn-lg">
-                <Camera className="h-4 w-4" /> Pilot starten
+              <Link href="/login" className="btn-secondary btn-lg">
+                <LogIn className="h-4 w-4" /> Einloggen
               </Link>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-500">
