@@ -29,7 +29,6 @@ import {
   Brain,
   FileSearch,
   Bot,
-  Clock,
   HardHat,
   Link2,
   LogIn,
@@ -591,9 +590,7 @@ export default function LandingPage() {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <span className="h-11 w-11 rounded-xl bg-brand-50 text-brand-700 grid place-content-center">
-                    <Clock className="h-5 w-5" />
-                  </span>
+                  <img src="/partners/mctime.png" alt="McTime" className="h-11 w-11 rounded-xl object-contain" />
                   <div>
                     <p className="text-xs text-slate-500">Empfohlener Partner</p>
                     <p className="font-bold text-lg leading-tight">McTime</p>

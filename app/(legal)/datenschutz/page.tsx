@@ -1,75 +1,72 @@
-export const metadata = { title: "Datenschutzerklärung · Klarblick" };
+export const metadata = { title: "Datenschutz — Klarblick" };
 
 export default function DatenschutzPage() {
   return (
-    <article className="space-y-6 text-sm leading-relaxed text-slate-700">
-      <h1 className="text-4xl font-extrabold tracking-tight text-foreground">Datenschutzerklärung</h1>
-      <p className="text-sm text-slate-500">Stand: Mai 2026</p>
+    <article className="space-y-8 text-sm leading-relaxed text-slate-700">
+      <div>
+        <h1 className="text-4xl font-extrabold tracking-tight text-foreground">Datenschutzerklärung</h1>
+        <p className="text-sm text-slate-500 mt-2">Stand: Juni 2026 · gemäß DSGVO (EU) 2016/679 und DSG 2018</p>
+      </div>
 
       <section className="space-y-2">
         <h2 className="text-xl font-bold text-foreground">1. Verantwortlicher</h2>
         <p>
-          Amin Sistek · E-Mail:{" "}
-          <a href="mailto:amin.sistek20@gmail.com" className="text-brand-600 hover:underline">amin.sistek20@gmail.com</a>
+          <strong>Amin Sistek · Klarblick</strong><br />
+          Wienerbergstraße 11, 1100 Wien, Österreich<br />
+          E-Mail:{" "}
+          <a href="mailto:office@klarblick.at" className="text-brand-600 hover:underline">office@klarblick.at</a>
         </p>
       </section>
 
       <section className="space-y-2">
         <h2 className="text-xl font-bold text-foreground">2. Welche Daten wir verarbeiten</h2>
         <ul className="list-disc pl-6 space-y-1">
-          <li><strong>Konto-Daten</strong>: E-Mail-Adresse, Passwort-Hash, Firmenname (Art. 6 Abs. 1 lit. b DSGVO – Vertragserfüllung).</li>
-          <li><strong>Beleg-Daten</strong>: Hochgeladene Belege (PDF / Foto) sowie automatisch ausgelesene Felder (Lieferant, Datum, Beträge, MwSt). Speicherung in deinem eigenen, geschützten Workspace.</li>
-          <li><strong>Zahlungsdaten</strong>: Werden ausschließlich von Stripe verarbeitet. Wir speichern nur eine Kunden-ID und Rechnungshistorie.</li>
-          <li><strong>Technische Daten</strong>: IP-Adresse, Browser, Login-Zeit (zur Sicherheit, max. 30 Tage).</li>
+          <li><strong>Konto-Daten:</strong> Name, E-Mail-Adresse, Passwort-Hash, Firmenname (Art. 6 Abs. 1 lit. b DSGVO).</li>
+          <li><strong>Beleg-Daten:</strong> Hochgeladene Bilder/PDFs sowie automatisch erkannte Felder (Lieferant, Datum, Betrag, MwSt-Satz). Gespeichert in deinem eigenen, geschützten Workspace.</li>
+          <li><strong>WhatsApp-Kommunikation:</strong> Mediendateien und Rufnummer bei Beleg-Versand via WhatsApp (Twilio).</li>
+          <li><strong>E-Mail-Weiterleitung:</strong> Absender, Betreff und Anhänge bei Weiterleitung an deine Klarblick-Inbound-Adresse.</li>
+          <li><strong>Technische Daten:</strong> IP-Adresse, Browser-Typ, Zugriffszeitpunkte (max. 30 Tage, nur zur IT-Sicherheit).</li>
         </ul>
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-xl font-bold text-foreground">3. Auftragsverarbeiter</h2>
+        <h2 className="text-xl font-bold text-foreground">3. KI-gestützte Belegverarbeitung</h2>
+        <p>
+          Für die automatische Erkennung von Belegdaten (OCR) werden Bilder temporär an die
+          <strong> Anthropic API</strong> (USA) übermittelt. Anthropic verarbeitet diese Daten ausschließlich
+          zur Erbringung der API-Leistung und verwendet sie nicht für KI-Training.
+          Die Übermittlung in die USA erfolgt auf Basis der EU-Standardvertragsklauseln (SCC) gemäß Art. 46 DSGVO.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-xl font-bold text-foreground">4. Auftragsverarbeiter</h2>
+        <table className="w-full border border-slate-200 rounded text-xs not-prose">
+          <thead className="bg-slate-50">
+            <tr>
+              <th className="text-left p-3 font-semibold">Anbieter</th>
+              <th className="text-left p-3 font-semibold">Zweck</th>
+              <th className="text-left p-3 font-semibold">Serverstandort</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-t border-slate-100"><td className="p-3">Supabase Inc.</td><td className="p-3">Datenbank, Auth, Speicher</td><td className="p-3">AWS Frankfurt (EU)</td></tr>
+            <tr className="border-t border-slate-100"><td className="p-3">Railway</td><td className="p-3">App-Hosting</td><td className="p-3">USA</td></tr>
+            <tr className="border-t border-slate-100"><td className="p-3">Anthropic PBC</td><td className="p-3">KI-Belegerkennung (Claude Vision)</td><td className="p-3">USA</td></tr>
+            <tr className="border-t border-slate-100"><td className="p-3">Twilio Inc.</td><td className="p-3">WhatsApp-Inbound</td><td className="p-3">USA</td></tr>
+            <tr className="border-t border-slate-100"><td className="p-3">Postmark (Wildbit)</td><td className="p-3">E-Mail-Inbound</td><td className="p-3">USA</td></tr>
+          </tbody>
+        </table>
+        <p className="text-xs text-slate-500">Alle Anbieter sind im EU-US Data Privacy Framework zertifiziert oder es bestehen SCC. AVV-Verträge liegen vor.</p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-xl font-bold text-foreground">5. Speicherdauer</h2>
         <ul className="list-disc pl-6 space-y-1">
-          <li><strong>Supabase</strong> (Hosting Datenbank &amp; Authentifizierung) — EU-Server, AVV abgeschlossen.</li>
-          <li><strong>Stripe Payments Europe Ltd.</strong> (Zahlungsabwicklung) — siehe stripe.com/de/privacy.</li>
-          <li><strong>Vercel Inc.</strong> (App-Hosting) — Frankfurt EU-Region.</li>
+          <li>Beleg-Daten: für die Dauer der Vertragslaufzeit + 30 Tage nach Kündigung</li>
+          <li>Steuerlich relevante Belege: 7 Jahre (§ 132 BAO)</li>
+          <li>Nutzungs-Logs: max. 30 Tage</li>
         </ul>
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-xl font-bold text-foreground">4. Speicherdauer &amp; Buchhaltung</h2>
-        <p>
-          Beleg-Daten unterliegen gesetzlichen Aufbewahrungsfristen und werden für deren Dauer
-          unveränderlich archiviert:
-        </p>
-        <ul className="list-disc pl-6 space-y-1">
-          <li>
-            <strong>Österreich:</strong> 7 Jahre nach Ablauf des Kalenderjahres (§ 132 BAO).
-          </li>
-          <li>
-            <strong>Deutschland:</strong> 10 Jahre für Rechnungen, Buchungsbelege und Jahresabschlüsse
-            (§ 147 AO, § 257 HGB).
-          </li>
-          <li>
-            Nach Steuerberater-Übergabe werden Belege als <em>freigegeben</em> markiert und gegen
-            Änderung gesperrt (GoBD-konforme Unveränderbarkeit).
-          </li>
-          <li>
-            Jede Übergabe wird im <strong>Audit-Log</strong> mit Zeitstempel, Empfänger-E-Mail und
-            Anzahl der Belege dokumentiert.
-          </li>
-        </ul>
-        <p>
-          Nach Ablauf der Aufbewahrungspflicht bzw. nach Kontolöschung (mit Cooldown von 30 Tagen)
-          werden alle personenbezogenen Daten unwiderruflich gelöscht. Du kannst jederzeit einen
-          vollständigen Daten-Export im JSON-Format anfordern (DSGVO Art. 20).
-        </p>
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-xl font-bold text-foreground">5. E-Mail-Forwarding (optional)</h2>
-        <p>
-          Wenn du E-Mails an deine persönliche Klarblick-Inbox (z.B. <em>du+klarblick@firma.de</em>) weiterleitest,
-          verarbeiten wir den Anhang (PDF / Bild) per OCR. <strong>E-Mail-Inhalte werden nicht dauerhaft gespeichert</strong>,
-          nur die extrahierten Beleg-Daten. Quelle: dein eigener Mail-Server — wir scannen keine fremden Postfächer.
-        </p>
       </section>
 
       <section className="space-y-2">
@@ -79,28 +76,38 @@ export default function DatenschutzPage() {
           <li>Berichtigung unrichtiger Daten</li>
           <li>Löschung („Recht auf Vergessenwerden")</li>
           <li>Einschränkung der Verarbeitung</li>
-          <li>Datenübertragbarkeit (Export als JSON / CSV)</li>
-          <li>Widerspruch gegen Verarbeitung</li>
-          <li>Beschwerde bei der Aufsichtsbehörde</li>
+          <li>Datenübertragbarkeit (Export als CSV / JSON)</li>
+          <li>Widerspruch gegen Verarbeitung auf Basis berechtigter Interessen</li>
         </ul>
-        <p>Anfragen formlos an <a className="text-brand-600 hover:underline" href="mailto:amin.sistek20@gmail.com">amin.sistek20@gmail.com</a>.</p>
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-xl font-bold text-foreground">7. Cookies &amp; Tracking</h2>
         <p>
-          Wir nutzen ausschließlich technisch notwendige Cookies (Session-Cookie zum Login). Kein Tracking, kein Google
-          Analytics, keine Werbe-Pixel. Die Standort-Karte wird über OpenStreetMap eingebunden — keine personenbezogene Auswertung.
+          Anfragen an:{" "}
+          <a className="text-brand-600 hover:underline" href="mailto:office@klarblick.at">office@klarblick.at</a>
         </p>
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-xl font-bold text-foreground">8. Sicherheit</h2>
+        <h2 className="text-xl font-bold text-foreground">7. Beschwerderecht</h2>
+        <p>
+          <strong>Österreichische Datenschutzbehörde</strong><br />
+          Barichgasse 40–42, 1030 Wien ·{" "}
+          <a href="https://www.dsb.gv.at" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">www.dsb.gv.at</a>
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-xl font-bold text-foreground">8. Cookies & Tracking</h2>
+        <p>
+          Klarblick verwendet ausschließlich technisch notwendige Cookies für die Authentifizierung (Session-Token).
+          Kein Google Analytics, keine Werbe-Pixel, kein Social-Media-Tracking.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-xl font-bold text-foreground">9. Sicherheit</h2>
         <ul className="list-disc pl-6 space-y-1">
           <li>TLS 1.3 Verschlüsselung für alle Verbindungen</li>
-          <li>Passwörter via bcrypt gehasht</li>
-          <li>Optionale Zwei-Faktor-Authentifizierung (2FA)</li>
-          <li>Row-Level-Security: niemand sieht fremde Daten</li>
+          <li>Passwörter via bcrypt gehasht (Supabase Auth)</li>
+          <li>Row-Level-Security: kein Nutzer sieht fremde Daten</li>
           <li>Tägliche verschlüsselte Backups</li>
         </ul>
       </section>
