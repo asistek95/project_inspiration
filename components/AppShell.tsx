@@ -21,6 +21,7 @@ import {
   Lock,
   Crown,
   TrendingUp,
+  ArrowRight,
 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
@@ -66,6 +67,8 @@ const NAV = [
 
 // ── AppShell ───────────────────────────────────────────────────────────────────
 
+const TRIAL_DAYS = 14;
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -77,6 +80,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [plan, setPlan] = useState<PlanTier>("mid");
   const [showSetup, setShowSetup] = useState(false);
   const [lockedMsg, setLockedMsg] = useState<string | null>(null);
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
+  const [trialExpired, setTrialExpired] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -100,11 +105,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         setUser({ email: data.user.email || "", name: meta.owner_name, company: meta.company_name });
         if (data.user.email) setSessionCookie(data.user.email);
         localStorage.setItem("klarblick.realUser", "1");
-        // Plan aus Supabase user_metadata übernehmen wenn gesetzt
+
+        // Plan aus Supabase user_metadata
         if (meta.plan && meta.plan in PLAN_LEVEL) {
           const p = meta.plan as PlanTier;
           setPlan(p);
           localStorage.setItem("klarblick.plan", p);
+        }
+
+        // Trial-Berechnung — bezahlte Nutzer (plan !== "basic" in meta = paid) überspringen
+        const isPaid = meta.paid === true;
+        if (!isPaid) {
+          const createdAt = new Date(data.user.created_at);
+          const trialEnd = new Date(createdAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+          const now = new Date();
+          const msLeft = trialEnd.getTime() - now.getTime();
+          const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+          if (daysLeft <= 0) {
+            setTrialExpired(true);
+          } else {
+            setTrialDaysLeft(daysLeft);
+          }
         }
       }
     });
@@ -135,6 +156,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex bg-slate-50">
       {showSetup && <CompanySetupModal onComplete={() => setShowSetup(false)} />}
+
+      {/* Trial abgelaufen — blocking gate */}
+      {trialExpired && (
+        <div className="fixed inset-0 z-[60] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center space-y-5">
+            <div className="h-16 w-16 rounded-2xl bg-amber-100 text-amber-600 grid place-content-center mx-auto">
+              <Lock className="h-8 w-8" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">Testphase beendet</h2>
+              <p className="text-slate-600 mt-2 text-sm leading-relaxed">
+                Deine 14 Tage sind abgelaufen. Wähle einen Tarif um weiterzumachen — alle Daten sind noch da.
+              </p>
+            </div>
+            <div className="rounded-xl bg-brand-50 border border-brand-100 p-4 text-left space-y-2">
+              <p className="text-xs font-semibold text-brand-700 uppercase tracking-wider">Ab €20 / Monat</p>
+              {["Unbegrenzte Belege", "WhatsApp & E-Mail Eingang", "UVA-Vorbereitung", "Steuerberater-Übergabe"].map(f => (
+                <p key={f} className="text-sm text-slate-700 flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-500 shrink-0" />{f}
+                </p>
+              ))}
+            </div>
+            <Link href="/#preise" className="btn-primary w-full justify-center">
+              Tarif wählen & weiter <ArrowRight className="h-4 w-4" />
+            </Link>
+            <button onClick={signOut} className="text-xs text-slate-400 hover:text-slate-600">
+              Abmelden
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Trial-Banner (Tage verbleibend) */}
+      {trialDaysLeft !== null && trialDaysLeft <= 7 && !trialExpired && (
+        <div className="fixed top-0 inset-x-0 z-50 bg-amber-500 text-white text-xs font-medium px-4 py-2 flex items-center justify-center gap-3">
+          <span>Testphase endet in <strong>{trialDaysLeft} {trialDaysLeft === 1 ? "Tag" : "Tagen"}</strong></span>
+          <Link href="/#preise" className="underline font-bold">Jetzt upgraden →</Link>
+        </div>
+      )}
 
       {/* Locked Feature Toast */}
       {lockedMsg && (

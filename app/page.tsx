@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { Disclaimer } from "@/components/Disclaimer";
 import { DemoVideo } from "@/components/DemoVideo";
+import { DemoDashboard } from "@/components/DemoDashboard";
 import { Testimonials } from "@/components/Partners";
 import { LiveChat } from "@/components/LiveChat";
 import { Onboarding } from "@/components/Onboarding";
@@ -161,100 +162,8 @@ export default function LandingPage() {
             <p className="mt-3 text-slate-600 max-w-xl mx-auto">Alle Belege, KPIs und der Monatsstatus in einer Ansicht. Kein Buchhaltungswissen nötig.</p>
           </div>
 
-          {/* Browser-Frame Mock */}
-          <div className="rounded-2xl shadow-2xl ring-1 ring-slate-200 overflow-hidden">
-            {/* Browser Chrome */}
-            <div className="bg-slate-800 px-4 py-2.5 flex items-center gap-3">
-              <div className="flex gap-1.5 shrink-0">
-                <span className="h-3 w-3 rounded-full bg-red-400" />
-                <span className="h-3 w-3 rounded-full bg-yellow-400" />
-                <span className="h-3 w-3 rounded-full bg-emerald-400" />
-              </div>
-              <div className="flex-1 max-w-xs bg-slate-700 rounded px-3 py-1 text-xs text-slate-400 text-center mx-auto">
-                app.klarblick.at/dashboard
-              </div>
-            </div>
-
-            {/* App UI */}
-            <div className="bg-slate-50 flex min-h-[420px]">
-              {/* Sidebar */}
-              <div className="w-44 bg-white border-r border-slate-200 p-3 flex-col gap-1 hidden md:flex shrink-0">
-                <div className="flex items-center gap-2 px-2 py-2 mb-2">
-                  <div className="h-7 w-7 rounded-lg bg-brand-600 shrink-0" />
-                  <span className="font-bold text-sm text-slate-900">Klarblick</span>
-                </div>
-                {[
-                  { label: "Dashboard",    href: "/dashboard" },
-                  { label: "Sammelstelle", href: "/upload" },
-                  { label: "Eingang",      href: "/inbox" },
-                  { label: "Belege",       href: "/receipts" },
-                  { label: "Auswertung",   href: "/report" },
-                  { label: "UVA",          href: "/uva" },
-                  { label: "Übergabe",     href: "/tax-advisor" },
-                  { label: "Einstellungen",href: "/settings" },
-                ].map(({ label, href }, i) => (
-                  <Link key={label} href={href} className={`block px-2.5 py-2 rounded-lg text-xs font-medium transition ${i === 0 ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"}`}>
-                    {label}
-                  </Link>
-                ))}
-              </div>
-
-              {/* Dashboard Main */}
-              <div className="flex-1 p-5 min-w-0 overflow-hidden">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-5 gap-2">
-                  <div>
-                    <p className="text-xs text-slate-500 mb-0.5">Monatsabschluss</p>
-                    <h3 className="font-bold text-slate-900 text-lg">Mai 2025</h3>
-                    <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" /> 3 Belege noch ausstehend
-                    </p>
-                  </div>
-                  <span className="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                    In Bearbeitung
-                  </span>
-                </div>
-
-                {/* KPI Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-                  {[
-                    { label: "Umsatz (netto)", value: "12.400 €", sub: "+8 % vs. April", color: "text-emerald-600" },
-                    { label: "Ausgaben", value: "4.280 €", sub: "Eingangsrechnungen", color: "text-slate-800" },
-                    { label: "Vorsteuer §12", value: "856 €", sub: "abzugsfähig", color: "text-brand-700" },
-                    { label: "Belege", value: "23 / 26", sub: "3 fehlen noch", color: "text-amber-600" },
-                  ].map(({ label, value, sub, color }) => (
-                    <div key={label} className="bg-white rounded-xl border border-slate-200 p-3 lg:p-3.5">
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">{label}</p>
-                      <p className={`text-base font-bold mt-1 tabular-nums ${color}`}>{value}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Recent Receipts */}
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                  <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-700">Letzte Belege</span>
-                    <span className="text-xs text-brand-600 cursor-pointer hover:underline">Alle anzeigen →</span>
-                  </div>
-                  {[
-                    { supplier: "Shell Tankstelle Wien", date: "14.05.", amount: "87,40 €", cat: "KFZ", ok: true },
-                    { supplier: "Würth GmbH", date: "12.05.", amount: "234,00 €", cat: "Material", ok: true },
-                    { supplier: "Unbekannter Lieferant", date: "10.05.", amount: "???", cat: "–", ok: false },
-                    { supplier: "Amazon Business", date: "08.05.", amount: "156,80 €", cat: "Büro", ok: true },
-                  ].map(({ supplier, date, amount, cat, ok }) => (
-                    <div key={supplier} className="px-4 py-2.5 flex items-center gap-3 text-xs border-b border-slate-50 last:border-0">
-                      <span className={`h-2 w-2 rounded-full shrink-0 ${ok ? "bg-emerald-400" : "bg-amber-400"}`} />
-                      <span className="flex-1 font-medium text-slate-800 truncate">{supplier}</span>
-                      <span className="text-slate-400 tabular-nums shrink-0">{date}</span>
-                      <span className="w-16 text-right tabular-nums font-medium text-slate-700 shrink-0">{amount}</span>
-                      <span className="hidden lg:block w-16 text-right text-slate-400 shrink-0">{cat}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Interaktiver Demo-Mock */}
+          <DemoDashboard />
 
           <div className="mt-8 text-center">
             <Link href="/register" className="btn-primary btn-lg">
