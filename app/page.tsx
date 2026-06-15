@@ -58,10 +58,9 @@ export default function LandingPage() {
             <a href="#partner" className="hover:text-foreground">Partner</a>
             <a href="#preise" className="hover:text-foreground">Preise</a>
             <a href="#kontakt" className="hover:text-foreground">Kontakt</a>
-            <Link href="/login" className="hover:text-foreground">Login</Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Link href="/login" className="btn-secondary hidden sm:inline-flex">Einloggen</Link>
+            <Link href="/login" className="btn-secondary hidden sm:inline-flex">Login</Link>
             <Link href="/register" className="btn-primary">Jetzt starten</Link>
           </div>
         </div>
@@ -90,7 +89,7 @@ export default function LandingPage() {
                 Jetzt starten <ArrowRight className="h-4 w-4" />
               </Link>
               <Link href="/login" className="btn-secondary btn-lg">
-                <LogIn className="h-4 w-4" /> Einloggen
+                <LogIn className="h-4 w-4" /> Login
               </Link>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-500">
@@ -131,11 +130,40 @@ export default function LandingPage() {
 
       {/* MagicMoment deaktiviert — Flow-Sektion ersetzt es */}
 
+      {/* PROBLEM */}
+      <section id="problem" className="py-20 lg:py-24 border-t border-border">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Das Problem</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Belegchaos. Rückfragen.<br />
+              <span className="text-slate-500">Und der 15. kommt näher.</span>
+            </h2>
+          </div>
+          <ul className="space-y-3 text-slate-700">
+            {[
+              "Belege liegen in Schuhkartons, WhatsApp, E-Mail und Ordnern",
+              "Steuerberater fragt jeden Monat dieselben Belege nach",
+              "Keine Übersicht, was wirklich übrig bleibt",
+              "UVA-Vorbereitung kostet stundenlang Nerven",
+              "Niemand weiß, ob der Monat fertig ist oder nicht",
+            ].map((t, i) => (
+              <li key={i} className="card p-4 flex items-start gap-3">
+                <span className="h-7 w-7 rounded-md bg-danger-soft text-danger grid place-content-center shrink-0">
+                  <AlertTriangle className="h-4 w-4" />
+                </span>
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
       {/* APP-VORSCHAU */}
-      <section className="py-16 lg:py-24 bg-gradient-to-b from-white to-slate-50 border-t border-border">
+      <section id="loesung" className="py-16 lg:py-24 bg-gradient-to-b from-white to-slate-50 border-t border-border">
         <div className="max-w-6xl mx-auto px-4 lg:px-8">
           <div className="text-center mb-10">
-            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">So sieht Klarblick aus</p>
+            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Die Lösung</p>
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Das Dashboard — auf einen Blick</h2>
             <p className="mt-3 text-slate-600 max-w-xl mx-auto">Alle Belege, KPIs und der Monatsstatus in einer Ansicht. Kein Buchhaltungswissen nötig.</p>
           </div>
@@ -237,125 +265,6 @@ export default function LandingPage() {
 
       <PartnersStrip />
 
-      {/* PROBLEM */}
-      <section id="problem" className="py-20 lg:py-24 border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Das Problem</p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              Belegchaos. Rückfragen.<br />
-              <span className="text-slate-500">Und der 15. kommt näher.</span>
-            </h2>
-          </div>
-          <ul className="space-y-3 text-slate-700">
-            {[
-              "Belege liegen in Schuhkartons, WhatsApp, E-Mail und Ordnern",
-              "Steuerberater fragt jeden Monat dieselben Belege nach",
-              "Keine Übersicht, was wirklich übrig bleibt",
-              "UVA-Vorbereitung kostet stundenlang Nerven",
-              "Niemand weiß, ob der Monat fertig ist oder nicht",
-            ].map((t, i) => (
-              <li key={i} className="card p-4 flex items-start gap-3">
-                <span className="h-7 w-7 rounded-md bg-danger-soft text-danger grid place-content-center shrink-0">
-                  <AlertTriangle className="h-4 w-4" />
-                </span>
-                <span>{t}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-
-      {/* WARUM NICHT KLASSISCHE BUCHHALTUNG */}
-      <section className="py-20 lg:py-24 border-t border-border">
-        <div className="max-w-5xl mx-auto px-4 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Häufige Frage</p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              "Warum nicht einfach sevdesk oder BMD?"
-            </h2>
-            <p className="mt-3 text-slate-600">
-              Kurze Antwort: Buchhaltungssoftware ist für Buchhalter gebaut. Klarblick ist für den Chef gebaut —
-              der nur wissen will, ob der Monat bis 15. fertig ist und was übrig bleibt.
-            </p>
-          </div>
-          <div className="card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-border">
-                <tr>
-                  <th className="text-left p-4 font-semibold">Was du brauchst</th>
-                  <th className="text-center p-4 font-semibold w-36">Buchhaltungs-SW</th>
-                  <th className="text-center p-4 font-semibold w-32 bg-brand-50 text-brand-700">Klarblick</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {[
-                  ["Beleg per WhatsApp hochladen", "no", "yes"],
-                  ["Monatsstatus auf einen Blick", "part", "yes"],
-                  ["Klare Antwort: Ist mein Monat bereit?", "no", "yes"],
-                  ["Fehlende Belege automatisch finden", "part", "yes"],
-                  ["UVA-Vorbereitung verständlich", "part", "yes"],
-                  ["Gewinn & Kosten in Chef-Sprache", "no", "yes"],
-                  ["Steuerberater-Paket per Knopfdruck", "part", "yes"],
-                  ["Kein Buchhaltungswissen nötig", "no", "yes"],
-                ].map(([label, gpt, kb], i) => (
-                  <tr key={i}>
-                    <td className="p-4">{label}</td>
-                    <td className="p-4 text-center">
-                      {gpt === "yes" && <CheckCircle2 className="h-5 w-5 text-accent inline" />}
-                      {gpt === "no" && <XCircle className="h-5 w-5 text-slate-300 inline" />}
-                      {gpt === "part" && <span className="text-amber-600 text-xs font-medium">teilweise</span>}
-                    </td>
-                    <td className="p-4 text-center bg-brand-50/40">
-                      {kb === "yes" ? <CheckCircle2 className="h-5 w-5 text-accent inline" /> : <XCircle className="h-5 w-5 text-slate-300 inline" />}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-center text-xs text-slate-500 mt-4">
-            Klarblick ersetzt keine Buchhaltungssoftware — Klarblick bereitet den Monat so vor, dass der Steuerberater sofort buchen kann.
-          </p>
-        </div>
-      </section>
-
-      <Testimonials />
-
-      {/* PROFI-FEATURES */}
-      <section id="features" className="py-20 lg:py-24 border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Funktionen</p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              Alles, was der Monat braucht.
-            </h2>
-            <p className="mt-3 text-slate-600">Vom Beleg-Eingang bis zum fertigen Steuerberater-Paket.</p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              { Icon: Send, title: "WhatsApp-Upload", desc: "Beleg per WhatsApp senden — Bot bestätigt Eingang. Antwortet auf Was fehlt noch? und Ist mein Monat bereit?.", tag: "Einfach" },
-              { Icon: Receipt, title: "Eingangs- & Ausgangsbelege", desc: "Klarblick trennt Lieferanten- und Kundenrechnungen automatisch. Sauber für UVA und DATEV.", tag: "Sortiert" },
-              { Icon: AlertTriangle, title: "Fehlende Belege", desc: "Doppelte erkennen, unsichere markieren, Zahlungen ohne Beleg anzeigen. To-do-Liste mit offenen Punkten.", tag: "Prüfung" },
-              { Icon: FileBarChart2, title: "UVA-Vorbereitung", desc: "Umsatzsteuer aus Ausgangs-, Vorsteuer aus Eingangsbelegen. Monatsexport für Steuerberater.", tag: "UVA" },
-              { Icon: TrendingUp, title: "Gewinn & Kosten", desc: "Umsatz, Kosten, geschätzter Gewinn, größte Kostenblöcke und auffällige Ausgaben — in Chef-Sprache.", tag: "Übersicht" },
-              { Icon: ShieldCheck, title: "Steuerberater-Paket", desc: "Ein Klick: alle Belege + UVA + Gewinn-Report + DATEV-CSV + PDF-Zusammenfassung. Fertig bis zum 15.", tag: "Bereit" },
-            ].map(({ Icon, title, desc, tag }) => (
-              <div key={title} className="card p-6 hover:shadow-md transition">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="h-11 w-11 rounded-xl bg-brand-50 text-brand-700 grid place-content-center">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <span className="pill bg-accent-soft text-accent border border-emerald-200 text-[10px]">{tag}</span>
-                </div>
-                <h3 className="font-bold text-lg">{title}</h3>
-                <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* DER KLARBLICK-FLUSS */}
       <section id="fluss" className="py-20 lg:py-28 bg-slate-50 border-t border-border">
@@ -465,6 +374,40 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* PROFI-FEATURES */}
+      <section id="features" className="py-20 lg:py-24 border-t border-border">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Funktionen</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Alles, was der Monat braucht.
+            </h2>
+            <p className="mt-3 text-slate-600">Vom Beleg-Eingang bis zum fertigen Steuerberater-Paket.</p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              { Icon: Send, title: "WhatsApp-Upload", desc: "Beleg per WhatsApp senden — Bot bestätigt Eingang. Antwortet auf Was fehlt noch? und Ist mein Monat bereit?.", tag: "Einfach" },
+              { Icon: Receipt, title: "Eingangs- & Ausgangsbelege", desc: "Klarblick trennt Lieferanten- und Kundenrechnungen automatisch. Sauber für UVA und DATEV.", tag: "Sortiert" },
+              { Icon: AlertTriangle, title: "Fehlende Belege", desc: "Doppelte erkennen, unsichere markieren, Zahlungen ohne Beleg anzeigen. To-do-Liste mit offenen Punkten.", tag: "Prüfung" },
+              { Icon: FileBarChart2, title: "UVA-Vorbereitung", desc: "Umsatzsteuer aus Ausgangs-, Vorsteuer aus Eingangsbelegen. Monatsexport für Steuerberater.", tag: "UVA" },
+              { Icon: TrendingUp, title: "Gewinn & Kosten", desc: "Umsatz, Kosten, geschätzter Gewinn, größte Kostenblöcke und auffällige Ausgaben — in Chef-Sprache.", tag: "Übersicht" },
+              { Icon: ShieldCheck, title: "Steuerberater-Paket", desc: "Ein Klick: alle Belege + UVA + Gewinn-Report + DATEV-CSV + PDF-Zusammenfassung. Fertig bis zum 15.", tag: "Bereit" },
+            ].map(({ Icon, title, desc, tag }) => (
+              <div key={title} className="card p-6 hover:shadow-md transition">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="h-11 w-11 rounded-xl bg-brand-50 text-brand-700 grid place-content-center">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="pill bg-accent-soft text-accent border border-emerald-200 text-[10px]">{tag}</span>
+                </div>
+                <h3 className="font-bold text-lg">{title}</h3>
+                <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* INTELLIGENTE FEATURES (Doku-Analyse, Kontext-Memory) */}
       <section className="py-20 lg:py-24 bg-gradient-to-br from-brand-50/40 via-white to-accent-soft/30 border-t border-border">
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
@@ -532,6 +475,62 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* WARUM NICHT KLASSISCHE BUCHHALTUNG */}
+      <section className="py-20 lg:py-24 border-t border-border">
+        <div className="max-w-5xl mx-auto px-4 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Häufige Frage</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              "Warum nicht einfach sevdesk oder BMD?"
+            </h2>
+            <p className="mt-3 text-slate-600">
+              Kurze Antwort: Buchhaltungssoftware ist für Buchhalter gebaut. Klarblick ist für den Chef gebaut —
+              der nur wissen will, ob der Monat bis 15. fertig ist und was übrig bleibt.
+            </p>
+          </div>
+          <div className="card overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-border">
+                <tr>
+                  <th className="text-left p-4 font-semibold">Was du brauchst</th>
+                  <th className="text-center p-4 font-semibold w-36">Buchhaltungs-SW</th>
+                  <th className="text-center p-4 font-semibold w-32 bg-brand-50 text-brand-700">Klarblick</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {[
+                  ["Beleg per WhatsApp hochladen", "no", "yes"],
+                  ["Monatsstatus auf einen Blick", "part", "yes"],
+                  ["Klare Antwort: Ist mein Monat bereit?", "no", "yes"],
+                  ["Fehlende Belege automatisch finden", "part", "yes"],
+                  ["UVA-Vorbereitung verständlich", "part", "yes"],
+                  ["Gewinn & Kosten in Chef-Sprache", "no", "yes"],
+                  ["Steuerberater-Paket per Knopfdruck", "part", "yes"],
+                  ["Kein Buchhaltungswissen nötig", "no", "yes"],
+                ].map(([label, gpt, kb], i) => (
+                  <tr key={i}>
+                    <td className="p-4">{label}</td>
+                    <td className="p-4 text-center">
+                      {gpt === "yes" && <CheckCircle2 className="h-5 w-5 text-accent inline" />}
+                      {gpt === "no" && <XCircle className="h-5 w-5 text-slate-300 inline" />}
+                      {gpt === "part" && <span className="text-amber-600 text-xs font-medium">teilweise</span>}
+                    </td>
+                    <td className="p-4 text-center bg-brand-50/40">
+                      {kb === "yes" ? <CheckCircle2 className="h-5 w-5 text-accent inline" /> : <XCircle className="h-5 w-5 text-slate-300 inline" />}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-center text-xs text-slate-500 mt-4">
+            Klarblick ersetzt keine Buchhaltungssoftware — Klarblick bereitet den Monat so vor, dass der Steuerberater sofort buchen kann.
+          </p>
+        </div>
+      </section>
+
+      <Testimonials />
 
       {/* FÜR WEN */}
       <section className="py-20 lg:py-24 bg-slate-50 border-y border-border">

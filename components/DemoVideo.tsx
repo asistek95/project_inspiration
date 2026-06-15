@@ -3,10 +3,6 @@
 import { useRef, useState } from "react";
 import { Play, Pause, HardHat, Phone, FileText, CalendarClock } from "lucide-react";
 
-/**
- * Hero-Visual — Story-Video eines typischen Handwerker-Tags.
- * Ersetzt die alte Mock-Karussell-Animation.
- */
 export function DemoVideo() {
   const ref = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -15,35 +11,12 @@ export function DemoVideo() {
   function toggle() {
     const v = ref.current;
     if (!v) return;
-    if (v.paused) {
-      v.play();
-      setPlaying(true);
-      setStarted(true);
-    } else {
-      v.pause();
-      setPlaying(false);
-    }
+    if (v.paused) { v.play(); setPlaying(true); setStarted(true); }
+    else { v.pause(); setPlaying(false); }
   }
 
   return (
-    <div className="relative pt-2 lg:pt-0 lg:pr-[300px]">
-      {/* Story-Karte außerhalb rechts — nicht mehr über dem Video */}
-      <div className="hidden lg:block absolute right-0 top-0 w-[280px] card-soft p-4 shadow-lg ring-1 ring-slate-200 bg-white">
-        <div className="flex items-start gap-3">
-          <span className="h-9 w-9 rounded-lg bg-brand-50 text-brand-700 grid place-content-center shrink-0">
-            <HardHat className="h-5 w-5" />
-          </span>
-          <div className="text-sm leading-snug">
-            <p className="font-semibold text-foreground">Kennst du das?</p>
-            <p className="text-slate-600 mt-1 text-[13px]">
-              Du bist Handwerker, hast 10 Leute auf der Baustelle, das Telefon klingelt
-              im Minutentakt — und irgendwo dazwischen stapeln sich die Belege.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Video */}
+    <div className="relative">
       <div className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-slate-200 bg-slate-900">
         <video
           ref={ref}
@@ -57,48 +30,68 @@ export function DemoVideo() {
           onPause={() => setPlaying(false)}
         />
 
-        {/* Play-Overlay vor Start */}
-        {!started ? (
+        {/* Story strip — bottom overlay, always visible */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 grid grid-cols-3 divide-x divide-white/10">
+          {[
+            { Icon: Phone, label: "Ständig Telefon" },
+            { Icon: FileText, label: "Belege stapeln sich" },
+            { Icon: CalendarClock, label: "Monatsabschluss?" },
+          ].map(({ Icon, label }) => (
+            <div key={label} className="flex items-center justify-center gap-1.5 py-2 bg-slate-900/75 backdrop-blur-sm">
+              <Icon className="h-3.5 w-3.5 text-brand-300 shrink-0" />
+              <span className="text-[11px] font-medium text-white">{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* "Kennst du das?" bubble — top-right corner, visible when not playing */}
+        {!playing && (
+          <div className="absolute top-3 right-3 z-30 w-[175px] bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg ring-1 ring-slate-200/60 pointer-events-none">
+            <div className="flex items-start gap-2">
+              <span className="h-8 w-8 rounded-lg bg-brand-50 text-brand-700 grid place-content-center shrink-0">
+                <HardHat className="h-4 w-4" />
+              </span>
+              <div className="text-xs leading-snug">
+                <p className="font-semibold text-slate-900">Kennst du das?</p>
+                <p className="text-slate-500 mt-0.5 text-[11px]">Belege stapeln sich, Telefon klingelt — Monat fehlt.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Play overlay — before first start */}
+        {!started && (
           <button
             onClick={toggle}
-            className="absolute inset-0 grid place-content-center bg-gradient-to-br from-slate-900/40 via-slate-900/20 to-slate-900/60 group"
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-900/50 group"
             aria-label="Video abspielen"
           >
             <span className="h-20 w-20 rounded-full bg-white/95 grid place-content-center shadow-2xl transition group-hover:scale-110">
               <Play className="h-8 w-8 text-brand-600 ml-1" fill="currentColor" />
             </span>
-            <span className="absolute bottom-5 left-5 right-5 text-center">
+            <div className="absolute bottom-12 left-5 right-5 text-center">
               <p className="text-white font-bold text-lg leading-tight drop-shadow-lg">
                 Ein Tag im Leben eines Selbständigen
               </p>
-              <p className="text-white/90 text-sm mt-1 drop-shadow-lg">
+              <p className="text-white/80 text-sm mt-1 drop-shadow">
                 Telefon · Baustelle · Belege · „Wann ist eigentlich Monatsabschluss?"
               </p>
-            </span>
-          </button>
-        ) : (
-          <button
-            onClick={toggle}
-            className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-white/90 backdrop-blur grid place-content-center shadow-lg hover:bg-white transition"
-            aria-label={playing ? "Pause" : "Abspielen"}
-          >
-            {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" fill="currentColor" />}
+            </div>
           </button>
         )}
-      </div>
 
-      {/* Story-Punkte unter dem Video */}
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-        {[
-          { Icon: Phone, label: "Ständig Telefon" },
-          { Icon: FileText, label: "Belege stapeln sich" },
-          { Icon: CalendarClock, label: "Monatsabschluss?" },
-        ].map(({ Icon, label }) => (
-          <div key={label} className="rounded-lg border border-border bg-white px-2 py-2.5 flex items-center justify-center gap-1.5">
-            <Icon className="h-3.5 w-3.5 text-brand-600 shrink-0" />
-            <span className="text-[11px] font-medium text-slate-700">{label}</span>
-          </div>
-        ))}
+        {/* Pause / resume button after first play */}
+        {started && (
+          <button
+            onClick={toggle}
+            className="absolute bottom-12 right-3 z-30 h-10 w-10 rounded-full bg-white/90 backdrop-blur grid place-content-center shadow-lg hover:bg-white transition"
+            aria-label={playing ? "Pause" : "Abspielen"}
+          >
+            {playing
+              ? <Pause className="h-4 w-4" />
+              : <Play className="h-4 w-4 ml-0.5" fill="currentColor" />}
+          </button>
+        )}
       </div>
     </div>
   );

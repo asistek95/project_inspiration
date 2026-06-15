@@ -5,6 +5,21 @@ import { useState } from "react";
 import { Mail, Building2, User, Eye, EyeOff, ArrowRight, CheckCircle2 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase";
 
+function pwStrength(pw: string): { score: number; label: string; barColor: string } {
+  if (!pw) return { score: 0, label: "", barColor: "" };
+  let s = 0;
+  if (pw.length >= 8) s++;
+  if (pw.length >= 12) s++;
+  if (/[A-Z]/.test(pw)) s++;
+  if (/[0-9]/.test(pw)) s++;
+  if (/[^A-Za-z0-9]/.test(pw)) s++;
+  if (s <= 1) return { score: s, label: "Zu schwach", barColor: "bg-red-500" };
+  if (s <= 2) return { score: s, label: "Schwach", barColor: "bg-orange-400" };
+  if (s <= 3) return { score: s, label: "Mittel", barColor: "bg-yellow-400" };
+  if (s <= 4) return { score: s, label: "Stark", barColor: "bg-emerald-500" };
+  return { score: s, label: "Sehr stark", barColor: "bg-emerald-600" };
+}
+
 export default function RegisterPage() {
   const [form, setForm] = useState({ name: "", email: "", company: "", password: "" });
   const [showPw, setShowPw] = useState(false);
@@ -142,6 +157,24 @@ export default function RegisterPage() {
               {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
+          {form.password && (() => {
+            const { score, label, barColor } = pwStrength(form.password);
+            return (
+              <div className="mt-2 space-y-1">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${score >= i ? barColor : "bg-slate-200"}`}
+                    />
+                  ))}
+                </div>
+                <p className={`text-xs font-medium ${score <= 2 ? "text-red-500" : score <= 3 ? "text-yellow-600" : "text-emerald-600"}`}>
+                  {label}
+                </p>
+              </div>
+            );
+          })()}
         </div>
 
         {error && <p className="text-sm text-danger">{error}</p>}
