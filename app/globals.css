@@ -6,7 +6,8 @@
   :root {
     color-scheme: light;
   }
-  html, body { @apply bg-white text-foreground; }
+  html { @apply bg-white text-foreground; scroll-behavior: smooth; }
+  body { @apply bg-white text-foreground; }
   body {
     font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
     -webkit-font-smoothing: antialiased;

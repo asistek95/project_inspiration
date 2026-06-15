@@ -10,13 +10,7 @@ import {
   TrendingUp,
   Receipt,
   Send,
-  Users,
   Building2,
-  Utensils,
-  Hammer,
-  Wrench,
-  Briefcase,
-  Heart,
   Calculator,
   MapPin,
   Mail,
@@ -27,7 +21,6 @@ import {
   Scale,
   Database,
   Brain,
-  FileSearch,
   Bot,
   HardHat,
   Link2,
@@ -35,7 +28,7 @@ import {
 } from "lucide-react";
 import { Disclaimer } from "@/components/Disclaimer";
 import { DemoVideo } from "@/components/DemoVideo";
-import { PartnersStrip, Testimonials } from "@/components/Partners";
+import { Testimonials } from "@/components/Partners";
 import { LiveChat } from "@/components/LiveChat";
 import { Onboarding } from "@/components/Onboarding";
 import { MagicMoment } from "@/components/MagicMoment";
@@ -272,9 +265,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <PartnersStrip />
-
-
       {/* DER KLARBLICK-FLUSS */}
       <section id="fluss" className="py-20 lg:py-28 bg-slate-50 border-t border-border">
         <div className="max-w-6xl mx-auto px-4 lg:px-8">
@@ -417,74 +407,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* INTELLIGENTE FEATURES (Doku-Analyse, Kontext-Memory) */}
-      <section className="py-20 lg:py-24 bg-gradient-to-br from-brand-50/40 via-white to-accent-soft/30 border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">KI-Intelligenz</p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              Klarblick kennt deinen Betrieb.
-            </h2>
-            <p className="mt-3 text-slate-600">
-              Je länger du Klarblick nutzt, desto weniger Rückfragen, desto schneller ist der Monat fertig.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-5">
-            <div className="card p-6">
-              <FileSearch className="h-8 w-8 text-brand-600 mb-3" />
-              <h3 className="font-bold">Eingang/Ausgang — automatisch</h3>
-              <p className="text-sm text-slate-600 mt-1.5">
-                Claude Vision erkennt ob ein Beleg eine Eingangs- oder Ausgangsrechnung ist — via ATU-Nummer, Firmenwortlaut und Rechnungsmerkmale. Reverse Charge §19 wird erkannt.
-              </p>
-            </div>
-            <div className="card p-6">
-              <Brain className="h-8 w-8 text-brand-600 mb-3" />
-              <h3 className="font-bold">Stammlieferanten-Gedächtnis</h3>
-              <p className="text-sm text-slate-600 mt-1.5">
-                Lieferanten werden gespeichert — beim nächsten Beleg von Shell, Würth oder Amazon stimmt die Kategorie sofort. Je mehr Belege, desto präziser.
-              </p>
-            </div>
-            <div className="card p-6">
-              <Scale className="h-8 w-8 text-brand-600 mb-3" />
-              <h3 className="font-bold">Österreichisches Steuerrecht</h3>
-              <p className="text-sm text-slate-600 mt-1.5">
-                20%/13%/10% USt, §19 Reverse Charge, §12 Vorsteuerausschluss (PKW vs. Kastenwagen), §132 BAO Aufbewahrung — alles nach AT-UStG 1994 hinterlegt.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* WAS KLARBLICK NICHT MACHT */}
-      <section className="py-16 lg:py-20 bg-slate-50 border-y border-border">
-        <div className="max-w-5xl mx-auto px-4 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Ehrlich gesagt</p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              Was Klarblick <span className="text-danger">nicht</span> macht.
-            </h2>
-            <p className="mt-3 text-slate-600">
-              Wir versprechen lieber weniger und liefern das zuverlässig — als zu viel und enttäuschen dich.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            {[
-              "Keine Steuererklärung — das macht dein Steuerberater.",
-              "Keine FinanzOnline-Übermittlung — du gibst die UVA-Vorbereitung weiter, dein StB übermittelt.",
-              "Kein Ersatz für Buchhaltung — wir bereiten den Monat vor, dein StB bucht.",
-              "Keine Lohnverrechnung oder Gehaltsabrechnung.",
-              "Keine Rechtsberatung — wir verweisen aufs Gesetz, nicht auf Paragraphen.",
-              "Keine Garantie auf 100 % korrekte KI-Ergebnisse — deshalb Prüfschritt und unsichere Belege markiert.",
-            ].map((t, i) => (
-              <div key={i} className="flex items-start gap-3 bg-white border border-border rounded-lg p-4">
-                <XCircle className="h-5 w-5 text-danger shrink-0 mt-0.5" />
-                <span className="text-sm text-slate-700">{t}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* WARUM NICHT KLASSISCHE BUCHHALTUNG */}
       <section className="py-20 lg:py-24 border-t border-border">
         <div className="max-w-5xl mx-auto px-4 lg:px-8">
@@ -540,39 +462,6 @@ export default function LandingPage() {
       </section>
 
       <Testimonials />
-
-      {/* FÜR WEN */}
-      <section className="py-20 lg:py-24 bg-slate-50 border-y border-border">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">Für wen?</p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Kleine österreichische Betriebe.</h2>
-            <p className="mt-3 text-slate-600">
-              Handwerker, KMU, Familienbetriebe mit 1–20 Mitarbeitern — alle, die mit Belegen, Rückfragen und
-              dem Monatsende-Chaos kämpfen.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { t: "Handwerker", Icon: Hammer },
-              { t: "Bauunternehmer", Icon: Wrench },
-              { t: "Gastro", Icon: Utensils },
-              { t: "Kleine Händler", Icon: Building2 },
-              { t: "Dienstleister", Icon: Briefcase },
-              { t: "Einzelunternehmer", Icon: Users },
-              { t: "Familienbetriebe", Icon: Heart },
-              { t: "Steuerberater (White-Label)", Icon: Calculator },
-            ].map(({ t, Icon }) => (
-              <div key={t} className="card p-4 flex items-center gap-3">
-                <span className="h-9 w-9 rounded-md bg-brand-50 text-brand-700 grid place-content-center">
-                  <Icon className="h-4.5 w-4.5" />
-                </span>
-                <span className="font-medium">{t}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* PARTNER & INTEGRATIONEN */}
       <section id="partner" className="py-20 lg:py-24 border-t border-border">
@@ -721,50 +610,10 @@ export default function LandingPage() {
               ]}
             />
           </div>
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center space-y-3">
             <Link href="/register" className="btn-secondary">Jetzt kostenlos starten <ArrowRight className="h-4 w-4" /></Link>
-          </div>
-        </div>
-      </section>
-
-      {/* DISCLAIMER */}
-      <section className="py-12 bg-slate-50 border-t border-border">
-        <div className="max-w-3xl mx-auto px-4 text-center">
-          <p className="text-sm text-slate-600 leading-relaxed">
-            <strong className="text-foreground">Wichtig:</strong> Klarblick ist keine Steuerberatung.
-            Die App sammelt, prüft und sortiert deine Belege und bereitet die UVA vor. Die finale Prüfung und Einreichung
-            erfolgt durch deinen Steuerberater.
-          </p>
-        </div>
-      </section>
-
-      {/* ABO-MODELL */}
-      <section id="abo" className="py-20 lg:py-24 bg-slate-50 border-y border-border">
-        <div className="max-w-5xl mx-auto px-4 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-sm font-semibold text-brand-600 uppercase tracking-wider mb-3">So funktioniert das Abo</p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Faire Abrechnung. Monatlich kündbar.</h2>
-            <p className="mt-3 text-slate-600">Keine Einrichtungsgebühr. Keine versteckten Kosten. Du bestimmst, wann du gehst.</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-5">
-            <div className="card p-6">
-              <CreditCard className="h-7 w-7 text-brand-600 mb-3" />
-              <h3 className="font-bold">SEPA-Lastschrift</h3>
-              <p className="text-sm text-slate-600 mt-1.5">Einmal Mandat erteilen — wir buchen monatlich am 1. Werktag ab. Rechnung kommt per E-Mail.</p>
-            </div>
-            <div className="card p-6">
-              <CheckCircle2 className="h-7 w-7 text-accent mb-3" />
-              <h3 className="font-bold">14 Tage gratis testen</h3>
-              <p className="text-sm text-slate-600 mt-1.5">Voller Funktionsumfang. Keine Zahlungsdaten nötig. Erst nach Testphase erfolgt erste Buchung.</p>
-            </div>
-            <div className="card p-6">
-              <XCircle className="h-7 w-7 text-amber-600 mb-3" />
-              <h3 className="font-bold">Monatlich kündbar</h3>
-              <p className="text-sm text-slate-600 mt-1.5">Ein Klick in den Einstellungen — fertig. Alle Daten lassen sich vorher exportieren (DATEV, PDF, CSV).</p>
-            </div>
-          </div>
-          <div className="mt-8 text-center">
-            <Link href="/#preise" className="btn-secondary">Preise &amp; Pakete ansehen <ArrowRight className="h-4 w-4" /></Link>
+            <p className="text-xs text-slate-400">14 Tage gratis · monatlich kündbar · keine Kreditkarte nötig</p>
+            <p className="text-xs text-slate-400 max-w-lg mx-auto">Klarblick ersetzt keine Steuerberatung — die App bereitet den Monat vor, dein Steuerberater prüft und übermittelt.</p>
           </div>
         </div>
       </section>
@@ -871,7 +720,7 @@ export default function LandingPage() {
               <div className="card overflow-hidden">
                 <iframe
                   title="Klarblick Standort — THE ICON VIENNA, 1100 Wien"
-                  src="https://www.google.com/maps?q=48.1861391,16.3742893&z=17&output=embed"
+                  src="https://maps.google.com/maps?q=THE+ICON+VIENNA+Gertrude-Fr%C3%B6hlich-Sandner-Stra%C3%9Fe+2+1100+Wien&t=&z=17&ie=UTF8&iwloc=&output=embed"
                   className="w-full h-64 border-0"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
