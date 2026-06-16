@@ -8,41 +8,66 @@ type Msg = { from: "bot" | "user"; text: string; ts: number };
 const FAQ: { q: RegExp; a: string }[] = [
   {
     q: /preis|kost|abo|teuer|tarif|paket/i,
-    a: "Unsere Pakete: Starter 29 €, Profi 79 € (beliebt), Betrieb 149 € — alle inkl. 14 Tage gratis. Details: /pricing",
+    a: "Pakete: Basic 20 €, Betrieb 35 € (beliebtestes), Pro 50 € — alle inkl. 14 Tage gratis, monatlich kündbar, keine Kreditkarte nötig.",
   },
   {
-    q: /datev|steuerberater|export/i,
-    a: "Klarblick exportiert auf Knopfdruck eine DATEV-CSV mit SKR03-Kontierung. Dein Steuerberater spart Stunden.",
+    q: /datev|export/i,
+    a: "Unter Übergabe → DATEV-Button. Du bekommst eine EXTF-CSV mit SKR04 Österreich — kompatibel mit DATEV, BMD und RZL. Dein Steuerberater importiert sie direkt.",
+  },
+  {
+    q: /steuerberater|übergabe|abschluss/i,
+    a: "Übergabe-Sektion aufrufen → Checkliste abhaken → dann PDF, CSV, DATEV oder SEPA herunterladen oder direkt per Mail an den Steuerberater schicken.",
+  },
+  {
+    q: /beleg.*hochlad|upload|wie.*hochlad|sammelstelle/i,
+    a: "Drei Wege: Drag & Drop in der Sammelstelle, WhatsApp-Foto an unsere Nummer schicken, oder Rechnung per E-Mail weiterleiten. Alles landet automatisch im Eingang.",
+  },
+  {
+    q: /whatsapp/i,
+    a: "Beleg fotografieren → an unsere WhatsApp-Nummer schicken → in Sekunden vorerfasst im Dashboard. Die Nummer findest du in der Sammelstelle nach der Anmeldung.",
+  },
+  {
+    q: /uva|umsatzsteuer.*voranmeld/i,
+    a: "Unter UVA berechnet Klarblick deine Kennzahlen (Umsatzsteuer-Schuld, Vorsteuer, Zahllast). Die Einreichung bei FinanzOnline macht dann dein Steuerberater.",
+  },
+  {
+    q: /passwort|login|anmeld/i,
+    a: "Eingeloggt: Einstellungen → Sicherheit. Ausgeloggt: auf der Login-Seite 'Passwort vergessen?' klicken — der Reset-Link kommt per E-Mail.",
   },
   {
     q: /handwerk|elektriker|sanit|maler|tischler|dach/i,
-    a: "Klarblick ist speziell für Handwerker entwickelt — Baumärkte, Großhändler und KFZ-Belege werden zuverlässig erkannt.",
-  },
-  {
-    q: /skonto|sparen|geld/i,
-    a: "Unser Skonto-Alarm zeigt dir, wo du Geld liegen lässt. Im Schnitt holen Kunden über 1.200 € pro Jahr zurück.",
+    a: "Klarblick ist für Handwerksbetriebe gebaut — Hornbach, Würth, GC Gienger und KFZ-Belege werden zuverlässig erkannt und automatisch kategorisiert.",
   },
   {
     q: /sicher|gobd|dsgvo|datenschutz/i,
-    a: "Klarblick ist DSGVO- und GoBD-konform. Server in der EU, Audit-Log, optional 2FA. Details: /datenschutz",
+    a: "DSGVO-konform, Audit-Log nach §132 BAO, Server in der EU (Frankfurt). Details unter /datenschutz.",
   },
   {
     q: /kündig|monat|laufzeit/i,
-    a: "Du kannst jederzeit zum Monatsende kündigen — ein Klick in den Einstellungen. Keine Knebelverträge.",
+    a: "Jederzeit zum Monatsende kündigen — ein Klick in den Einstellungen. Keine Knebelverträge, kein Anruf nötig.",
   },
   {
     q: /demo|test|ausprobieren/i,
-    a: "Klar — du kannst die App ohne Anmeldung als Demo testen: /dashboard",
+    a: "14 Tage gratis testen — keine Kreditkarte, kein Risiko. Einfach unter /register registrieren.",
+  },
+  {
+    q: /kategor|buch|kontier/i,
+    a: "Die KI erkennt Lieferant und Kategorie automatisch (Material, KFZ, Büro, etc.). Du kannst jederzeit manuell korrigieren — beim nächsten Beleg vom selben Lieferanten merkt sich Klarblick deine Auswahl.",
   },
 ];
 
-const SUGGESTIONS = ["Was kostet das?", "Wie funktioniert DATEV?", "Demo ansehen", "Mit Mensch sprechen"];
+const SUGGESTIONS = [
+  "Wie lade ich einen Beleg hoch?",
+  "Was kostet das?",
+  "Wie funktioniert DATEV-Export?",
+  "Mit Mensch sprechen",
+];
 
 function botReply(text: string): string {
   for (const { q, a } of FAQ) if (q.test(text)) return a;
   if (/mensch|berater|telefon|anrufen|persön/i.test(text))
-    return "Klar — hinterlasse mir kurz deine E-Mail und Telefonnummer, dann melde ich mich innerhalb von 24 Stunden. (Schreib einfach in den Chat.)";
-  return "Gute Frage — ich leite das direkt an Amin weiter. Tipp: nutze unser Kontaktformular oder schreib mir hier E-Mail + Anliegen, dann antworten wir per Mail.";
+    return "Klar — schreib uns direkt an office@klarblick.at, wir antworten innerhalb eines Werktags. Oder hinterlasse hier deine E-Mail, dann melden wir uns bei dir.";
+  return "Gute Frage! Ich leite das an unser Team weiter. Am schnellsten erreichst du uns per E-Mail: office@klarblick.at";
 }
 
 export function LiveChat() {
