@@ -562,17 +562,23 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Telefon (optional)</label>
-                  <input name="phone" className="input mt-1.5" placeholder="+49 ..." />
+                  <input name="phone" className="input mt-1.5" placeholder="+43 ..." />
                 </div>
               </div>
               <div>
                 <label className="text-sm font-medium">Worum geht's?</label>
                 <textarea name="message" required rows={4} className="input mt-1.5 resize-none" placeholder="Wir sind ein Sanitärbetrieb mit 6 Mitarbeitern und suchen ..." />
               </div>
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input type="checkbox" name="_dsgvo" required className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-brand-600 shrink-0" />
+                <span className="text-xs text-slate-500 leading-relaxed">
+                  Ich stimme zu, dass meine Daten zur Bearbeitung dieser Anfrage gespeichert werden. Details in der{" "}
+                  <Link href="/datenschutz" className="underline hover:text-slate-700">Datenschutzerklärung</Link>.
+                </span>
+              </label>
               <button type="submit" className="btn-primary w-full">
                 Anfrage senden <Send className="h-4 w-4" />
               </button>
-              <p className="text-xs text-slate-500">Mit dem Absenden bestätigst du, dass deine Daten zur Bearbeitung der Anfrage verwendet werden.</p>
             </form>
 
             {/* Kontaktinfo + Map */}
