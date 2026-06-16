@@ -196,6 +196,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
+      {/* Navigation progress bar */}
+      {isPending && (
+        <div
+          className="fixed top-0 inset-x-0 z-[60] h-[2px] bg-brand-500"
+          style={{ animation: "nav-bar 1.5s ease-out forwards" }}
+        />
+      )}
+
       {/* Locked Feature Toast */}
       {lockedMsg && (
         <div
