@@ -29,6 +29,7 @@ import { getSupabaseBrowser } from "@/lib/supabase";
 import { setSessionCookie, clearSessionCookie } from "@/lib/session-cookie";
 import { CompanySetupModal } from "./CompanySetupModal";
 import { ReadOnlyBanner } from "./ReadOnlyBanner";
+import { LiveChat } from "./LiveChat";
 
 // ── Plan System ────────────────────────────────────────────────────────────────
 
@@ -392,6 +393,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           Klarblick ersetzt keine Steuerberatung. Erkannte Daten bitte prüfen.
         </footer>
       </main>
+
+      {/* In-App KI-Assistent — kontext-bewusst, Verlauf gespeichert */}
+      <LiveChat persistKey="klarblick.chat.app" pageContext={pathname} />
     </div>
   );
 }

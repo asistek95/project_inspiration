@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    const { messages } = await req.json();
+    const { messages, pageContext } = await req.json();
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: "messages fehlt" }, { status: 400 });
@@ -109,6 +109,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const systemWithContext = pageContext
+      ? `${SYSTEM}\n\n═══ AKTUELLER KONTEXT ═══\nDer User ist gerade auf dieser Seite: ${pageContext}\nBeziehe deine Antworten auf diesen Kontext wenn passend — erkläre direkt was der User auf dieser Seite tun kann.`
+      : SYSTEM;
+
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -118,8 +122,8 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
-        max_tokens: 350,
-        system: SYSTEM,
+        max_tokens: 400,
+        system: systemWithContext,
         messages: messages.map((m: any) => ({
           role: m.role === "user" ? "user" : "assistant",
           content: String(m.content || "").slice(0, 2000),
