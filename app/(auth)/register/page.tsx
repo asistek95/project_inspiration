@@ -159,19 +159,35 @@ export default function RegisterPage() {
           </div>
           {form.password && (() => {
             const { score, label, barColor } = pwStrength(form.password);
+            const pw = form.password;
+            const reqs = [
+              { ok: pw.length >= 8,           text: "Mindestens 8 Zeichen" },
+              { ok: /[A-Z]/.test(pw),          text: "Großbuchstabe (A–Z)" },
+              { ok: /[0-9]/.test(pw),          text: "Zahl (0–9)" },
+              { ok: /[^A-Za-z0-9]/.test(pw),  text: "Sonderzeichen (!@#…)" },
+            ];
             return (
-              <div className="mt-2 space-y-1">
+              <div className="mt-2 space-y-2">
+                {/* Stärke-Balken */}
                 <div className="flex gap-1">
                   {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${score >= i ? barColor : "bg-slate-200"}`}
-                    />
+                    <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${score >= i ? barColor : "bg-slate-200"}`} />
                   ))}
                 </div>
-                <p className={`text-xs font-medium ${score <= 2 ? "text-red-500" : score <= 3 ? "text-yellow-600" : "text-emerald-600"}`}>
+                <p className={`text-xs font-semibold ${score <= 2 ? "text-red-500" : score <= 3 ? "text-yellow-600" : "text-emerald-600"}`}>
                   {label}
                 </p>
+                {/* Requirements */}
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-0.5">
+                  {reqs.map(({ ok, text }) => (
+                    <p key={text} className={`flex items-center gap-1.5 text-[11px] transition-colors ${ok ? "text-emerald-600" : "text-slate-400"}`}>
+                      <span className={`h-3.5 w-3.5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${ok ? "bg-emerald-100" : "bg-slate-100"}`}>
+                        {ok ? "✓" : "✗"}
+                      </span>
+                      {text}
+                    </p>
+                  ))}
+                </div>
               </div>
             );
           })()}
