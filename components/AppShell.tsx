@@ -118,7 +118,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     sb.auth.getUser().then(({ data }) => {
       if (data.user) {
         const meta = (data.user.user_metadata || {}) as any;
-        setUser({ email: data.user.email || "", name: meta.owner_name, company: meta.company_name });
+        // localStorage-Profil hat Vorrang (User hat es in Einstellungen gesetzt)
+        let profile: Record<string, string> = {};
+        try { profile = JSON.parse(localStorage.getItem("klarblick.profile") || "{}"); } catch {}
+        setUser({
+          email: data.user.email || "",
+          name: profile.owner_name || meta.owner_name,
+          company: profile.company_name || meta.company_name,
+        });
         if (data.user.email) setSessionCookie(data.user.email);
         localStorage.setItem("klarblick.realUser", "1");
 
@@ -145,6 +152,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         }
       }
     });
+  }, []);
+
+  // Sidebar-Name sofort aktualisieren wenn Settings gespeichert werden
+  useEffect(() => {
+    function onStorage(e: StorageEvent) {
+      if (e.key === "klarblick.profile" && e.newValue) {
+        try {
+          const p = JSON.parse(e.newValue) as Record<string, string>;
+          setUser((prev) => prev ? {
+            ...prev,
+            name: p.owner_name || prev.name,
+            company: p.company_name || prev.company,
+          } : prev);
+        } catch {}
+      }
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   function toggleCollapsed() {

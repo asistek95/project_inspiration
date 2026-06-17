@@ -61,7 +61,10 @@ export default function SettingsPage() {
   function save(e: React.FormEvent) {
     e.preventDefault();
     if (typeof window !== "undefined") {
-      localStorage.setItem("klarblick.profile", JSON.stringify(form));
+      const profileJson = JSON.stringify(form);
+      localStorage.setItem("klarblick.profile", profileJson);
+      // Sidebar im selben Tab sofort aktualisieren
+      window.dispatchEvent(new StorageEvent("storage", { key: "klarblick.profile", newValue: profileJson }));
       // Mini-Audit-Log
       const log = JSON.parse(localStorage.getItem("klarblick.audit") || "[]");
       log.push({
@@ -70,6 +73,20 @@ export default function SettingsPage() {
         snapshot: { ...form },
       });
       localStorage.setItem("klarblick.audit", JSON.stringify(log.slice(-200)));
+
+      // Supabase user_metadata synchronisieren → Sidebar zeigt sofort neue Daten
+      import("@/lib/supabase").then(({ getSupabaseBrowser }) => {
+        const sb = getSupabaseBrowser();
+        if (!sb) return;
+        sb.auth.updateUser({
+          data: {
+            company_name: form.company_name,
+            owner_name: form.owner_name,
+            company_type: form.company_type,
+            atu_nummer: form.atu_nummer,
+          },
+        }).catch(() => {/* offline — egal, localStorage ist aktuell */});
+      });
     }
     setSaved(true);
     setLocked(true);
