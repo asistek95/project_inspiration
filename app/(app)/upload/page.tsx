@@ -437,6 +437,8 @@ function ItemCard({
 }) {
   const [lightbox, setLightbox] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [showOcrBlock, setShowOcrBlock] = useState(true);
+  const [showWarnings, setShowWarnings] = useState(false);
 
   if (item.status === "reading") {
     return (
@@ -559,11 +561,34 @@ function ItemCard({
 
         {/* Eingang / Ausgang — bestätigt oder Auswahl */}
         {isConfirmed ? (
-          <OcrClassificationBlock
-            draft={draft}
-            direction={direction}
-            onChangeDirection={() => onSetDirection(direction === "eingang" ? "ausgang" : "eingang")}
-          />
+          <div>
+            <div className="flex items-center justify-between">
+              <OcrClassificationBlock
+                draft={draft}
+                direction={direction}
+                onChangeDirection={() => onSetDirection(direction === "eingang" ? "ausgang" : "eingang")}
+                collapsed={!showOcrBlock}
+              />
+            </div>
+            {showOcrBlock && (
+              <button
+                type="button"
+                onClick={() => setShowOcrBlock(false)}
+                className="text-xs text-slate-400 hover:text-slate-600 mt-1 ml-1"
+              >
+                Details ausblenden ↑
+              </button>
+            )}
+            {!showOcrBlock && (
+              <button
+                type="button"
+                onClick={() => setShowOcrBlock(true)}
+                className="text-xs text-slate-400 hover:text-slate-600"
+              >
+                Erkennungsdetails anzeigen ↓
+              </button>
+            )}
+          </div>
         ) : (
           <div className="rounded-md border border-red-200 bg-red-50 p-3">
             <p className="text-xs font-semibold text-red-700 mb-2">Bitte wählen — Pflichtfeld</p>
@@ -716,15 +741,30 @@ function ItemCard({
           </div>
         )}
 
-        {/* Warnungen — klein, sachlich */}
+        {/* Warnungen — einklappbar */}
         {draft.warnings.length > 0 && (
-          <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600 space-y-1">
-            {draft.warnings.map((w, i) => (
-              <p key={i} className="flex items-start gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
-                {w}
-              </p>
-            ))}
+          <div className="rounded border border-slate-200 bg-slate-50 text-xs text-slate-600">
+            <button
+              type="button"
+              onClick={() => setShowWarnings((v) => !v)}
+              className="w-full flex items-center justify-between px-3 py-2 hover:bg-slate-100 transition rounded"
+            >
+              <span className="flex items-center gap-1.5 font-medium text-amber-700">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                {draft.warnings.length} Steuerhinweis{draft.warnings.length !== 1 ? "e" : ""} — für Steuerberater
+              </span>
+              <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${showWarnings ? "rotate-180" : ""}`} />
+            </button>
+            {showWarnings && (
+              <div className="px-3 pb-2.5 space-y-1 border-t border-slate-200 pt-2">
+                {draft.warnings.map((w, i) => (
+                  <p key={i} className="flex items-start gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                    {w}
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1104,10 +1144,12 @@ function OcrClassificationBlock({
   draft,
   direction,
   onChangeDirection,
+  collapsed = false,
 }: {
   draft: Receipt;
   direction: string;
   onChangeDirection: () => void;
+  collapsed?: boolean;
 }) {
   const d = draft as Receipt & {
     invoice_type_reason?: string | null;
@@ -1117,7 +1159,6 @@ function OcrClassificationBlock({
     reverse_charge?: boolean;
   };
 
-  // Mandant aus localStorage lesen
   const profile = (() => {
     try { return JSON.parse(localStorage.getItem("klarblick.profile") || "{}"); } catch { return {}; }
   })();
@@ -1133,9 +1174,28 @@ function OcrClassificationBlock({
   const dotClass   = direction === "ausgang" ? "bg-emerald-500" :
                      direction === "eingang" ? "bg-blue-500" : "bg-slate-400";
 
+  if (collapsed) {
+    return (
+      <div className={`rounded-lg border px-3 py-2 flex items-center gap-2 ${colorClass}`}>
+        <span className={`h-2 w-2 rounded-full shrink-0 ${dotClass}`} />
+        <span className="text-sm font-bold text-slate-800">{dirLabel}</span>
+        <span className="text-xs text-slate-500">· {dirHint}</span>
+        {confidence > 0 && (
+          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
+            confidence >= 90 ? "bg-emerald-100 text-emerald-700" :
+            confidence >= 70 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
+          }`}>{confidence}%</span>
+        )}
+        <button type="button" onClick={onChangeDirection}
+          className="ml-auto text-xs text-slate-400 hover:text-slate-700 underline shrink-0">
+          Ändern
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
-      {/* Haupt-Banner: Richtung + Confidence */}
       <div className={`rounded-lg border p-3 ${colorClass}`}>
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2 flex-wrap">
@@ -1155,7 +1215,6 @@ function OcrClassificationBlock({
           </button>
         </div>
 
-        {/* Aussteller / Empfänger / Mandant — mini Tabelle */}
         <div className="text-[11px] space-y-1 mb-2">
           <div className="flex items-baseline gap-2">
             <span className="w-16 text-slate-400 shrink-0 font-medium">Aussteller</span>
@@ -1178,7 +1237,6 @@ function OcrClassificationBlock({
           )}
         </div>
 
-        {/* Erkennungsregel */}
         {d.invoice_type_reason && (
           <p className="text-[11px] text-slate-500 pl-3 border-l-2 border-slate-300/60 leading-relaxed">
             {d.invoice_type_reason}
@@ -1186,7 +1244,6 @@ function OcrClassificationBlock({
         )}
       </div>
 
-      {/* Steuerfall-Block — nur wenn relevant */}
       <SteuerCaseBlock draft={d} />
     </div>
   );

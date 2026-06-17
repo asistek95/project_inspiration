@@ -9,6 +9,7 @@ export const STATUS_LABEL: Record<ReceiptStatus, string> = {
 
 export const CATEGORIES = [
   "Wareneinkauf",
+  "Lebensmittel / Supermarkt",
   "Werkzeug & Material",
   "Fahrtkosten",
   "Treibstoff",

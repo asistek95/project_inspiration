@@ -2,6 +2,7 @@ import type { Receipt, Category, PaymentMethod, ReceiptType } from "./types";
 
 const SUPPLIERS_BY_CAT: Record<Category, string[]> = {
   Wareneinkauf: ["GC Gienger", "Richter+Frenzel", "Sonepar", "Metro", "Klöckner"],
+  "Lebensmittel / Supermarkt": ["EUROSPAR", "Billa", "Hofer", "Lidl", "Penny"],
   "Werkzeug & Material": ["Hornbach", "Bauhaus", "OBI", "Würth", "Hilti", "Festool", "Berner"],
   Fahrtkosten: ["Shell", "Aral", "Esso", "ATU"],
   Treibstoff: ["Shell", "OMV", "Aral"],
@@ -27,6 +28,7 @@ const RECURRING_SUPPLIERS = new Set([
 
 const RANGES: Record<Category, [number, number]> = {
   Wareneinkauf: [180, 1800],
+  "Lebensmittel / Supermarkt": [8, 150],
   "Werkzeug & Material": [40, 650],
   Fahrtkosten: [55, 140],
   Treibstoff: [50, 140],

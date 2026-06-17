@@ -87,6 +87,13 @@ const SUPPLIERS: {
   // Versicherung — wiederkehrend
   { name: "Allianz", cat: "Versicherungen", type: "Rechnung", min: 89, max: 320, pay: "Lastschrift", keywords: ["allianz"], recurring: true },
   { name: "HDI", cat: "Versicherungen", type: "Rechnung", min: 75, max: 280, pay: "Lastschrift", keywords: ["hdi"], recurring: true },
+  // Lebensmittel / Supermarkt (AT + DE)
+  { name: "EUROSPAR", cat: "Lebensmittel / Supermarkt", type: "Kassenbon", min: 8, max: 180, pay: "Karte", keywords: ["eurospar", "interspar", "spar"] },
+  { name: "Billa", cat: "Lebensmittel / Supermarkt", type: "Kassenbon", min: 6, max: 120, pay: "Karte", keywords: ["billa"] },
+  { name: "Hofer", cat: "Lebensmittel / Supermarkt", type: "Kassenbon", min: 5, max: 90, pay: "Karte", keywords: ["hofer", "aldi"] },
+  { name: "Lidl", cat: "Lebensmittel / Supermarkt", type: "Kassenbon", min: 5, max: 100, pay: "Karte", keywords: ["lidl"] },
+  { name: "Penny", cat: "Lebensmittel / Supermarkt", type: "Kassenbon", min: 5, max: 80, pay: "Karte", keywords: ["penny"] },
+  { name: "Merkur", cat: "Lebensmittel / Supermarkt", type: "Kassenbon", min: 8, max: 130, pay: "Karte", keywords: ["merkur"] },
   // Sonstiges
   { name: "DHL", cat: "Sonstiges", type: "Quittung", min: 6, max: 35, pay: "Karte", keywords: ["dhl", "paket"] },
   { name: "Restaurant Sonne", cat: "Bewirtung", type: "Bewirtungsbeleg", min: 28, max: 165, pay: "Karte", keywords: ["restaurant", "gasthaus", "sonne"] },
