@@ -21,6 +21,7 @@ import {
 import type { Receipt } from "@/lib/types";
 import { loadReceipts } from "@/lib/store";
 import { formatEUR, cn } from "@/lib/utils";
+import { MonatsabschlussAmpel } from "@/components/MonatsabschlussAmpel";
 
 interface MonthStats {
   month: number;
@@ -186,6 +187,9 @@ export default function DashboardRestructured() {
           ← Zur Startseite
         </Link>
       </div>
+
+      {/* Monatsabschluss-Ampel */}
+      <MonatsabschlussAmpel receipts={receipts} />
 
       {/* KPI-Kacheln */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">

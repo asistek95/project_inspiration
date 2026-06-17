@@ -25,6 +25,7 @@ import { formatEUR } from "@/lib/utils";
 import { exportCSV, generateReportPDF } from "@/lib/pdf";
 import { buildDatevCSV, downloadCSV } from "@/lib/datev";
 import { buildSepaXML, downloadXML } from "@/lib/sepa";
+import { buildExcelWorkbook, downloadExcel } from "@/lib/excel-export";
 import { buildInsights, periodStats } from "@/lib/insights";
 import { DEMO_COMPANY } from "@/lib/demo-data";
 
@@ -246,6 +247,12 @@ export default function MonatsabschlussPaketPage() {
           </button>
           <button onClick={() => exportCSV(checkedReceipts, `belege_${from}_${to}.csv`)} className="btn-secondary">
             <FileSpreadsheet className="h-4 w-4" /> CSV
+          </button>
+          <button onClick={() => {
+            const blob = buildExcelWorkbook(checkedReceipts, `${from} — ${to}`, DEMO_COMPANY.company_name);
+            downloadExcel(`klarblick_${from}_${to}.xlsx`, blob);
+          }} className="btn-secondary">
+            <FileSpreadsheet className="h-4 w-4" /> Excel (6 Tabs)
           </button>
           <button onClick={() => downloadCSV(`datev_${from}_${to}.csv`, buildDatevCSV(checkedReceipts, `${from} — ${to}`))} className="btn-secondary">
             <Database className="h-4 w-4" /> DATEV-CSV
