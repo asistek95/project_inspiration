@@ -237,6 +237,38 @@ export default function ReceiptDetail() {
             </div>
           </div>
 
+          {/* OCR-Erkennungs-Info */}
+          {(receipt.invoice_type_reason || receipt.recipient_name || receipt.original_invoice_number || receipt.vendor_uid) && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3 space-y-1.5 text-xs">
+              {receipt.original_invoice_number && (
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-500 font-semibold shrink-0 w-24">Orig.-Nr.</span>
+                  <span className="font-mono font-bold text-blue-800">{receipt.original_invoice_number}</span>
+                </div>
+              )}
+              {receipt.supplier_name && receipt.vendor_uid && (
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-500 font-semibold shrink-0 w-24">Aussteller</span>
+                  <span className="text-slate-700">{receipt.supplier_name} <span className="font-mono text-slate-400 ml-1">{receipt.vendor_uid}</span></span>
+                </div>
+              )}
+              {receipt.recipient_name && (
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-500 font-semibold shrink-0 w-24">Empfänger</span>
+                  <span className="text-slate-700">{receipt.recipient_name}
+                    {receipt.recipient_uid && <span className="font-mono text-slate-400 ml-1">{receipt.recipient_uid}</span>}
+                  </span>
+                </div>
+              )}
+              {receipt.invoice_type_reason && (
+                <div className="flex items-start gap-2 pt-1 border-t border-blue-100">
+                  <span className="text-blue-500 font-semibold shrink-0 w-24">Erkennung</span>
+                  <span className="text-slate-600">{receipt.invoice_type_reason}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           <details className="group rounded-lg border border-slate-200 bg-slate-50/40">
             <summary className="cursor-pointer select-none flex items-center justify-between px-4 py-3 min-h-[44px] text-sm font-semibold text-slate-700 hover:bg-slate-100/60 rounded-lg">
               <span>Details bearbeiten (Lieferant, Beträge, Belegart …)</span>
