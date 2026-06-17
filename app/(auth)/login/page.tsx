@@ -30,8 +30,20 @@ function LoginInner() {
     try {
       const sb = getSupabaseBrowser();
       if (sb) {
-        const { error } = await sb.auth.signInWithPassword({ email, password });
+        const { error, data } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        // Sofort als Real-User markieren + Demo-Daten aus Browser löschen
+        localStorage.setItem("klarblick.realUser", "1");
+        localStorage.removeItem("klarblick.receipts.v1");
+        // Profil aus Supabase-Metadata vorausfüllen falls noch kein klarblick.profile gesetzt
+        const meta = data.user?.user_metadata || {};
+        const existing = (() => { try { return JSON.parse(localStorage.getItem("klarblick.profile") || "{}"); } catch { return {}; } })();
+        if (!existing.company_name && (meta.company || meta.company_name)) {
+          localStorage.setItem("klarblick.profile", JSON.stringify({
+            company_name: meta.company || meta.company_name || "",
+            owner_name: meta.name || "",
+          }));
+        }
       }
       setSessionCookie(email);
       router.push(next);

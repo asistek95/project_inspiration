@@ -40,6 +40,19 @@ function ConfirmInner() {
       .then(({ data, error }) => {
         if (error) throw error;
         if (data.user?.email) setSessionCookie(data.user.email);
+        // Sofort als Real-User markieren + Demo-Daten löschen
+        localStorage.setItem("klarblick.realUser", "1");
+        localStorage.removeItem("klarblick.receipts.v1");
+        // Profil aus Supabase-Metadata vorausfüllen
+        const meta = data.user?.user_metadata || {};
+        if (meta.company || meta.company_name) {
+          const existing = (() => { try { return JSON.parse(localStorage.getItem("klarblick.profile") || "{}"); } catch { return {}; } })();
+          localStorage.setItem("klarblick.profile", JSON.stringify({
+            company_name: meta.company || meta.company_name || "",
+            owner_name: meta.name || "",
+            ...existing,
+          }));
+        }
         setStatus("success");
         setTimeout(() => router.push("/dashboard"), 1200);
       })

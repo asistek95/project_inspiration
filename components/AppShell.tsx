@@ -100,7 +100,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setCollapsed(localStorage.getItem("klarblick.sidebarCollapsed") === "1");
       try {
         const profile = JSON.parse(localStorage.getItem("klarblick.profile") || "{}");
-        if (!profile.atu_nummer) setShowSetup(true);
+        // Modal nur zeigen wenn: kein Firmenname UND noch nicht übersprungen
+        if (!profile.company_name && !profile._setup_skipped) setShowSetup(true);
       } catch { setShowSetup(true); }
     }
   }, []);
