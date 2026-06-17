@@ -4,6 +4,7 @@ const SUPPLIERS_BY_CAT: Record<Category, string[]> = {
   Wareneinkauf: ["GC Gienger", "Richter+Frenzel", "Sonepar", "Metro", "Klöckner"],
   "Werkzeug & Material": ["Hornbach", "Bauhaus", "OBI", "Würth", "Hilti", "Festool", "Berner"],
   Fahrtkosten: ["Shell", "Aral", "Esso", "ATU"],
+  Treibstoff: ["Shell", "OMV", "Aral"],
   Bewirtung: ["Rewe", "Restaurant Sonne", "Edeka"],
   "Werbung & Marketing": ["Google Ads", "Meta Ads", "Canva"],
   Bürobedarf: ["Amazon Business"],
@@ -11,6 +12,10 @@ const SUPPLIERS_BY_CAT: Record<Category, string[]> = {
   Software: ["DATEV", "Microsoft 365", "Adobe"],
   Miete: ["Vermietung Müller"],
   Versicherungen: ["Allianz", "HDI"],
+  "Personal / Lohn": ["Lohnabrechnung Mai", "Lohnabrechnung April"],
+  "Reise & Diäten": ["ÖBB Tickets", "Austrian Airlines"],
+  "Bau & Instandhaltung": ["Infocom GmbH", "Bauservice KG"],
+  Anlagegut: ["Würth Maschinen", "Festool Direktkauf"],
   Sonstiges: ["DHL"],
 };
 
@@ -24,6 +29,7 @@ const RANGES: Record<Category, [number, number]> = {
   Wareneinkauf: [180, 1800],
   "Werkzeug & Material": [40, 650],
   Fahrtkosten: [55, 140],
+  Treibstoff: [50, 140],
   Bewirtung: [25, 180],
   "Werbung & Marketing": [49, 350],
   Bürobedarf: [8, 90],
@@ -31,6 +37,10 @@ const RANGES: Record<Category, [number, number]> = {
   Software: [12, 79],
   Miete: [1200, 1200],
   Versicherungen: [120, 320],
+  "Personal / Lohn": [1800, 4500],
+  "Reise & Diäten": [45, 350],
+  "Bau & Instandhaltung": [200, 2500],
+  Anlagegut: [500, 8000],
   Sonstiges: [15, 220],
 };
 

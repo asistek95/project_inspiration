@@ -19,6 +19,7 @@ Gib NUR dieses JSON zurück — kein Markdown, kein Text davor/danach:
 {
   "vendor": "Firmenname des AUSSTELLERS (Briefkopf oben, z.B. 'Infocom GmbH', 'GitHub Inc.', 'Shell Austria GmbH')",
   "vendor_uid": "ATU/UID des AUSSTELLERS (z.B. 'ATU70447037'), null wenn nicht vorhanden",
+  "recipient_name": "Firmenname des EMPFÄNGERS im 'An:'-Feld / 'Rechnungsempfänger' / 'BILL TO' (z.B. 'PKE Facility Management GmbH', 'Mustermann GmbH'), null wenn nicht erkennbar",
   "customer_uid": "ATU/UID des EMPFÄNGERS falls sichtbar (z.B. 'ATU66952069'), null wenn nicht vorhanden",
   "invoice_number": "Rechnungsnummer (z.B. 'HR260145', 'INV135863718', 'RE-2026-047'), null wenn nicht vorhanden",
   "date": "Rechnungsdatum YYYY-MM-DD, null wenn nicht lesbar",
@@ -168,6 +169,7 @@ function classifyInvoiceType(
   vendor: string,
   vendorUid: string | null,
   customerUid: string | null,
+  recipientName: string | null,
   receiptType: string,
   userCompanyName?: string,
   userCompanyUid?: string
@@ -175,45 +177,59 @@ function classifyInvoiceType(
 
   const userUid = userCompanyUid ? normalizeUid(userCompanyUid) : null;
 
-  // ══ STUFE 1: ATU-Match — 100% sicher, keine Annahmen ══
-  // Vendor-UID = unsere ATU → WIR haben die Rechnung ausgestellt → AUSGANG
+  function nameCore(s: string): string {
+    return s.toLowerCase()
+      .replace(/\s*(gmbh|kg|og|ag|eg|nfg|gbr|ug|se|inc|ltd|llc|e\.u\.|eu)\.?\s*$/i, "")
+      .trim();
+  }
+
+  // ══ STUFE 1: ATU-Match — 100% sicher ══
+  // Aussteller-UID = unsere ATU → WIR haben ausgestellt → AUSGANG
   if (userUid && vendorUid && normalizeUid(vendorUid) === userUid) {
     return {
       invoice_type: "ausgang",
       is_vendor_match: true,
       vendor_identifier_confidence: 0.99,
-      reason: `Aussteller-ATU (${vendorUid}) = Unternehmens-ATU → Ausgangsrechnung`,
+      reason: `Aussteller-ATU (${vendorUid}) stimmt mit Unternehmens-ATU überein → Ausgangsrechnung`,
     };
   }
 
-  // Customer-UID = unsere ATU → WIR sind der Empfänger → EINGANG
+  // Empfänger-UID = unsere ATU → WIR sind der Empfänger → EINGANG
   if (userUid && customerUid && normalizeUid(customerUid) === userUid) {
     return {
       invoice_type: "eingang",
       is_vendor_match: false,
       vendor_identifier_confidence: 0.99,
-      reason: `Empfänger-ATU (${customerUid}) = Unternehmens-ATU → Eingangsrechnung`,
+      reason: `Empfänger-ATU (${customerUid}) stimmt mit Unternehmens-ATU überein → Eingangsrechnung`,
     };
   }
 
   // ══ STUFE 2: Firmenwortlaut-Match ══
   if (userCompanyName && userCompanyName.length >= 3) {
-    const vendorLower = vendor.toLowerCase();
-    const nameLower = userCompanyName.toLowerCase();
-    // Ersten signifikanten Teil des Firmennamens nehmen (vor GmbH/KG/OG etc.)
-    const nameCore = nameLower.replace(/\s*(gmbh|kg|og|ag|eg|nfg|gbr|ug|se|inc|ltd|llc)\.?\s*$/i, "").trim();
-    if (nameCore.length >= 3 && vendorLower.includes(nameCore)) {
-      return {
-        invoice_type: "ausgang",
-        is_vendor_match: true,
-        vendor_identifier_confidence: 0.88,
-        reason: `Firmenname "${userCompanyName}" im Briefkopf erkannt → Ausgangsrechnung`,
-      };
+    const userCore = nameCore(userCompanyName);
+    if (userCore.length >= 3) {
+      // 2a: Firmenname im Aussteller-Block → Ausgang
+      if (vendor.toLowerCase().includes(userCore)) {
+        return {
+          invoice_type: "ausgang",
+          is_vendor_match: true,
+          vendor_identifier_confidence: 0.88,
+          reason: `Unternehmensname "${userCompanyName}" im Aussteller erkannt → Ausgangsrechnung`,
+        };
+      }
+      // 2b: Firmenname im Empfänger-Block → Eingang (wichtig: PKE FM uploads Infocom-Rechnung)
+      if (recipientName && recipientName.toLowerCase().includes(userCore)) {
+        return {
+          invoice_type: "eingang",
+          is_vendor_match: false,
+          vendor_identifier_confidence: 0.90,
+          reason: `Unternehmensname "${userCompanyName}" im Empfänger erkannt → Eingangsrechnung`,
+        };
+      }
     }
   }
 
-  // ══ STUFE 3: Belegart-Heuristik (unabhängig von Firma) ══
-  // Kassenbons, Tankbelege etc. sind IMMER Eingang (eigener Einkauf)
+  // ══ STUFE 3: Belegart-Heuristik ══
   if (["Kassenbon", "Tankbeleg", "Kartenzahlungsbeleg"].includes(receiptType)) {
     return {
       invoice_type: "eingang",
@@ -223,25 +239,23 @@ function classifyInvoiceType(
     };
   }
 
-  // ══ STUFE 4: OCR-Guess — niedrige Konfidenz, Benutzer muss prüfen ══
+  // ══ STUFE 4: OCR-Guess + Kontext ══
   if (!userUid && !userCompanyName) {
-    // KEIN Firmenprofil hinterlegt → kann nicht automatisch entscheiden
     return {
       invoice_type: "unknown",
       is_vendor_match: false,
       vendor_identifier_confidence: 0.0,
-      reason: "ATU-Nummer nicht in Einstellungen hinterlegt — Eingang/Ausgang bitte manuell prüfen",
+      reason: "Kein Firmenprofil hinterlegt — Eingang/Ausgang bitte manuell bestätigen",
     };
   }
 
-  // Mit Firmenprofil aber kein Match → OCR-Guess mit niedrigerer Konfidenz
   if (ocrGuess === "ausgang") {
     return { invoice_type: "ausgang", is_vendor_match: false, vendor_identifier_confidence: 0.60,
-      reason: "OCR-Indizien: Rechnungsnummer + Kundennummer + Zahlungsziel — bitte prüfen" };
+      reason: "KI-Einschätzung: Ausgangsrechnung (Aussteller = Mandant) — bitte prüfen" };
   }
   if (ocrGuess === "eingang") {
     return { invoice_type: "eingang", is_vendor_match: false, vendor_identifier_confidence: 0.60,
-      reason: "OCR-Indizien: Lieferantenbeleg, Zahlungsaufforderung — bitte prüfen" };
+      reason: "KI-Einschätzung: Eingangsrechnung (Lieferantenbeleg) — bitte prüfen" };
   }
 
   return {
@@ -395,6 +409,7 @@ export async function POST(req: NextRequest) {
       ocrResult.vendor || "Unbekannt",
       ocrResult.vendor_uid || null,
       ocrResult.customer_uid || null,
+      ocrResult.recipient_name || null,
       ocrResult.receipt_type || "Quittung",
       userCompanyName,
       userCompanyUid
@@ -405,7 +420,7 @@ export async function POST(req: NextRequest) {
       invoice_type: classification.invoice_type,
       is_vendor_match: classification.is_vendor_match,
       vendor_identifier_confidence: classification.vendor_identifier_confidence,
-      classification_reason: classification.reason,
+      invoice_type_reason: classification.reason,
     });
   } catch (e) {
     return NextResponse.json({ _error: (e as Error).message, vendor: null }, { status: 500 });

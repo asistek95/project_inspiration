@@ -18,19 +18,23 @@ export interface ExtractedReceipt {
   is_recurring?: boolean;
   fingerprint?: string;
 
-  // ── Eingangs-/Ausgangsrechnung ──
+  // ── Aussteller / Empfänger / Klassifizierung ──
   invoice_type?: "eingang" | "ausgang" | "unknown";
-  vendor_uid?: string | null;
+  vendor_uid?: string | null;           // UID des Ausstellers
   vendor_identifier_confidence?: number;
   is_vendor_match?: boolean;
+  recipient_name?: string | null;       // Empfänger-Firmenname (aus OCR)
+  recipient_uid?: string | null;        // UID des Empfängers
+  invoice_type_reason?: string | null;  // Erklärungs-Text für Eingang/Ausgang
+  original_invoice_number?: string | null; // Rechnungsnummer vom Aussteller (HR2600145 etc.)
 
   // ── Österr. Steuerrecht ──
-  vat_treatment?: string | null;        // z.B. "reverse_charge_§19_bauleistung", "normal_20", ...
+  vat_treatment?: string | null;
   reverse_charge?: boolean;
-  reverse_charge_law?: string | null;   // z.B. "§19 Abs 1a UStG 1994"
-  period?: string | null;               // Leistungszeitraum, z.B. "Mai 2026"
-  invoice_number?: string | null;       // Rechnungsnummer vom Aussteller
-  iban?: string | null;                 // IBAN für Zahlung
+  reverse_charge_law?: string | null;
+  period?: string | null;
+  invoice_number?: string | null;       // Alias für original_invoice_number
+  iban?: string | null;
 }
 
 // Handwerker-Fokus: Werkzeug, Material, Großhandel, Sanitär, Elektro, KFZ
@@ -220,14 +224,24 @@ export async function extractReceiptData(
           const date = (data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date))
             ? data.date
             : new Date().toISOString().slice(0, 10);
-          // Kategorie-Mapping
+          // Kategorie-Mapping (OCR-Ausgabe → App-Kategorie)
           const catMap: Record<string, Category> = {
-            Material: "Werkzeug & Material",
-            Werkzeug: "Werkzeug & Material",
-            Treibstoff: "Fahrtkosten",
+            "Material": "Werkzeug & Material",
+            "Werkzeug": "Werkzeug & Material",
+            "Werkzeug/Material": "Werkzeug & Material",
+            "Treibstoff": "Treibstoff",
+            "Treibstoff/KFZ": "Treibstoff",
             "Büro": "Bürobedarf",
-            Bewirtung: "Bewirtung",
-            Sonstiges: "Sonstiges",
+            "Bürobedarf": "Bürobedarf",
+            "Bewirtung": "Bewirtung",
+            "Software/IT": "Software",
+            "Personal/Lohn": "Personal / Lohn",
+            "Reise/Diäten": "Reise & Diäten",
+            "Bau/Instandhaltung": "Bau & Instandhaltung",
+            "Versicherung": "Versicherungen",
+            "Miete/Leasing": "Miete",
+            "Werbung/Marketing": "Werbung & Marketing",
+            "Sonstiges": "Sonstiges",
           };
           const category: Category = catMap[data.category] || "Sonstiges";
           const suggest = suggestCategory(data.vendor);
@@ -283,6 +297,10 @@ export async function extractReceiptData(
             vendor_uid: vendorUid,
             vendor_identifier_confidence: round2(vendorIdentifierConfidence),
             is_vendor_match: isVendorMatch,
+            recipient_name: data.recipient_name || null,
+            recipient_uid: data.customer_uid || null,
+            invoice_type_reason: data.invoice_type_reason || null,
+            original_invoice_number: data.invoice_number || null,
             vat_treatment: data.vat_treatment || null,
             reverse_charge: !!data.reverse_charge,
             reverse_charge_law: data.reverse_charge_law || null,

@@ -132,6 +132,10 @@ export default function UploadPage() {
           vendor_uid: extracted.vendor_uid || null,
           vendor_identifier_confidence: extracted.vendor_identifier_confidence || 0,
           is_vendor_match: extracted.is_vendor_match || false,
+          recipient_name: extracted.recipient_name || null,
+          recipient_uid: extracted.recipient_uid || null,
+          invoice_type_reason: extracted.invoice_type_reason || null,
+          original_invoice_number: extracted.original_invoice_number || null,
           ocr_filename: null,
           user_custom_name: null,
           vorsteuerabzug: extracted.direction === "eingang" ? true : null,
@@ -486,57 +490,86 @@ function ItemCard({
 
       <div className="p-4 space-y-4">
 
-        {/* Kerninfos — tabellarisch, klar */}
+        {/* Aussteller + Empfänger + Betrag */}
         <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Aussteller</p>
-            <p className="text-xl font-bold text-slate-900 truncate">{draft.supplier_name}</p>
-            <p className="text-sm text-slate-500 mt-0.5">
+          <div className="min-w-0 flex-1">
+            {/* Aussteller */}
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Aussteller</p>
+            <p className="text-lg font-bold text-slate-900 truncate">{draft.supplier_name}</p>
+            {draft.vendor_uid && (
+              <p className="text-[11px] font-mono text-slate-400">{draft.vendor_uid}</p>
+            )}
+            {/* Empfänger — nur anzeigen wenn vorhanden */}
+            {(draft as any).recipient_name && (
+              <div className="mt-2">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Empfänger</p>
+                <p className="text-sm font-semibold text-slate-700 truncate">{(draft as any).recipient_name}</p>
+                {(draft as any).recipient_uid && (
+                  <p className="text-[11px] font-mono text-slate-400">{(draft as any).recipient_uid}</p>
+                )}
+              </div>
+            )}
+            <p className="text-xs text-slate-500 mt-2">
               {new Date(draft.receipt_date).toLocaleDateString("de-AT")}
               {draft.custom_category || draft.category ? ` · ${draft.custom_category || draft.category}` : ""}
             </p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Brutto</p>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Brutto</p>
             <p className="text-2xl font-bold text-slate-900">{formatEUR(draft.gross_amount)}</p>
             <p className="text-xs text-slate-400">Netto {formatEUR(draft.net_amount)} · USt {formatEUR(draft.vat_amount)}</p>
+            {/* Original-Rechnungsnummer vom Aussteller */}
+            {(draft as any).original_invoice_number && (
+              <p className="text-[11px] font-mono text-slate-500 mt-1">
+                Nr. {(draft as any).original_invoice_number}
+              </p>
+            )}
+            {/* Klarblick-interne Belegnummer */}
             {draft.receipt_number && (
-              <p className="text-[11px] font-mono text-slate-400 mt-1">{draft.receipt_number}</p>
+              <p className="text-[11px] font-mono text-slate-400">
+                KB: {draft.receipt_number}
+              </p>
             )}
           </div>
         </div>
 
         {/* Eingang / Ausgang — bestätigt oder Auswahl */}
         {isConfirmed ? (
-          /* Bestätigt → kompaktes Banner */
-          <div className={`flex items-center justify-between gap-3 rounded-md px-3 py-2.5 border ${
-            direction === "ausgang"
-              ? "bg-slate-50 border-slate-200"
-              : direction === "eingang"
-              ? "bg-slate-50 border-slate-200"
-              : "bg-slate-50 border-slate-200"
+          /* Bestätigt → kompaktes Banner mit Erklärungs-Grund */
+          <div className={`rounded-md border px-3 py-2.5 ${
+            direction === "ausgang" ? "bg-emerald-50 border-emerald-200" :
+            direction === "eingang" ? "bg-blue-50 border-blue-200" :
+            "bg-slate-50 border-slate-200"
           }`}>
-            <div className="flex items-center gap-2">
-              <span className={`h-2 w-2 rounded-full ${
-                direction === "ausgang" ? "bg-emerald-500" :
-                direction === "eingang" ? "bg-blue-500" : "bg-slate-400"
-              }`} />
-              <span className="text-sm font-semibold text-slate-700">
-                {direction === "ausgang" ? "Ausgangsrechnung" :
-                 direction === "eingang" ? "Eingangsrechnung" : "Quittung / Spesen"}
-              </span>
-              <span className="text-xs text-slate-400">
-                {direction === "ausgang" ? "· Umsatz, USt-Schuld" :
-                 direction === "eingang" ? "· Kosten, Vorsteuer" : "· Betriebsausgabe"}
-              </span>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className={`h-2 w-2 rounded-full shrink-0 ${
+                  direction === "ausgang" ? "bg-emerald-500" :
+                  direction === "eingang" ? "bg-blue-500" : "bg-slate-400"
+                }`} />
+                <span className="text-sm font-semibold text-slate-800">
+                  {direction === "ausgang" ? "Ausgangsrechnung" :
+                   direction === "eingang" ? "Eingangsrechnung" : "Quittung / Spesen"}
+                </span>
+                <span className="text-xs text-slate-500">
+                  {direction === "ausgang" ? "· Umsatz · USt-Schuld" :
+                   direction === "eingang" ? "· Kosten · Vorsteuer" : "· Betriebsausgabe"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onSetDirection(direction === "eingang" ? "ausgang" : "eingang")}
+                className="text-xs text-slate-400 hover:text-slate-700 underline shrink-0"
+              >
+                Ändern
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => onSetDirection(direction === "eingang" ? "ausgang" : "eingang")}
-              className="text-xs text-slate-400 hover:text-slate-700 underline"
-            >
-              Ändern
-            </button>
+            {/* Erklärungs-Grund — zeigt WIE die Entscheidung getroffen wurde */}
+            {(draft as any).invoice_type_reason && (
+              <p className="text-[11px] text-slate-500 mt-1.5 pl-4">
+                Erkannt: {(draft as any).invoice_type_reason}
+              </p>
+            )}
           </div>
         ) : (
           /* Unbekannt → dezente Radio-Auswahl */

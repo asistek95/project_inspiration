@@ -11,6 +11,7 @@ export const CATEGORIES = [
   "Wareneinkauf",
   "Werkzeug & Material",
   "Fahrtkosten",
+  "Treibstoff",
   "Bewirtung",
   "Werbung & Marketing",
   "Bürobedarf",
@@ -18,6 +19,10 @@ export const CATEGORIES = [
   "Software",
   "Miete",
   "Versicherungen",
+  "Personal / Lohn",
+  "Reise & Diäten",
+  "Bau & Instandhaltung",
+  "Anlagegut",
   "Sonstiges",
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -139,12 +144,16 @@ export interface Receipt {
   receipt_number?: string | null;   // fortlaufende Belegnummer (User-konfigurierbar)
   
   // ────────────────────────────────────────────────────
-  // Neue OCR-Erkennung (Eingangs-/Ausgangsrechnung)
+  // OCR: Aussteller + Empfänger + Klassifizierung
   // ────────────────────────────────────────────────────
   invoice_type?: "eingang" | "ausgang" | "unknown";  // OCR-erkannt
-  vendor_uid?: string | null;                         // UID-Nummer des Lieferanten
+  vendor_uid?: string | null;                         // UID-Nummer des Ausstellers
   vendor_identifier_confidence?: number;              // 0..1 wie sicher ist die Erkennung
-  is_vendor_match?: boolean;                          // ob der Vendor in company_identifiers ist (= Ausgangsrechnung)
+  is_vendor_match?: boolean;                          // ob der Aussteller unser Unternehmen ist (= Ausgangsrechnung)
+  recipient_name?: string | null;                     // Empfänger der Rechnung (wer bekommt sie?)
+  recipient_uid?: string | null;                      // ATU/UID des Empfängers
+  invoice_type_reason?: string | null;                // Warum Eingang/Ausgang: z.B. "Empfänger-ATU = Unternehmens-ATU"
+  original_invoice_number?: string | null;            // Rechnungsnummer vom Aussteller (z.B. HR2600145)
   
   // ────────────────────────────────────────────────────
   // Beleg-Bennung (Audit-Trail für OCR + User)
