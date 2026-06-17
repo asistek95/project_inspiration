@@ -74,8 +74,9 @@ const NAV = [
   { href: "/reverse-charge", label: "Reverse Charge",   Icon: Globe,           tier: "mid"   as PlanTier },
   { href: "/tax-advisor",    label: "Steuerberater",    Icon: PackageCheck,    tier: "mid"   as PlanTier },
   // ── Verwaltung ────────────────────────────────────────────────────────────
-  { href: "/aufgaben",       label: "Aufgaben",         Icon: ListTodo,        tier: "mid"   as PlanTier },
-  { href: "/kanzlei",        label: "Kanzlei",          Icon: Building2,       tier: "pro"   as PlanTier },
+  // Aufgaben + Kanzlei: zukünftige Admin-Panel-Features — aktuell ausgeblendet
+  { href: "/aufgaben",       label: "Aufgaben",         Icon: ListTodo,        tier: "mid"   as PlanTier, hidden: true },
+  { href: "/kanzlei",        label: "Kanzlei",          Icon: Building2,       tier: "pro"   as PlanTier, hidden: true },
   { href: "/ai-reports",     label: "Pro-Analyse",      Icon: Sparkles,        tier: "pro"   as PlanTier },
   { href: "/settings",       label: "Einstellungen",    Icon: Settings,        tier: "basic" as PlanTier },
 ];
@@ -296,7 +297,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Nav */}
         <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-          {NAV.map((item) => {
+          {NAV.filter((item) => !(item as any).hidden).map((item) => {
             const { href, label, Icon, tier } = item;
             const isLocked = PLAN_LEVEL[tier] > planLevel;
             const active = !isLocked && (pathname === href || pathname?.startsWith(href + "/"));

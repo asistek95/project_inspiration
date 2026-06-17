@@ -191,10 +191,12 @@ export default function UploadPage() {
     const item = items.find((p) => p.id === id);
     if (!item || !item.draft) return;
     const cfg = loadNumbering();
-    const autoPreview = previewNext(cfg);
+    // Vergleich muss denselben Typ+Direction nutzen wie beim Erstellen des Drafts
+    const direction = (item.draft as any).direction as "eingang" | "ausgang" | "neutral" | undefined;
+    const autoPreview = previewNext(cfg, item.draft.receipt_type, direction);
     let receipt_number = item.draft.receipt_number || null;
     if (cfg.enabled && (!receipt_number || receipt_number === autoPreview)) {
-      receipt_number = reserveNextNumber(item.draft.receipt_type);
+      receipt_number = reserveNextNumber(item.draft.receipt_type, direction);
     }
     const ocr_filename = receipt_number
       ? `${receipt_number}_${item.draft.supplier_name.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 20)}`

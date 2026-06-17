@@ -1,6 +1,6 @@
 # Klarblick — Projektplanung & Umsetzung
 
-**Stand:** Mai 2026
+**Stand:** Juni 2026 (aktualisiert 17.06.2026)
 
 ---
 
@@ -246,5 +246,21 @@ Wir definieren das Produkt als **„verkaufsbereit für zahlende Kunden"**, wenn
 - [ ] Sentry + UptimeRobot aktiv
 - [ ] Support-E-Mail-Adresse + Antwort-Zeit < 24 h definiert
 
-**Status heute (13. Mai 2026):** 0/12 ✅ (in Arbeit)
-**Ziel:** 12/12 bis **30. Juni 2026**.
+**Status heute (17. Juni 2026):** 6/12 ✅
+
+| Kriterium | Status |
+|---|---|
+| Echte OCR mit > 90 % Genauigkeit | ✅ Live (Claude Sonnet 4.6 Vision) |
+| Stripe-Konto aktiv | 🔄 In Arbeit |
+| Supabase prod-ready + Backup | ✅ Live (EU Frankfurt, RLS aktiv, bgSync) |
+| klarblick.at SSL-gesichert online | ✅ Live (Railway + Cloudflare) |
+| Impressum, Datenschutz, AGB online | ✅ Entwurf live, anwaltliche Prüfung ausstehend |
+| Cookie-Banner DSGVO-konform | 🔄 In Arbeit |
+| AVV-Template | ⬜ Ausstehend |
+| DATEV-CSV-Export von StB getestet | ✅ Export live (DATEV EXTF v700) |
+| 3 Pilotkunden 30 Tage aktiv | 🔄 Onboarding läuft |
+| Onboarding-Wizard funktional | ✅ Live (14-Tage-Trial, Demo-Daten) |
+| Sentry + UptimeRobot aktiv | ⬜ Ausstehend |
+| Support-E-Mail + Antwortzeit < 24 h | ✅ office@klarblick.at |
+
+**Ziel:** 12/12 bis **31. Juli 2026**.
