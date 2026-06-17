@@ -19,9 +19,19 @@ import {
   ChevronUp,
   Info,
   Link2,
+  Lock,
+  Plus,
+  Tag,
+  ShieldCheck,
 } from "lucide-react";
 import { extractReceiptData, findDuplicate, suggestCategory } from "@/lib/ocr";
 import { uploadReceiptFile } from "@/lib/supabase-sync";
+import {
+  loadInternCats,
+  addInternCat,
+  rememberSupplierCat,
+  suggestInternCat,
+} from "@/lib/intern-cats";
 import { Select } from "@/components/Select";
 import { detectVorsteuerabzug } from "@/lib/vorsteuer";
 import { upsertReceipt, loadReceipts } from "@/lib/store";
@@ -543,44 +553,12 @@ function ItemCard({
 
         {/* Eingang / Ausgang — bestätigt oder Auswahl */}
         {isConfirmed ? (
-          /* Bestätigt → kompaktes Banner mit Erklärungs-Grund */
-          <div className={`rounded-md border px-3 py-2.5 ${
-            direction === "ausgang" ? "bg-emerald-50 border-emerald-200" :
-            direction === "eingang" ? "bg-blue-50 border-blue-200" :
-            "bg-slate-50 border-slate-200"
-          }`}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <span className={`h-2 w-2 rounded-full shrink-0 ${
-                  direction === "ausgang" ? "bg-emerald-500" :
-                  direction === "eingang" ? "bg-blue-500" : "bg-slate-400"
-                }`} />
-                <span className="text-sm font-semibold text-slate-800">
-                  {direction === "ausgang" ? "Ausgangsrechnung" :
-                   direction === "eingang" ? "Eingangsrechnung" : "Quittung / Spesen"}
-                </span>
-                <span className="text-xs text-slate-500">
-                  {direction === "ausgang" ? "· Umsatz · USt-Schuld" :
-                   direction === "eingang" ? "· Kosten · Vorsteuer" : "· Betriebsausgabe"}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => onSetDirection(direction === "eingang" ? "ausgang" : "eingang")}
-                className="text-xs text-slate-400 hover:text-slate-700 underline shrink-0"
-              >
-                Ändern
-              </button>
-            </div>
-            {/* Erklärungs-Grund — zeigt WIE die Entscheidung getroffen wurde */}
-            {(draft as any).invoice_type_reason && (
-              <p className="text-[11px] text-slate-500 mt-1.5 pl-4">
-                Erkannt: {(draft as any).invoice_type_reason}
-              </p>
-            )}
-          </div>
+          <OcrClassificationBlock
+            draft={draft}
+            direction={direction}
+            onChangeDirection={() => onSetDirection(direction === "eingang" ? "ausgang" : "eingang")}
+          />
         ) : (
-          /* Unbekannt → dezente Radio-Auswahl */
           <div className="rounded-md border border-red-200 bg-red-50 p-3">
             <p className="text-xs font-semibold text-red-700 mb-2">Bitte wählen — Pflichtfeld</p>
             <div className="flex gap-2">
@@ -592,16 +570,11 @@ function ItemCard({
                   neutral: "Quittung / Spesen",
                 };
                 return (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => onSetDirection(d)}
+                  <button key={d} type="button" onClick={() => onSetDirection(d)}
                     className={`flex-1 py-2 px-3 rounded text-xs font-semibold border transition ${
-                      current
-                        ? "bg-slate-800 text-white border-slate-800"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
-                    }`}
-                  >
+                      current ? "bg-slate-800 text-white border-slate-800"
+                              : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                    }`}>
                     {labels[d]}
                   </button>
                 );
@@ -636,26 +609,38 @@ function ItemCard({
               <Field label="Datum">
                 <input type="date" className="input" value={draft.receipt_date} onChange={(e) => onUpdate({ receipt_date: e.target.value })} />
               </Field>
-              <Field label="Kategorie">
+              {/* Steuerkategorie — auto-erkannt, bestimmt Steuerlogik */}
+              <Field label="Steuerkategorie">
+                <div className="flex items-center gap-2">
+                  <div className="input flex-1 flex items-center gap-1.5 bg-slate-50 text-slate-600 cursor-default select-none">
+                    <Lock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">{draft.category}</span>
+                  </div>
+                  <button type="button"
+                    onClick={() => {/* öffnet Kategorie-Dropdown im details */}}
+                    className="text-xs text-slate-400 hover:text-brand-600 whitespace-nowrap">
+                    ändern
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">Auto-erkannt · bestimmt Steuerlogik</p>
+              </Field>
+              {/* Wenn User Steuerkategorie ändern will — als normales Select darunter */}
+              <Field label="Steuerkategorie ändern">
                 <Select value={draft.category} onChange={(v) => onUpdate({ category: v as any })} options={[...CATEGORIES]} />
               </Field>
-              <Field label="Eigene Kategorie (optional)">
-                <input
-                  className="input"
+              {/* Interne Kategorie — user-definiert mit Vorschlägen */}
+              <Field label="Interne Kategorie">
+                <InternCatSelector
                   value={draft.custom_category || ""}
-                  onChange={(e) => {
-                    const val = e.target.value || null;
-                    const vst = detectVorsteuerabzug(e.target.value, direction, draft.category);
+                  supplier={draft.supplier_name}
+                  onChange={(v) => {
+                    const vst = detectVorsteuerabzug(v, direction, draft.category);
                     onUpdate({
-                      custom_category: val,
+                      custom_category: v || null,
                       ...(vst.berechtigt !== null ? { vorsteuerabzug: vst.berechtigt } : {}),
                     });
                   }}
-                  placeholder="z.B. Caddy Kastenwagen, BMW 5er, Firmenwagen"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Tipp: „Caddy Kastenwagen" → Vorsteuer ✓ · „5er BMW" → kein Vorsteuer ✗
-                </p>
               </Field>
               <Field label="Interne Notiz">
                 <input
@@ -1101,6 +1086,250 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <label className="label">{label}</label>
       {children}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// OCR CLASSIFICATION BLOCK
+// Zeigt vollständige Entscheidungs-Transparenz für Steuerberater
+// ─────────────────────────────────────────────────────────
+function OcrClassificationBlock({
+  draft,
+  direction,
+  onChangeDirection,
+}: {
+  draft: Receipt;
+  direction: string;
+  onChangeDirection: () => void;
+}) {
+  const d = draft as Receipt & {
+    invoice_type_reason?: string | null;
+    recipient_name?: string | null;
+    recipient_uid?: string | null;
+    vat_treatment?: string | null;
+    reverse_charge?: boolean;
+  };
+
+  // Mandant aus localStorage lesen
+  const profile = (() => {
+    try { return JSON.parse(localStorage.getItem("klarblick.profile") || "{}"); } catch { return {}; }
+  })();
+
+  const confidence = Math.round((draft.vendor_identifier_confidence || 0) * 100);
+
+  const dirLabel = direction === "ausgang" ? "Ausgangsrechnung" :
+                   direction === "eingang" ? "Eingangsrechnung" : "Quittung / Spesen";
+  const dirHint  = direction === "ausgang" ? "Umsatz · USt-Schuld" :
+                   direction === "eingang" ? "Kosten · Vorsteuer" : "Betriebsausgabe";
+  const colorClass = direction === "ausgang" ? "bg-emerald-50 border-emerald-200" :
+                     direction === "eingang" ? "bg-blue-50 border-blue-200" : "bg-slate-50 border-slate-200";
+  const dotClass   = direction === "ausgang" ? "bg-emerald-500" :
+                     direction === "eingang" ? "bg-blue-500" : "bg-slate-400";
+
+  return (
+    <div className="space-y-2">
+      {/* Haupt-Banner: Richtung + Confidence */}
+      <div className={`rounded-lg border p-3 ${colorClass}`}>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`h-2 w-2 rounded-full shrink-0 ${dotClass}`} />
+            <span className="text-sm font-bold text-slate-800">{dirLabel}</span>
+            <span className="text-xs text-slate-500">· {dirHint}</span>
+            {confidence > 0 && (
+              <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
+                confidence >= 90 ? "bg-emerald-100 text-emerald-700" :
+                confidence >= 70 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
+              }`}>{confidence}%</span>
+            )}
+          </div>
+          <button type="button" onClick={onChangeDirection}
+            className="text-xs text-slate-400 hover:text-slate-700 underline shrink-0">
+            Ändern
+          </button>
+        </div>
+
+        {/* Aussteller / Empfänger / Mandant — mini Tabelle */}
+        <div className="text-[11px] space-y-1 mb-2">
+          <div className="flex items-baseline gap-2">
+            <span className="w-16 text-slate-400 shrink-0 font-medium">Aussteller</span>
+            <span className="font-semibold text-slate-700">{draft.supplier_name}</span>
+            {draft.vendor_uid && <span className="font-mono text-slate-400">{draft.vendor_uid}</span>}
+          </div>
+          {d.recipient_name && (
+            <div className="flex items-baseline gap-2">
+              <span className="w-16 text-slate-400 shrink-0 font-medium">Empfänger</span>
+              <span className="font-semibold text-slate-700">{d.recipient_name}</span>
+              {d.recipient_uid && <span className="font-mono text-slate-400">{d.recipient_uid}</span>}
+            </div>
+          )}
+          {profile.company_name && (
+            <div className="flex items-baseline gap-2">
+              <span className="w-16 text-slate-400 shrink-0 font-medium">Mandant</span>
+              <span className="font-semibold text-brand-700">{profile.company_name}</span>
+              {profile.atu_nummer && <span className="font-mono text-slate-400">{profile.atu_nummer}</span>}
+            </div>
+          )}
+        </div>
+
+        {/* Erkennungsregel */}
+        {d.invoice_type_reason && (
+          <p className="text-[11px] text-slate-500 pl-3 border-l-2 border-slate-300/60 leading-relaxed">
+            {d.invoice_type_reason}
+          </p>
+        )}
+      </div>
+
+      {/* Steuerfall-Block — nur wenn relevant */}
+      <SteuerCaseBlock draft={d} />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// STEUERFALL-CHECKLISTE
+// ─────────────────────────────────────────────────────────
+function SteuerCaseBlock({ draft }: { draft: Receipt & { vat_treatment?: string | null; reverse_charge?: boolean } }) {
+  type SteuerItem = { type: "ok" | "warn" | "info"; label: string; sub?: string };
+  const items: SteuerItem[] = [];
+  const vt = draft.vat_treatment;
+  const rc = draft.reverse_charge;
+
+  if (vt === "reverse_charge_§19_bauleistung" || (rc && vt?.includes("bauleistung"))) {
+    items.push({ type: "ok",   label: "Bauleistung §19 Abs 1a UStG 1994", sub: "Steuerschuld geht auf Leistungsempfänger über" });
+    items.push({ type: "warn", label: "Reverse Charge",                    sub: "Eigenberechnung erforderlich — UVA KZ 057 + KZ 066" });
+    items.push({ type: "warn", label: "UVA-relevant",                      sub: "In Voranmeldung gesondert ausweisen" });
+  } else if (vt === "reverse_charge_§19_sonstige") {
+    items.push({ type: "ok",   label: "EU-Dienstleistung §19 Abs 1 UStG", sub: "Leistender Unternehmer im EU-Ausland" });
+    items.push({ type: "warn", label: "Reverse Charge",                    sub: "UVA KZ 057 + KZ 066" });
+  } else if (vt === "reverse_charge_drittland") {
+    items.push({ type: "ok",   label: "Drittland-Dienstleistung §3a UStG", sub: "z.B. US-/UK-Software-Dienst" });
+    items.push({ type: "warn", label: "Reverse Charge",                    sub: "UVA KZ 057 + KZ 066" });
+  } else if (rc) {
+    items.push({ type: "warn", label: "Reverse Charge erkannt",            sub: (draft as any).reverse_charge_law || "§19 UStG" });
+    items.push({ type: "warn", label: "Eigenberechnung erforderlich" });
+  } else if (vt === "ig_erwerb") {
+    items.push({ type: "ok",   label: "iG-Erwerb §1 Abs 1 Z 1 UStG",     sub: "Ware von EU-Lieferant" });
+    items.push({ type: "warn", label: "Erwerbsteuer",                      sub: "UVA KZ 070 + ggf. KZ 065" });
+  } else if (vt === "steuerfrei_§6") {
+    items.push({ type: "ok",   label: "Steuerfreie Leistung §6 UStG" });
+    items.push({ type: "warn", label: "Kein Vorsteuerabzug möglich" });
+  } else if (vt === "normal_20") {
+    items.push({ type: "ok",   label: "Regelbesteuerung 20% USt",          sub: "Vorsteuerabzug ggf. möglich" });
+  } else if (vt === "normal_10") {
+    items.push({ type: "ok",   label: "Ermäßigter Steuersatz 10% USt" });
+  } else if (vt === "normal_13") {
+    items.push({ type: "ok",   label: "Ermäßigter Steuersatz 13% USt",    sub: "Beherbergung / Kultur / Wein" });
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 space-y-1.5">
+      <div className="flex items-center gap-1.5 mb-1">
+        <ShieldCheck className="h-3.5 w-3.5 text-slate-400" />
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Steuerfall</span>
+      </div>
+      {items.map((it, i) => (
+        <div key={i} className="flex items-start gap-2">
+          <span className={`mt-0.5 shrink-0 text-sm leading-none ${
+            it.type === "ok" ? "text-emerald-500" :
+            it.type === "warn" ? "text-amber-500" : "text-blue-400"
+          }`}>
+            {it.type === "ok" ? "✓" : it.type === "warn" ? "⚠" : "ℹ"}
+          </span>
+          <div>
+            <span className="text-xs font-semibold text-slate-700">{it.label}</span>
+            {it.sub && <span className="text-[11px] text-slate-500 ml-1.5">{it.sub}</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// INTERNE KATEGORIE SELECTOR
+// Dropdown + "Neue erstellen" + Lieferant-Gedächtnis
+// ─────────────────────────────────────────────────────────
+function InternCatSelector({
+  value,
+  supplier,
+  onChange,
+}: {
+  value: string;
+  supplier: string;
+  onChange: (v: string) => void;
+}) {
+  const [cats, setCats] = useState<string[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [newCat, setNewCat] = useState("");
+  const suggestion = suggestInternCat(supplier);
+
+  useEffect(() => {
+    setCats(loadInternCats());
+    // Vorschlag automatisch vorausfüllen (nur wenn noch leer)
+    if (!value && suggestion) onChange(suggestion);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supplier]);
+
+  function handleChange(v: string) {
+    if (v === "__new__") { setAdding(true); return; }
+    onChange(v);
+    rememberSupplierCat(supplier, v);
+  }
+
+  function handleAdd() {
+    const trimmed = newCat.trim();
+    if (!trimmed) { setAdding(false); return; }
+    const next = addInternCat(trimmed);
+    setCats(next);
+    onChange(trimmed);
+    rememberSupplierCat(supplier, trimmed);
+    setAdding(false);
+    setNewCat("");
+  }
+
+  if (adding) {
+    return (
+      <div className="flex gap-2">
+        <input
+          autoFocus
+          className="input flex-1"
+          placeholder="z.B. Subunternehmer, Projekt Wien …"
+          value={newCat}
+          onChange={(e) => setNewCat(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); if (e.key === "Escape") setAdding(false); }}
+        />
+        <button type="button" onClick={handleAdd} className="btn-primary !py-2 !px-3 shrink-0">
+          <Plus className="h-4 w-4" />
+        </button>
+        <button type="button" onClick={() => setAdding(false)} className="btn-ghost !py-2 !px-2 shrink-0">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <select
+        className="input"
+        value={value || ""}
+        onChange={(e) => handleChange(e.target.value)}
+      >
+        <option value="">— keine —</option>
+        {cats.map((c) => (
+          <option key={c} value={c}>{c}</option>
+        ))}
+        <option value="__new__">+ Neue Kategorie erstellen …</option>
+      </select>
+      {suggestion && !value && (
+        <p className="text-[11px] text-brand-600">
+          <Tag className="h-3 w-3 inline mr-1" />
+          Vorschlag für {supplier.slice(0, 20)}: <strong>{suggestion}</strong>
+        </p>
+      )}
     </div>
   );
 }
