@@ -15,7 +15,7 @@ import {
   Upload as UploadIcon,
   Loader2,
 } from "lucide-react";
-import { loadReceipts, deleteReceipts, setStatusBulk, upsertReceipt } from "@/lib/store";
+import { loadReceipts, deleteReceipts, setStatusBulk, upsertReceipt, initFromSupabase, flushPendingSync } from "@/lib/store";
 import { CATEGORIES, STATUS_LABEL, DIRECTION_SHORT } from "@/lib/types";
 import type { Receipt, ReceiptStatus, ReceiptDirection } from "@/lib/types";
 import { StatusBadge, ConfidenceBadge } from "@/components/Badges";
@@ -41,7 +41,14 @@ export default function ReceiptsListPage() {
   const [zipping, setZipping] = useState(false);
 
   useEffect(() => {
+    // Synchron aus localStorage laden (sofort, kein Flackern)
     setAll(loadReceipts());
+    // Async: falls localStorage leer → Supabase laden; Pending-Queue flushen
+    (async () => {
+      const loaded = await initFromSupabase();
+      if (loaded) setAll(loadReceipts());
+      await flushPendingSync();
+    })();
   }, []);
 
   // URL-Filter (kommt z. B. aus Monatsabschluss-Checkliste)

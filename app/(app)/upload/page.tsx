@@ -21,6 +21,7 @@ import {
   Link2,
 } from "lucide-react";
 import { extractReceiptData, findDuplicate, suggestCategory } from "@/lib/ocr";
+import { uploadReceiptFile } from "@/lib/supabase-sync";
 import { Select } from "@/components/Select";
 import { detectVorsteuerabzug } from "@/lib/vorsteuer";
 import { upsertReceipt, loadReceipts } from "@/lib/store";
@@ -175,7 +176,7 @@ export default function UploadPage() {
     );
   }
 
-  function saveDraft(id: string, status: Receipt["status"]) {
+  async function saveDraft(id: string, status: Receipt["status"]) {
     const item = items.find((p) => p.id === id);
     if (!item || !item.draft) return;
     const cfg = loadNumbering();
@@ -184,11 +185,18 @@ export default function UploadPage() {
     if (cfg.enabled && (!receipt_number || receipt_number === autoPreview)) {
       receipt_number = reserveNextNumber(item.draft.receipt_type);
     }
-    // OCR-Dateiname generieren: B_<nummer>_<lieferant>
     const ocr_filename = receipt_number
       ? `${receipt_number}_${item.draft.supplier_name.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 20)}`
       : null;
-    const final = { ...item.draft, status, receipt_number, ocr_filename };
+
+    let file_url = item.draft.file_url;
+    // Datei zu Supabase Storage hochladen wenn real user + blob-URL (flüchtig)
+    if (item.file && file_url?.startsWith("blob:") && localStorage.getItem("klarblick.realUser") === "1") {
+      const storageUrl = await uploadReceiptFile(item.file, item.id);
+      if (storageUrl) file_url = storageUrl;
+    }
+
+    const final = { ...item.draft, status, receipt_number, ocr_filename, file_url };
     upsertReceipt(final);
     setItems((prev) => prev.map((p) => (p.id === id ? { ...p, status: "saved" } : p)));
   }
