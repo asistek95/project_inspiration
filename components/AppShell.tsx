@@ -25,6 +25,8 @@ import {
   FileWarning,
   Building2,
   ListTodo,
+  Globe,
+  BarChart3,
 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
@@ -64,10 +66,12 @@ const NAV = [
   { href: "/inbox",       label: "Beleg-Check",      Icon: Mail,            tier: "mid"   as PlanTier },
   { href: "/report",      label: "Auswertung",       Icon: FileBarChart2,   tier: "mid"   as PlanTier },
   { href: "/uva",         label: "UVA-Vorerfassung", Icon: Calculator,      tier: "mid"   as PlanTier },
-  { href: "/tax-advisor",   label: "Übergabe",         Icon: PackageCheck,  tier: "mid"   as PlanTier },
-  { href: "/offene-posten", label: "Offene Posten",   Icon: FileWarning,   tier: "mid"   as PlanTier },
-  { href: "/aufgaben",      label: "Aufgaben",         Icon: ListTodo,      tier: "mid"   as PlanTier },
-  { href: "/kanzlei",       label: "Kanzlei",          Icon: Building2,     tier: "pro"   as PlanTier },
+  { href: "/tax-advisor",     label: "Übergabe",          Icon: PackageCheck,  tier: "mid"   as PlanTier },
+  { href: "/offene-posten",  label: "Offene Posten",    Icon: FileWarning,   tier: "mid"   as PlanTier },
+  { href: "/cashflow",        label: "Cashflow",          Icon: BarChart3,     tier: "mid"   as PlanTier },
+  { href: "/reverse-charge", label: "Reverse Charge",   Icon: Globe,         tier: "mid"   as PlanTier },
+  { href: "/aufgaben",       label: "Aufgaben",          Icon: ListTodo,      tier: "mid"   as PlanTier },
+  { href: "/kanzlei",        label: "Kanzlei",           Icon: Building2,     tier: "pro"   as PlanTier },
   { href: "/ai-reports",    label: "Pro-Analyse",      Icon: Sparkles,      tier: "pro"   as PlanTier },
   { href: "/settings",      label: "Einstellungen",    Icon: Settings,      tier: "basic" as PlanTier },
 ];

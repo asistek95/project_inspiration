@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, AlertTriangle, XCircle, ArrowRight, TrendingUp } from "lucide-react";
 import type { Receipt } from "@/lib/types";
 import { cn, formatEUR } from "@/lib/utils";
+import { findAllRC } from "@/lib/reverse-charge";
 
 interface Props {
   receipts: Receipt[];
@@ -59,6 +60,10 @@ export function MonatsabschlussAmpel({ receipts, month, year }: Props) {
     const ausgang = mr.filter((r) => r.invoice_type === "ausgang" || r.direction === "ausgang");
     const eingang = mr.filter((r) => r.invoice_type === "eingang" || r.direction === "eingang");
 
+    const rcCases = findAllRC(mr);
+    const rcOpen = rcCases.filter((x) => x.rc.requiresManualReview && (x.receipt as any).rc_status !== "confirmed" && (x.receipt as any).rc_status !== "rejected").length;
+    const rcTotal = rcCases.length;
+
     const checks: Check[] = [
       {
         label: `Alle Belege geprüft (${geprueft}/${total})`,
@@ -89,13 +94,15 @@ export function MonatsabschlussAmpel({ receipts, month, year }: Props) {
       },
     ];
 
-    if (reverseCharge > 0) {
+    if (rcTotal > 0) {
       checks.push({
-        label: `Reverse-Charge-Eigenberechnung (${reverseCharge} Belege)`,
-        ok: false,
-        warn: true,
-        count: reverseCharge,
-        href: "/uva",
+        label: rcOpen === 0
+          ? `Reverse Charge geprüft (${rcTotal} Fälle)`
+          : `Reverse Charge: ${rcOpen} unbestätigt (${rcTotal} gesamt)`,
+        ok: rcOpen === 0,
+        warn: rcOpen > 0,
+        count: rcOpen || undefined,
+        href: "/reverse-charge",
       });
     }
 
