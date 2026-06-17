@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { checkRateLimit } from "@/lib/rate-limit";
-
-/**
- * POST /api/phone/verify-otp
- * Body: { phone: "+436641234567", code: "123456" }
- *
- * Validiert OTP, speichert Nummer in profiles.whatsapp_phone.
- */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  // 5 Versuche / 10 min pro IP — OTP-Brute-Force-Schutz
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const rl = checkRateLimit(`otp-verify:${ip}`, 5, 10 * 60_000);
   if (!rl.ok) {
@@ -33,22 +24,25 @@ export async function POST(req: NextRequest) {
 
     const phone = rawPhone.replace(/\s+/g, "").replace(/^00/, "+");
 
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
-    }
+    // Bearer-Token aus Authorization-Header
+    const authHeader = req.headers.get("authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!token) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+
+    const anonClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user } } = await anonClient.auth.getUser(token);
+    if (!user) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
     const admin = getSupabaseAdmin();
-    if (!admin) {
-      return NextResponse.json({ error: "Server-Konfiguration fehlt" }, { status: 500 });
-    }
+    if (!admin) return NextResponse.json({ error: "Server-Konfiguration fehlt" }, { status: 500 });
 
-    // OTP suchen
     const { data: otp } = await admin
       .from("phone_verifications")
       .select("id, code, expires_at, used")
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .eq("phone", phone)
       .eq("used", false)
       .order("created_at", { ascending: false })
@@ -67,14 +61,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Falscher Code." }, { status: 400 });
     }
 
-    // OTP als verwendet markieren
     await admin.from("phone_verifications").update({ used: true }).eq("id", otp.id);
 
-    // Nummer am Profil speichern
     const { error: updateError } = await admin
       .from("profiles")
       .update({ whatsapp_phone: phone })
-      .eq("id", session.user.id);
+      .eq("id", user.id);
 
     if (updateError) throw updateError;
 

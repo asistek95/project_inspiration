@@ -35,15 +35,16 @@ function LoginInner() {
         // Sofort als Real-User markieren + Demo-Daten aus Browser löschen
         localStorage.setItem("klarblick.realUser", "1");
         localStorage.removeItem("klarblick.receipts.v1");
-        // Profil aus Supabase-Metadata vorausfüllen falls noch kein klarblick.profile gesetzt
+        // Profil aus Supabase-Metadata vorausfüllen — demo-Daten (whatsapp_phone etc.) entfernen
         const meta = data.user?.user_metadata || {};
         const existing = (() => { try { return JSON.parse(localStorage.getItem("klarblick.profile") || "{}"); } catch { return {}; } })();
-        if (!existing.company_name && (meta.company || meta.company_name)) {
-          localStorage.setItem("klarblick.profile", JSON.stringify({
-            company_name: meta.company || meta.company_name || "",
-            owner_name: meta.name || "",
-          }));
+        const cleanProfile: Record<string, unknown> = { ...existing };
+        delete cleanProfile.whatsapp_phone; // nie Demo-Nummer übernehmen
+        if (!cleanProfile.company_name && (meta.company || meta.company_name)) {
+          cleanProfile.company_name = meta.company || meta.company_name || "";
+          cleanProfile.owner_name = meta.name || "";
         }
+        localStorage.setItem("klarblick.profile", JSON.stringify(cleanProfile));
       }
       setSessionCookie(email);
       router.push(next);

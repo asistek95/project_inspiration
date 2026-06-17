@@ -785,8 +785,9 @@ function VorsteuerRow({
 // ── WhatsApp-Panel ─────────────────────────────────────────────────────────────
 
 function WhatsAppPanel() {
-  const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "+43 XXX XXX XXXX";
-  const waLink = `https://wa.me/${waNumber.replace(/[\s+]/g, "")}`;
+  const waNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
+  const waAvailable = !!waNumber && !waNumber.includes("XXX");
+  const waLink = waAvailable ? `https://wa.me/${waNumber.replace(/[\s+]/g, "")}` : "#";
   const [copiedWa, setCopiedWa] = useState(false);
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
   const [step, setStep] = useState<"idle" | "entering" | "otp" | "done">("idle");
@@ -799,15 +800,34 @@ function WhatsAppPanel() {
   useEffect(() => {
     try {
       const p = JSON.parse(localStorage.getItem("klarblick.profile") || "{}");
-      if (p.whatsapp_phone) { setVerifiedPhone(p.whatsapp_phone); setStep("done"); }
+      // Nur echte verifizierte Nummern anzeigen (keine Demo-Daten)
+      if (p.whatsapp_phone && p.whatsapp_verified) {
+        setVerifiedPhone(p.whatsapp_phone);
+        setStep("done");
+      }
     } catch {}
   }, []);
+
+  async function getAuthToken(): Promise<string | null> {
+    try {
+      const { getSupabaseBrowser } = await import("@/lib/supabase");
+      const sb = getSupabaseBrowser();
+      if (!sb) return null;
+      const { data: { session } } = await sb.auth.getSession();
+      return session?.access_token ?? null;
+    } catch { return null; }
+  }
 
   async function sendOtp() {
     setLoading(true); setError(null);
     try {
+      const token = await getAuthToken();
       const res = await fetch("/api/phone/send-otp", {
-        method: "POST", headers: { "content-type": "application/json" },
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ phone }),
       });
       const data = await res.json();
@@ -821,19 +841,39 @@ function WhatsAppPanel() {
   async function verifyOtp() {
     setLoading(true); setError(null);
     try {
+      const token = await getAuthToken();
       const res = await fetch("/api/phone/verify-otp", {
-        method: "POST", headers: { "content-type": "application/json" },
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ phone, code }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falscher Code");
       try {
         const p = JSON.parse(localStorage.getItem("klarblick.profile") || "{}");
-        localStorage.setItem("klarblick.profile", JSON.stringify({ ...p, whatsapp_phone: phone }));
+        localStorage.setItem("klarblick.profile", JSON.stringify({ ...p, whatsapp_phone: phone, whatsapp_verified: true }));
       } catch {}
       setVerifiedPhone(phone); setStep("done");
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
+  }
+
+  if (!waAvailable) {
+    return (
+      <div className="rounded-xl border border-green-200 bg-green-50 p-5 flex items-start gap-3">
+        <MessageCircle className="h-5 w-5 text-green-700 mt-0.5 shrink-0" />
+        <div>
+          <p className="font-semibold text-green-800">WhatsApp-Eingang</p>
+          <p className="text-sm text-green-700 mt-1">
+            Foto per WhatsApp schicken — Beleg landet automatisch im Eingang.
+            <span className="ml-2 inline-block bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5 rounded">Bald verfügbar</span>
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -954,31 +994,8 @@ function WhatsAppPanel() {
 // ── E-Mail-Panel ────────────────────────────────────────────────────────────────
 
 function EmailPanel() {
-  const [email, setEmail] = useState("");
-  const [saved, setSaved] = useState(false);
   const [copiedAddr, setCopiedAddr] = useState(false);
-
-  useEffect(() => {
-    try {
-      const p = JSON.parse(localStorage.getItem("klarblick.profile") || "{}");
-      if (p.email) setEmail(p.email);
-    } catch {}
-  }, []);
-
-  const forwardAddr = (() => {
-    if (!email.includes("@")) return "belege@klarblick.at";
-    const [user, domain] = email.split("@");
-    return `${user}+klarblick@${domain}`;
-  })();
-
-  function saveEmail() {
-    try {
-      const p = JSON.parse(localStorage.getItem("klarblick.profile") || "{}");
-      localStorage.setItem("klarblick.profile", JSON.stringify({ ...p, email }));
-    } catch {}
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
+  const forwardAddr = "belege@klarblick.at";
 
   function copyAddr() {
     navigator.clipboard.writeText(forwardAddr).catch(() => {});
@@ -988,51 +1005,35 @@ function EmailPanel() {
 
   return (
     <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 space-y-4">
-      <div className="flex items-center gap-2 font-semibold text-blue-800">
-        <Mail className="h-5 w-5" /> E-Mail-Eingang einrichten
-      </div>
-
-      {/* Schritt 1: E-Mail-Adresse eingeben */}
-      <div className="rounded-lg bg-white border border-blue-200 p-4 space-y-3">
-        <p className="text-sm font-medium text-slate-700">Schritt 1 — Deine E-Mail-Adresse</p>
-        <p className="text-xs text-slate-500">
-          Wir berechnen daraus deine persönliche Weiterleitungsadresse.
-        </p>
-        <div className="flex gap-2">
-          <input
-            type="email" className="input flex-1" placeholder="dein.name@gmail.com"
-            value={email} onChange={(e) => { setEmail(e.target.value); setSaved(false); }}
-          />
-          <button onClick={saveEmail} disabled={!email.includes("@")}
-            className="btn bg-blue-600 text-white hover:bg-blue-700 text-sm px-3 disabled:opacity-50 shrink-0 flex items-center gap-1">
-            {saved ? <CheckCircle2 className="h-4 w-4" /> : null}
-            {saved ? "Gespeichert" : "Speichern"}
-          </button>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 font-semibold text-blue-800">
+          <Mail className="h-5 w-5" /> E-Mail-Eingang einrichten
         </div>
+        <span className="text-[11px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded">Beta</span>
       </div>
 
-      {/* Schritt 2: Weiterleitungsadresse */}
+      {/* Weiterleitungsadresse */}
       <div className="rounded-lg bg-white border border-blue-200 p-4 space-y-2">
-        <p className="text-sm font-medium text-slate-700">Schritt 2 — Deine Weiterleitungsadresse</p>
+        <p className="text-sm font-medium text-slate-700">Deine Klarblick-Eingangsadresse</p>
         <div className="flex items-center justify-between gap-3 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2.5">
-          <span className="font-mono text-sm font-semibold text-slate-900 truncate">{forwardAddr}</span>
+          <span className="font-mono text-sm font-bold text-slate-900">{forwardAddr}</span>
           <button onClick={copyAddr} className="btn-secondary text-xs px-2.5 py-1.5 shrink-0 flex items-center gap-1">
             {copiedAddr ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : null}
             {copiedAddr ? "Kopiert" : "Kopieren"}
           </button>
         </div>
         <p className="text-xs text-slate-500">
-          Trage diese Adresse als Weiterleitungsziel in deinem E-Mail-Konto ein.
+          Rechnungs-Mails einfach an diese Adresse weiterleiten — sie landen automatisch im Eingang.
         </p>
       </div>
 
       {/* Gmail-Anleitung */}
       <div className="space-y-2">
-        <p className="text-xs font-semibold text-blue-800 uppercase tracking-wide">Schritt 3 — Gmail-Weiterleitung</p>
+        <p className="text-xs font-semibold text-blue-800 uppercase tracking-wide">Gmail-Weiterleitung einrichten</p>
         {[
           "Gmail → Einstellungen (Zahnrad) → Alle Einstellungen anzeigen",
           "Tab \"Weiterleitung und POP/IMAP\" → \"Weiterleitungsadresse hinzufügen\"",
-          "Adresse von oben eintragen, Bestätigungslink klicken.",
+          `Adresse eintragen: ${forwardAddr} → Bestätigungslink klicken`,
           "Fertig — Rechnungs-Mails landen automatisch im Eingang.",
         ].map((s, i) => (
           <div key={i} className="flex items-start gap-3 text-sm text-blue-800">
