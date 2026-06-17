@@ -34,7 +34,7 @@ import {
 } from "@/lib/intern-cats";
 import { Select } from "@/components/Select";
 import { detectVorsteuerabzug } from "@/lib/vorsteuer";
-import { upsertReceipt, loadReceipts } from "@/lib/store";
+import { upsertReceipt, updateReceipt, loadReceipts } from "@/lib/store";
 import { loadNumbering, previewNext, reserveNextNumber } from "@/lib/numbering";
 import { ConfidenceBadge } from "@/components/Badges";
 import {
@@ -186,7 +186,7 @@ export default function UploadPage() {
     );
   }
 
-  async function saveDraft(id: string, status: Receipt["status"]) {
+  function saveDraft(id: string, status: Receipt["status"]) {
     const item = items.find((p) => p.id === id);
     if (!item || !item.draft) return;
     const cfg = loadNumbering();
@@ -199,16 +199,22 @@ export default function UploadPage() {
       ? `${receipt_number}_${item.draft.supplier_name.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 20)}`
       : null;
 
-    let file_url = item.draft.file_url;
-    // Datei zu Supabase Storage hochladen wenn real user + blob-URL (flüchtig)
-    if (item.file && file_url?.startsWith("blob:") && localStorage.getItem("klarblick.realUser") === "1") {
-      const storageUrl = await uploadReceiptFile(item.file, item.id);
-      if (storageUrl) file_url = storageUrl;
-    }
-
-    const final = { ...item.draft, status, receipt_number, ocr_filename, file_url };
+    // localStorage-Save IMMER sofort — niemals durch Upload blockieren
+    const final = { ...item.draft, status, receipt_number, ocr_filename };
     upsertReceipt(final);
     setItems((prev) => prev.map((p) => (p.id === id ? { ...p, status: "saved" } : p)));
+
+    // Storage-Upload im Hintergrund — Fehler dürfen den Save nicht beeinflussen
+    const fileUrl = item.draft.file_url;
+    if (item.file && fileUrl?.startsWith("blob:") && localStorage.getItem("klarblick.realUser") === "1") {
+      uploadReceiptFile(item.file, item.id)
+        .then((storageUrl) => {
+          if (storageUrl) {
+            updateReceipt(final.id, { file_url: storageUrl });
+          }
+        })
+        .catch(() => {/* Storage nicht verfügbar — blob-URL bleibt erstmal */});
+    }
   }
 
   function setDirection(id: string, direction: ReceiptDirection) {
