@@ -98,31 +98,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TRUST-WALL */}
-      <section className="py-10 bg-slate-50 border-y border-border">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            {[
-              { Icon: Scale, t: "Österr. Recht", d: "UGB · EStG · UStG" },
-              { Icon: ShieldCheck, t: "GoBD-konform", d: "Audit-Log" },
-              { Icon: Lock, t: "EU-Hosting", d: "Daten in Frankfurt" },
-              { Icon: Database, t: "DSGVO", d: "AV-Vertrag verfügbar" },
-              { Icon: AlertTriangle, t: "Kein StB-Ersatz", d: "Vorbereitend" },
-              { Icon: CheckCircle2, t: "Beta", d: "Tägliche Backups" },
-            ].map(({ Icon, t, d }) => (
-              <div key={t} className="flex items-center gap-2.5 bg-white border border-border rounded-lg p-3">
-                <Icon className="h-5 w-5 text-brand-600 shrink-0" />
-                <div>
-                  <p className="text-xs font-bold leading-tight">{t}</p>
-                  <p className="text-[11px] text-slate-500 leading-tight">{d}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* TRUST-STRIP */}
+      <div className="border-y border-border bg-slate-50 py-3">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-slate-500">
+          <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-brand-500" /> DSGVO · EU-Hosting (Frankfurt)</span>
+          <span className="flex items-center gap-1.5"><Scale className="h-3.5 w-3.5 text-brand-500" /> Österreichisches Steuerrecht</span>
+          <span className="flex items-center gap-1.5"><Lock className="h-3.5 w-3.5 text-brand-500" /> §132 BAO · GoBD-konform</span>
+          <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-brand-500" /> Kein Buchhaltungswissen nötig</span>
         </div>
-      </section>
-
-      {/* MagicMoment deaktiviert — Flow-Sektion ersetzt es */}
+      </div>
 
       {/* PROBLEM */}
       <section id="problem" className="py-20 lg:py-24 border-t border-border">

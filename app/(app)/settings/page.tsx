@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import * as React from "react";
-import { Save, RefreshCw, Trash2, Mail, Copy, CheckCircle2, Shield, KeyRound, Hash, ShieldCheck, Database as DbIcon, Users, Crown, UserPlus, Eye, X as XIcon, Send as SendIcon, Lock, Unlock, MessageCircle, Phone, ExternalLink, Info } from "lucide-react";
+import { Save, RefreshCw, Trash2, Mail, Copy, CheckCircle2, Shield, KeyRound, Hash, ShieldCheck, Database as DbIcon, Users, Crown, UserPlus, Eye, X as XIcon, Send as SendIcon, Lock, Unlock, MessageCircle, Phone, ExternalLink, Info, Globe } from "lucide-react";
 import { PhoneVerificationCard } from "@/components/PhoneVerificationCard";
 import { RestartTourButton } from "@/components/OnboardingTour";
 import { loadErrorLogs, clearErrorLogs } from "@/components/ErrorBoundary";
@@ -818,6 +818,9 @@ function TeamSection() {
       {/* WhatsApp-Verknüpfung */}
       <PhoneVerificationCard />
 
+      {/* White Label / Kanzlei-Bereich */}
+      <WhiteLabelSection />
+
       {/* Mitglieder-Liste */}
       {team.length > 0 && (
         <div>
@@ -851,6 +854,236 @@ function RoleCard({ icon, title, desc }: { icon: React.ReactNode; title: string;
     <div className="rounded-lg border border-border p-3 text-sm">
       <div className="flex items-center gap-2 font-medium">{icon}{title}</div>
       <p className="text-xs text-muted-foreground mt-1">{desc}</p>
+    </div>
+  );
+}
+
+// ── White Label / Kanzlei-Portal ─────────────────────────────────────────────
+
+function WhiteLabelSection() {
+  const [config, setConfig] = useState({
+    kanzlei_slug: "",
+    kanzlei_name: "",
+    kanzlei_logo_url: "",
+    kanzlei_color: "#1a56db",
+    kanzlei_headline: "",
+    kanzlei_welcome_text: "",
+    kanzlei_contact_email: "",
+    kanzlei_domain: "",
+    kanzlei_footer: "",
+  });
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = localStorage.getItem("klarblick.whitelabel");
+    if (raw) {
+      try { setConfig((c) => ({ ...c, ...JSON.parse(raw) })); } catch {}
+    }
+  }, []);
+
+  async function saveConfig(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      localStorage.setItem("klarblick.whitelabel", JSON.stringify(config));
+      // Speichere auch in Supabase user_metadata via API
+      const { getSupabaseBrowser } = await import("@/lib/supabase");
+      const sb = getSupabaseBrowser();
+      const token = sb ? (await sb.auth.getSession()).data.session?.access_token : null;
+      const res = await fetch("/api/whitelabel/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(config),
+      });
+      if (res.ok) setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const previewUrl = config.kanzlei_slug
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/login?tenant=${config.kanzlei_slug}`
+    : "";
+
+  return (
+    <div className="card p-6 space-y-4">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <div className="flex items-center gap-2">
+          <Crown className="h-5 w-5 text-purple-600" />
+          <div>
+            <h2 className="font-semibold">White Label / Kanzlei-Portal</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Eigenes Login für Mandanten — mit deinem Logo und deinen Farben
+            </p>
+          </div>
+        </div>
+        <span className="pill bg-purple-50 text-purple-700 border-purple-100 text-xs">Pro</span>
+      </button>
+
+      {expanded && (
+        <form onSubmit={saveConfig} className="space-y-4 border-t border-border pt-4">
+          <div className="rounded-lg bg-purple-50 border border-purple-100 px-4 py-3 text-sm text-purple-800">
+            <strong>Wie funktioniert White Label?</strong> Du richtest hier deinen Kanzlei-Slug ein.
+            Deine Mandanten erhalten dann den Link <strong>/login?tenant={"{slug}"}</strong> — dort sehen
+            sie dein Logo und deine Farben, nicht Klarblick.
+            Für eine eigene Domain (z.B. <em>portal.kanzlei-mueller.at</em>) richtest du einen CNAME-Eintrag
+            auf <code className="bg-purple-100 px-1 rounded text-xs">projectinspiration-production-cfa8.up.railway.app</code> ein.
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label className="label">Kanzlei-Slug <span className="text-danger">*</span></label>
+              <div className="flex items-center border border-border rounded-lg overflow-hidden">
+                <span className="px-3 text-xs text-slate-400 bg-slate-50 h-full flex items-center border-r border-border py-2.5 shrink-0">
+                  /login?tenant=
+                </span>
+                <input
+                  className="input !border-0 !rounded-none flex-1 text-sm"
+                  placeholder="kanzlei-mueller"
+                  value={config.kanzlei_slug}
+                  onChange={(e) => setConfig({ ...config, kanzlei_slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })}
+                />
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">Nur Kleinbuchstaben, Zahlen und Bindestriche</p>
+            </div>
+
+            <div>
+              <label className="label">Kanzlei-Name</label>
+              <input
+                className="input"
+                placeholder="Müller & Partner Steuerberatung"
+                value={config.kanzlei_name}
+                onChange={(e) => setConfig({ ...config, kanzlei_name: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="label">Logo-URL</label>
+              <input
+                className="input"
+                placeholder="https://kanzlei.at/logo.png"
+                value={config.kanzlei_logo_url}
+                onChange={(e) => setConfig({ ...config, kanzlei_logo_url: e.target.value })}
+              />
+              <p className="text-[11px] text-slate-400 mt-1">JPG oder PNG, empfohlen: weiße/transparente Version</p>
+            </div>
+
+            <div>
+              <label className="label">Primärfarbe</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={config.kanzlei_color}
+                  onChange={(e) => setConfig({ ...config, kanzlei_color: e.target.value })}
+                  className="h-10 w-10 rounded cursor-pointer border border-border shrink-0"
+                />
+                <input
+                  className="input"
+                  value={config.kanzlei_color}
+                  onChange={(e) => setConfig({ ...config, kanzlei_color: e.target.value })}
+                  placeholder="#1a56db"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="label">Headline im Login</label>
+              <input
+                className="input"
+                placeholder="Willkommen in Ihrem Steuerberater-Portal"
+                value={config.kanzlei_headline}
+                onChange={(e) => setConfig({ ...config, kanzlei_headline: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="label">Kontakt-E-Mail</label>
+              <input
+                type="email"
+                className="input"
+                placeholder="office@kanzlei-mueller.at"
+                value={config.kanzlei_contact_email}
+                onChange={(e) => setConfig({ ...config, kanzlei_contact_email: e.target.value })}
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="label">Willkommenstext</label>
+              <textarea
+                className="input resize-none"
+                rows={2}
+                placeholder="Bitte melden Sie sich mit Ihren Zugangsdaten an. Bei Fragen stehen wir gerne zur Verfügung."
+                value={config.kanzlei_welcome_text}
+                onChange={(e) => setConfig({ ...config, kanzlei_welcome_text: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="label">Custom Domain (optional)</label>
+              <input
+                className="input"
+                placeholder="portal.kanzlei-mueller.at"
+                value={config.kanzlei_domain}
+                onChange={(e) => setConfig({ ...config, kanzlei_domain: e.target.value })}
+              />
+              <p className="text-[11px] text-slate-400 mt-1">CNAME → projectinspiration-production-cfa8.up.railway.app</p>
+            </div>
+
+            <div>
+              <label className="label">Fußzeile</label>
+              <input
+                className="input"
+                placeholder="© Müller & Partner Steuerberatung GmbH"
+                value={config.kanzlei_footer}
+                onChange={(e) => setConfig({ ...config, kanzlei_footer: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Vorschau-Link */}
+          {previewUrl && (
+            <div className="rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 flex items-center gap-3 text-sm">
+              <Info className="h-4 w-4 text-slate-400 shrink-0" />
+              <div className="min-w-0">
+                <p className="font-semibold text-slate-700">Vorschau-URL für Mandanten:</p>
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-600 hover:underline text-xs break-all"
+                >
+                  {previewUrl}
+                </a>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText(previewUrl)}
+                className="btn-ghost !p-1.5 shrink-0"
+                title="Kopieren"
+              >
+                <Copy className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <button type="submit" disabled={saving || !config.kanzlei_slug} className="btn-primary">
+              {saving ? "Speichere …" : saved ? <><CheckCircle2 className="h-4 w-4" /> Gespeichert</> : <><Save className="h-4 w-4" /> White Label speichern</>}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
