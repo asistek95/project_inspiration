@@ -191,6 +191,8 @@ export default function SettingsPage() {
 
       <TeamSection />
 
+      <CloudIntegrationsSection />
+
       <DataPrivacySection />
 
       <SecuritySection />
@@ -603,6 +605,82 @@ function NumberingSection() {
         </button>
         {saved ? <span className="text-sm text-accent">Gespeichert.</span> : null}
       </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────
+// CLOUD-INTEGRATIONEN
+// ──────────────────────────────────────────────────────────
+function CloudIntegrationsSection() {
+  const integrations = [
+    {
+      name: "Google Drive",
+      icon: (
+        <svg viewBox="0 0 87.3 78" className="h-6 w-6" fill="none">
+          <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5l5.4 9.35z" fill="#0066DA"/>
+          <path d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 47.5C.4 48.9 0 50.45 0 52h27.5l16.15-27z" fill="#00AC47"/>
+          <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H60.1l5.85 11.6 7.6 12.2z" fill="#EA4335"/>
+          <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2L43.65 25z" fill="#00832D"/>
+          <path d="M60.1 52H27.5L13.75 75.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2L60.1 52z" fill="#2684FC"/>
+          <path d="M73.4 26.5L60.65 4.5C59.85 3.1 58.7 2 57.35 1.2L43.6 25l16.5 27h27.45c0-1.55-.4-3.1-1.2-4.5l-12.95-21z" fill="#FFBA00"/>
+        </svg>
+      ),
+      description: "Belege automatisch in Google Drive synchronisieren",
+    },
+    {
+      name: "Microsoft OneDrive",
+      icon: (
+        <svg viewBox="0 0 40 26" className="h-6 w-6" fill="none">
+          <path d="M24.1 6.5A10.2 10.2 0 0014.5 0C10 0 6.1 2.8 4.5 6.8A8 8 0 000 14c0 4.4 3.6 8 8 8h16a8 8 0 008-8 8 8 0 00-7.9-7.5z" fill="#0078D4"/>
+          <path d="M28.5 9.5a6 6 0 016 6 6 6 0 01-6 6H8a6 6 0 010-12c.3 0 .5 0 .8.1A8 8 0 0116 4c3 0 5.6 1.7 7 4.1.5-.4 1-.6 1.6-.7l3.9 2.1z" fill="#0364B8"/>
+        </svg>
+      ),
+      description: "Belege mit OneDrive for Business verknüpfen",
+    },
+    {
+      name: "Dropbox Business",
+      icon: (
+        <svg viewBox="0 0 43.1 40" className="h-6 w-6" fill="none">
+          <path d="M12.8 0L0 8.2l12.8 8.1 12.8-8.1L12.8 0zM38.2 0L25.5 8.2l12.7 8.1 12.7-8.1L38.2 0zM0 24.6l12.8 8.1 12.8-8.1-12.8-8.1L0 24.6zM25.5 24.6l12.7 8.1 12.7-8.1-12.7-8.1-12.7 8.1zM12.8 34.6L25.5 40l12.7-5.4-12.7-8-12.7 8z" fill="#0061FF"/>
+        </svg>
+      ),
+      description: "Belegablage in Dropbox Business-Ordner",
+    },
+  ];
+
+  return (
+    <div id="cloud-integrationen" className="card p-6 space-y-4 scroll-mt-20">
+      <div className="flex items-center gap-2">
+        <Globe className="h-5 w-5 text-brand-600" />
+        <h2 className="font-semibold">Cloud-Integrationen</h2>
+        <span className="ml-auto text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+          Bald verfügbar
+        </span>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Belege automatisch in deinem Cloud-Speicher ablegen und synchronisieren. Wir arbeiten an direkten Integrationen für die gängigsten Plattformen.
+      </p>
+      <div className="grid sm:grid-cols-3 gap-3">
+        {integrations.map((int) => (
+          <div
+            key={int.name}
+            className="relative flex flex-col gap-3 rounded-xl border border-border bg-slate-50/60 p-4 opacity-60 cursor-not-allowed select-none"
+          >
+            <div className="flex items-center gap-2.5">
+              {int.icon}
+              <span className="font-medium text-sm">{int.name}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">{int.description}</p>
+            <div className="mt-auto">
+              <span className="text-[11px] font-semibold text-amber-600">Bald verfügbar</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Bis dahin: <strong>ZIP-Archiv</strong> in der Belegliste → manuell in Drive/OneDrive hochladen.
+      </p>
     </div>
   );
 }

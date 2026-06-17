@@ -13,6 +13,7 @@ import {
   FileText,
   History,
   Lock,
+  Download,
 } from "lucide-react";
 import { ReceiptPaper } from "@/components/ReceiptPaper";
 import {
@@ -122,18 +123,42 @@ export default function ReceiptDetail() {
                     className="w-full flex-1 rounded border-0"
                     style={{ minHeight: "380px" }}
                   />
-                  <a href={receipt.file_url} target="_blank" rel="noreferrer"
-                    className="text-xs text-center text-brand-600 hover:underline mt-1 py-1">
-                    PDF in neuem Tab öffnen →
-                  </a>
+                  <div className="flex items-center justify-center gap-3 mt-1">
+                    <a href={receipt.file_url} target="_blank" rel="noreferrer"
+                      className="text-xs text-brand-600 hover:underline py-1">
+                      PDF in neuem Tab öffnen →
+                    </a>
+                    <a
+                      href={receipt.file_url}
+                      download={receipt.file_name || "beleg.pdf"}
+                      className="btn-secondary btn-sm flex items-center gap-1"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Herunterladen
+                    </a>
+                  </div>
                 </div>
               ) : (
-                <img
-                  src={receipt.file_url}
-                  alt={receipt.file_name || "Beleg"}
-                  className="w-full h-full object-contain"
-                  style={{ maxHeight: "480px" }}
-                />
+                <div className="flex flex-col">
+                  <img
+                    src={receipt.file_url}
+                    alt={receipt.file_name || "Beleg"}
+                    className="w-full object-contain"
+                    style={{ maxHeight: "440px" }}
+                  />
+                  <div className="flex items-center justify-center gap-3 mt-1">
+                    <a href={receipt.file_url} target="_blank" rel="noreferrer"
+                      className="text-xs text-brand-600 hover:underline py-1">
+                      In neuem Tab öffnen →
+                    </a>
+                    <a
+                      href={receipt.file_url}
+                      download={receipt.file_name || "beleg"}
+                      className="btn-secondary btn-sm flex items-center gap-1"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Herunterladen
+                    </a>
+                  </div>
+                </div>
               )
             ) : (
               <div className="flex flex-col items-center justify-center p-8 gap-3 text-slate-400" style={{ minHeight: "280px" }}>

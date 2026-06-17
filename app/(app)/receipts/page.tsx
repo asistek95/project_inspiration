@@ -21,6 +21,7 @@ import type { Receipt, ReceiptStatus, ReceiptDirection } from "@/lib/types";
 import { StatusBadge, ConfidenceBadge } from "@/components/Badges";
 import { formatDate, formatEUR } from "@/lib/utils";
 import { exportCSV } from "@/lib/pdf";
+import { buildReceiptsZip, downloadBlob } from "@/lib/zip-export";
 import { extractReceiptData, findDuplicate } from "@/lib/ocr";
 import { previewNext } from "@/lib/numbering";
 
@@ -37,6 +38,7 @@ export default function ReceiptsListPage() {
   const [filterDirection, setFilterDirection] = useState<"all" | ReceiptDirection>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState<{ total: number; done: number } | null>(null);
+  const [zipping, setZipping] = useState(false);
 
   useEffect(() => {
     setAll(loadReceipts());
@@ -211,6 +213,20 @@ export default function ReceiptsListPage() {
     exportCSV(sel.length ? sel : filtered, "belege_auswahl.csv");
   }
 
+  async function bulkExportZip() {
+    const sel = filtered.filter((r) => selected.has(r.id));
+    const toExport = sel.length ? sel : filtered;
+    setZipping(true);
+    try {
+      const profile = (() => { try { return JSON.parse(localStorage.getItem("klarblick.profile") || "{}"); } catch { return {}; } })();
+      const blob = await buildReceiptsZip(toExport, profile.company_name || "Mein Unternehmen");
+      const today = new Date().toISOString().slice(0, 10);
+      downloadBlob(blob, `Klarblick_Belege_${today}.zip`);
+    } finally {
+      setZipping(false);
+    }
+  }
+
   return (
     <div {...getRootProps()} className="space-y-5 relative">
       <input {...getInputProps()} />
@@ -244,9 +260,13 @@ export default function ReceiptsListPage() {
             {filtered.length} von {all.length} Belegen
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button type="button" onClick={open} className="btn-secondary">
             <UploadIcon className="h-4 w-4" /> Dateien wählen
+          </button>
+          <button type="button" onClick={bulkExportZip} disabled={zipping} className="btn-secondary">
+            {zipping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {zipping ? "ZIP …" : "ZIP-Archiv"}
           </button>
           <Link href="/upload" className="btn-primary">
             + Beleg hinzufügen
@@ -468,6 +488,10 @@ export default function ReceiptsListPage() {
           </button>
           <button className="btn-secondary !py-2" onClick={bulkExportCSV}>
             <Download className="h-4 w-4" /> Export CSV
+          </button>
+          <button className="btn-secondary !py-2" onClick={bulkExportZip} disabled={zipping}>
+            {zipping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {zipping ? "Erstelle ZIP …" : "ZIP-Archiv"}
           </button>
           <button className="btn-ghost !py-2 text-danger" onClick={bulkDelete}>
             <Trash2 className="h-4 w-4" /> Löschen
