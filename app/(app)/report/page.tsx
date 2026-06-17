@@ -26,6 +26,7 @@ import type { Receipt, ReceiptStatus } from "@/lib/types";
 import {
   buildInsights,
   groupByCategory,
+  groupByCustomer,
   groupByMonth,
   groupBySupplier,
   periodStats,
@@ -36,12 +37,13 @@ import { InsightCard } from "@/components/InsightCard";
 import { exportCSV, generateReportPDF } from "@/lib/pdf";
 import { DEMO_COMPANY } from "@/lib/demo-data";
 
-type TabId = "overview" | "categories" | "suppliers" | "taxcheck" | "receipts";
+type TabId = "overview" | "categories" | "suppliers" | "kunden" | "taxcheck" | "receipts";
 
 const TABS: { id: TabId; label: string; Icon: any }[] = [
   { id: "overview", label: "Übersicht", Icon: PieChart },
   { id: "categories", label: "Kategorien", Icon: Sparkles },
   { id: "suppliers", label: "Lieferanten", Icon: Users },
+  { id: "kunden", label: "Kunden", Icon: TrendingUp },
   { id: "taxcheck", label: "Steuer-Check", Icon: ListChecks },
   { id: "receipts", label: "Belege", Icon: FileText },
 ];
@@ -111,12 +113,12 @@ export default function ReportPage() {
   const insights = buildInsights(filtered);
   const cats = groupByCategory(filtered);
   const sups = groupBySupplier(filtered, 10);
+  const cust = groupByCustomer(filtered, 10);
   const months = groupByMonth(filtered);
   const periodLabel = from && to ? `${formatDate(from)} – ${formatDate(to)}` : "Zeitraum";
 
-  const avgPerReceipt = stats.count ? stats.total_gross / stats.count : 0;
   const topCat = cats[0];
-  const topCatShare = stats.total_gross && topCat ? Math.round((topCat.value / stats.total_gross) * 100) : 0;
+  const topCatShare = stats.total_costs && topCat ? Math.round((topCat.value / stats.total_costs) * 100) : 0;
   const noVat = filtered.filter((r) => r.vat_amount === 0).length;
 
   function downloadPDF() {
@@ -288,20 +290,20 @@ export default function ReportPage() {
         <KpiCard
           Icon={Wallet}
           tone="brand"
-          label="Gesamtausgaben"
-          value={formatEUR(stats.total_gross)}
-          sub={`Ø ${formatEUR(avgPerReceipt)} / Beleg`}
+          label="Gesamtkosten (Eingang)"
+          value={formatEUR(stats.total_costs)}
+          sub={`${stats.eingang_count} Eingangsbelege`}
         />
         <KpiCard
-          Icon={ReceiptIcon}
-          tone="slate"
-          label="Belege im Zeitraum"
-          value={String(stats.count)}
-          sub={`${stats.checked} geprüft · ${stats.unchecked} offen`}
+          Icon={TrendingUp}
+          tone="accent"
+          label="Gesamtumsatz (Ausgang)"
+          value={formatEUR(stats.total_revenue)}
+          sub={`${stats.ausgang_count} Ausgangsrechnungen`}
         />
         <KpiCard
           Icon={CheckCircle2}
-          tone="accent"
+          tone={stats.advisorReadyPct >= 80 ? "accent" : "brand"}
           label="Paket-Fortschritt"
           value={`${stats.advisorReadyPct}%`}
           sub="bereit für Steuerberater"
@@ -356,13 +358,13 @@ export default function ReportPage() {
             )}
           </div>
 
-          {/* Top-Kategorie + Top-Lieferant Mini */}
-          <div className="grid md:grid-cols-2 gap-3">
+          {/* Top-Kategorie + Top-Lieferant + Top-Kunde */}
+          <div className="grid md:grid-cols-3 gap-3">
             <MiniHighlight
               label="Größter Kostenblock"
               value={topCat?.name || "—"}
               amount={topCat ? formatEUR(topCat.value) : "—"}
-              share={topCat ? `${topCatShare}% der Ausgaben` : ""}
+              share={topCat ? `${topCatShare}% der Kosten` : ""}
               tone="brand"
             />
             <MiniHighlight
@@ -370,9 +372,20 @@ export default function ReportPage() {
               value={sups[0]?.name || "—"}
               amount={sups[0] ? formatEUR(sups[0].value) : "—"}
               share={
-                sups[0] && stats.total_gross
-                  ? `${Math.round((sups[0].value / stats.total_gross) * 100)}% Anteil`
+                sups[0] && stats.total_costs
+                  ? `${Math.round((sups[0].value / stats.total_costs) * 100)}% der Kosten`
                   : ""
+              }
+              tone="slate"
+            />
+            <MiniHighlight
+              label="Wichtigster Kunde"
+              value={cust[0]?.name || "—"}
+              amount={cust[0] ? formatEUR(cust[0].value) : "—"}
+              share={
+                cust[0] && stats.total_revenue
+                  ? `${Math.round((cust[0].value / stats.total_revenue) * 100)}% des Umsatzes`
+                  : cust.length === 0 ? "Keine Ausgangsrechnungen" : ""
               }
               tone="accent"
             />
@@ -435,9 +448,12 @@ export default function ReportPage() {
 
       {tab === "suppliers" ? (
         <div className="space-y-4">
+          <div className="rounded-lg bg-slate-50 border border-slate-200 px-4 py-2 text-xs text-slate-600">
+            Nur <strong>Eingangsrechnungen</strong> (Kosten) — nach Lieferant / Aussteller gruppiert.
+          </div>
           <div className="card-soft p-5">
             <p className="font-semibold mb-3">Top 10 Lieferanten</p>
-            {sups.length > 0 ? <SupplierChart data={sups} /> : <EmptyHint text="Keine Daten." />}
+            {sups.length > 0 ? <SupplierChart data={sups} /> : <EmptyHint text="Keine Eingangsrechnungen im Zeitraum." />}
           </div>
           <div className="card-soft p-0 overflow-hidden overflow-x-auto">
             <table className="w-full text-sm min-w-[480px]">
@@ -445,7 +461,7 @@ export default function ReportPage() {
                 <tr>
                   <th className="text-left p-3">#</th>
                   <th className="text-left p-3">Lieferant</th>
-                  <th className="text-right p-3">Ausgaben</th>
+                  <th className="text-right p-3">Kosten</th>
                   <th className="text-right p-3">Anteil</th>
                 </tr>
               </thead>
@@ -456,7 +472,43 @@ export default function ReportPage() {
                     <td className="p-3 font-medium">{s.name}</td>
                     <td className="p-3 text-right tabular-nums">{formatEUR(s.value)}</td>
                     <td className="p-3 text-right text-slate-600 tabular-nums">
-                      {stats.total_gross ? `${Math.round((s.value / stats.total_gross) * 100)}%` : "—"}
+                      {stats.total_costs ? `${Math.round((s.value / stats.total_costs) * 100)}%` : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
+      {tab === "kunden" ? (
+        <div className="space-y-4">
+          <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-2 text-xs text-emerald-700">
+            Nur <strong>Ausgangsrechnungen</strong> (Umsatz) — nach Empfänger / Kunde gruppiert.
+          </div>
+          <div className="card-soft p-5">
+            <p className="font-semibold mb-3">Top 10 Kunden</p>
+            {cust.length > 0 ? <SupplierChart data={cust} /> : <EmptyHint text="Keine Ausgangsrechnungen im Zeitraum." />}
+          </div>
+          <div className="card-soft p-0 overflow-hidden overflow-x-auto">
+            <table className="w-full text-sm min-w-[480px]">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left p-3">#</th>
+                  <th className="text-left p-3">Kunde</th>
+                  <th className="text-right p-3">Umsatz</th>
+                  <th className="text-right p-3">Anteil</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cust.map((c, i) => (
+                  <tr key={c.name} className="border-t border-border">
+                    <td className="p-3 text-muted-foreground">{i + 1}</td>
+                    <td className="p-3 font-medium">{c.name}</td>
+                    <td className="p-3 text-right tabular-nums">{formatEUR(c.value)}</td>
+                    <td className="p-3 text-right text-slate-600 tabular-nums">
+                      {stats.total_revenue ? `${Math.round((c.value / stats.total_revenue) * 100)}%` : "—"}
                     </td>
                   </tr>
                 ))}
@@ -619,11 +671,12 @@ function MiniHighlight({
   value: string;
   amount: string;
   share: string;
-  tone: "brand" | "accent";
+  tone: "brand" | "accent" | "slate";
 }) {
   const tones: Record<string, string> = {
     brand: "bg-brand-50 border-blue-100 text-brand-700",
     accent: "bg-accent-soft border-emerald-200 text-accent",
+    slate: "bg-slate-50 border-slate-200 text-slate-700",
   };
   return (
     <div className={`rounded-xl border p-4 ${tones[tone]}`}>

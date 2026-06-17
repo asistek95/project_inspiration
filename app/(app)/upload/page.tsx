@@ -44,6 +44,7 @@ import {
   DIRECTIONS,
   DIRECTION_LABEL,
   DIRECTION_FRIENDLY,
+  getCategoriesForDirection,
   DIRECTION_FRIENDLY_HINT,
   DIRECTION_EMOJI,
   RECHNUNG_SUBTYPEN,
@@ -655,9 +656,13 @@ function ItemCard({
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">Auto-erkannt · bestimmt Steuerlogik</p>
               </Field>
-              {/* Wenn User Steuerkategorie ändern will — als normales Select darunter */}
+              {/* Wenn User Steuerkategorie ändern will — richtungsabhängige Liste */}
               <Field label="Steuerkategorie ändern">
-                <Select value={draft.category} onChange={(v) => onUpdate({ category: v as any })} options={[...CATEGORIES]} />
+                <Select
+                  value={draft.category}
+                  onChange={(v) => onUpdate({ category: v as any })}
+                  options={[...getCategoriesForDirection(direction)]}
+                />
               </Field>
               {/* Interne Kategorie — user-definiert mit Vorschlägen */}
               <Field label="Interne Kategorie">

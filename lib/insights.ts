@@ -131,17 +131,26 @@ export function buildInsights(receipts: Receipt[]): Insight[] {
 }
 
 export function periodStats(receipts: Receipt[]) {
-  const total_gross = receipts.reduce((s, r) => s + r.gross_amount, 0);
-  const total_vat = receipts.reduce((s, r) => s + r.vat_amount, 0);
-  const total_net = receipts.reduce((s, r) => s + r.net_amount, 0);
-  const checked = receipts.filter((r) => r.status === "geprueft" || r.status === "freigegeben").length;
+  const eingang = receipts.filter((r) => (r as any).direction !== "ausgang");
+  const ausgang = receipts.filter((r) => (r as any).direction === "ausgang");
+
+  const total_gross  = receipts.reduce((s, r) => s + r.gross_amount, 0);
+  const total_costs  = eingang.reduce((s, r) => s + r.gross_amount, 0);
+  const total_revenue = ausgang.reduce((s, r) => s + r.gross_amount, 0);
+  const total_vat    = receipts.reduce((s, r) => s + r.vat_amount, 0);
+  const total_net    = receipts.reduce((s, r) => s + r.net_amount, 0);
+  const checked   = receipts.filter((r) => r.status === "geprueft" || r.status === "freigegeben").length;
   const uncertain = receipts.filter((r) => r.status === "unsicher").length;
   const unchecked = receipts.filter((r) => r.status === "ungeprueft").length;
   return {
     total_gross,
+    total_costs,
+    total_revenue,
     total_vat,
     total_net,
     count: receipts.length,
+    eingang_count: eingang.length,
+    ausgang_count: ausgang.length,
     checked,
     uncertain,
     unchecked,
@@ -150,16 +159,34 @@ export function periodStats(receipts: Receipt[]) {
 }
 
 export function groupByCategory(receipts: Receipt[]) {
+  // Nur Kostenkategorien (Eingang) für die Kosten-Auswertung
+  const costs = receipts.filter((r) => (r as any).direction !== "ausgang");
   const map: Record<string, number> = {};
-  for (const r of receipts) map[r.category] = (map[r.category] || 0) + r.gross_amount;
+  for (const r of costs) map[r.category] = (map[r.category] || 0) + r.gross_amount;
   return Object.entries(map)
     .map(([name, value]) => ({ name, value: Math.round(value * 100) / 100 }))
     .sort((a, b) => b.value - a.value);
 }
 
+/** Top-Lieferanten — nur Eingangsrechnungen (Kosten). */
 export function groupBySupplier(receipts: Receipt[], limit = 10) {
+  const eingang = receipts.filter((r) => (r as any).direction !== "ausgang");
   const map: Record<string, number> = {};
-  for (const r of receipts) map[r.supplier_name] = (map[r.supplier_name] || 0) + r.gross_amount;
+  for (const r of eingang) map[r.supplier_name] = (map[r.supplier_name] || 0) + r.gross_amount;
+  return Object.entries(map)
+    .map(([name, value]) => ({ name, value: Math.round(value * 100) / 100 }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
+/** Top-Kunden — nur Ausgangsrechnungen (Umsatz), nach recipient_name. */
+export function groupByCustomer(receipts: Receipt[], limit = 10) {
+  const ausgang = receipts.filter((r) => (r as any).direction === "ausgang");
+  const map: Record<string, number> = {};
+  for (const r of ausgang) {
+    const name = (r as any).recipient_name || r.supplier_name;
+    map[name] = (map[name] || 0) + r.gross_amount;
+  }
   return Object.entries(map)
     .map(([name, value]) => ({ name, value: Math.round(value * 100) / 100 }))
     .sort((a, b) => b.value - a.value)

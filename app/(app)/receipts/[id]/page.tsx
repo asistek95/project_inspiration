@@ -32,6 +32,7 @@ import {
   DIRECTION_EMOJI,
   RECHNUNG_SUBTYPEN,
   RECHNUNG_SUBTYP_LABEL,
+  getCategoriesForDirection,
   RECHNUNG_SUBTYP_HINT,
 } from "@/lib/types";
 import type { Receipt, ReceiptStatus, ReceiptDirection, RechnungSubtyp } from "@/lib/types";
@@ -286,7 +287,7 @@ export default function ReceiptDetail() {
               <Select
                 value={receipt.category}
                 onChange={(v) => update({ category: v as any })}
-                options={[...CATEGORIES]}
+                options={[...getCategoriesForDirection((receipt as any).direction)]}
               />
             </Field>
             <Field label="Belegart">

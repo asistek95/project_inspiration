@@ -7,7 +7,8 @@ export const STATUS_LABEL: Record<ReceiptStatus, string> = {
   freigegeben: "An Steuerberater übergeben",
 };
 
-export const CATEGORIES = [
+// ── Kostenkategorien (Eingangsrechnungen) ──────────────────
+export const EINGANGSKATEGORIEN = [
   "Wareneinkauf",
   "Lebensmittel / Supermarkt",
   "Werkzeug & Material",
@@ -26,7 +27,29 @@ export const CATEGORIES = [
   "Anlagegut",
   "Sonstiges",
 ] as const;
+
+// ── Erlöskategorien (Ausgangsrechnungen) ───────────────────
+export const AUSGANGSKATEGORIEN = [
+  "Erlöse Bauleistung",
+  "Erlöse Personalüberlassung",
+  "Erlöse Dienstleistung",
+  "Erlöse Wartung & Service",
+  "Erlöse Warenverkauf",
+  "Erlöse Sonstiges",
+] as const;
+
+// Vereinigung beider Listen — für Typen + Backwards-Compat
+export const CATEGORIES = [
+  ...EINGANGSKATEGORIEN,
+  ...AUSGANGSKATEGORIEN,
+] as const;
 export type Category = (typeof CATEGORIES)[number];
+
+/** Gibt die passende Kategorienliste je nach Belegrichtung zurück. */
+export function getCategoriesForDirection(direction?: string): readonly string[] {
+  if (direction === "ausgang") return AUSGANGSKATEGORIEN;
+  return EINGANGSKATEGORIEN;
+}
 
 export const RECEIPT_TYPES = [
   "Quittung",

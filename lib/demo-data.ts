@@ -18,6 +18,13 @@ const SUPPLIERS_BY_CAT: Record<Category, string[]> = {
   "Bau & Instandhaltung": ["Infocom GmbH", "Bauservice KG"],
   Anlagegut: ["Würth Maschinen", "Festool Direktkauf"],
   Sonstiges: ["DHL"],
+  // Erlöse (Ausgangsrechnungen) — Beispiele für Demo
+  "Erlöse Bauleistung": ["PKE Facility Management GmbH", "Strabag AG", "Porr GmbH"],
+  "Erlöse Personalüberlassung": ["PKE Facility Management GmbH", "Siemens AG"],
+  "Erlöse Dienstleistung": ["Kunde Wien GmbH", "Mustermann AG"],
+  "Erlöse Wartung & Service": ["Wartungskunde GmbH"],
+  "Erlöse Warenverkauf": ["Handelskunde GmbH"],
+  "Erlöse Sonstiges": ["Diverses"],
 };
 
 // Wiederkehrende Lieferanten (Abos)
@@ -44,6 +51,13 @@ const RANGES: Record<Category, [number, number]> = {
   "Bau & Instandhaltung": [200, 2500],
   Anlagegut: [500, 8000],
   Sonstiges: [15, 220],
+  // Erlöse (Ausgangsrechnungen)
+  "Erlöse Bauleistung": [400, 8000],
+  "Erlöse Personalüberlassung": [300, 5000],
+  "Erlöse Dienstleistung": [200, 3000],
+  "Erlöse Wartung & Service": [150, 1500],
+  "Erlöse Warenverkauf": [100, 2000],
+  "Erlöse Sonstiges": [50, 500],
 };
 
 const TYPES: ReceiptType[] = ["Quittung", "Rechnung", "Kassenbon", "Tankbeleg", "Bewirtungsbeleg"];
