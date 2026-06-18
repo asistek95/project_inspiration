@@ -234,6 +234,38 @@ export interface CategoryDef {
   color: string;
 }
 
+// ────────────────────────────────────────────────────
+// Kontoauszug-Abgleich (Bank Reconciliation)
+// ────────────────────────────────────────────────────
+
+export interface BankTransaction {
+  id: string;
+  user_id: string;
+  statement_ref: string;          // z.B. "004/2026" oder Dateiname des Imports
+  booking_date: string;           // ISO yyyy-mm-dd (Buchungstag)
+  valuta_date?: string | null;    // Valuta-/Wertstellungsdatum
+  amount: number;                 // negativ = Ausgang, positiv = Eingang
+  currency: "EUR";
+  counterparty: string;           // Empfänger/Auftraggeber laut Bank
+  purpose: string | null;         // Verwendungszweck/Buchungstext
+  iban?: string | null;
+  matched_receipt_id?: string | null;   // zugewiesener Beleg
+  match_confidence?: number | null;     // 0..1 Auto-Match-Score
+  dismissed?: boolean;             // Nutzer hat "kein Beleg nötig" markiert (z.B. private Buchung)
+  created_at: string;
+}
+
+export interface BankStatement {
+  id: string;
+  user_id: string;
+  reference: string;        // z.B. "004/2026"
+  file_name: string;
+  imported_at: string;      // ISO Zeitstempel
+  opening_balance: number | null;
+  closing_balance: number | null;
+  transaction_count: number;
+}
+
 export type InsightSeverity = "low" | "medium" | "high";
 export interface Insight {
   type: string;

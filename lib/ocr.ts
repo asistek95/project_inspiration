@@ -421,6 +421,25 @@ export function findDuplicate(extracted: ExtractedReceipt, existing: Receipt[]):
 }
 
 /**
+ * Findet IDs aller bereits gespeicherten Belege, die denselben Fingerprint
+ * wie mindestens ein anderer Beleg teilen (= potenzielle Dubletten).
+ */
+export function findDuplicateGroups(receipts: Receipt[]): Set<string> {
+  const byFp = new Map<string, string[]>();
+  for (const r of receipts) {
+    const fp = receiptFingerprint(r.supplier_name, r.receipt_date, r.gross_amount);
+    const ids = byFp.get(fp) || [];
+    ids.push(r.id);
+    byFp.set(fp, ids);
+  }
+  const dupeIds = new Set<string>();
+  for (const ids of byFp.values()) {
+    if (ids.length > 1) ids.forEach((id) => dupeIds.add(id));
+  }
+  return dupeIds;
+}
+
+/**
  * Plausi-Check für bereits gespeicherte Belege.
  */
 export function plausibilityCheck(

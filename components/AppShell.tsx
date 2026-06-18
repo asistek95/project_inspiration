@@ -27,6 +27,7 @@ import {
   ListTodo,
   Globe,
   BarChart3,
+  Landmark,
 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,7 @@ const NAV = [
   { href: "/report",         label: "Auswertung",       Icon: FileBarChart2,   tier: "mid"   as PlanTier },
   { href: "/cashflow",       label: "Cashflow",         Icon: BarChart3,       tier: "mid"   as PlanTier },
   { href: "/offene-posten",  label: "Offene Posten",    Icon: FileWarning,     tier: "mid"   as PlanTier },
+  { href: "/kontoauszuege",  label: "Kontoauszüge",     Icon: Landmark,        tier: "mid"   as PlanTier },
   // ── Steuer ────────────────────────────────────────────────────────────────
   { href: "/uva",            label: "UVA",              Icon: Calculator,      tier: "mid"   as PlanTier },
   { href: "/reverse-charge", label: "Reverse Charge",   Icon: Globe,           tier: "mid"   as PlanTier },

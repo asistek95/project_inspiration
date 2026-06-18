@@ -1,6 +1,6 @@
 "use client";
 
-import type { Receipt, ReceiptStatus, AuditEntry } from "./types";
+import type { Receipt, ReceiptStatus, AuditEntry, BankTransaction } from "./types";
 import { generateDemoReceipts } from "./demo-data";
 import {
   syncReceiptToSupabase,
@@ -11,6 +11,7 @@ import {
 
 const KEY = "klarblick.receipts.v1";
 const SYNC_PENDING_KEY = "klarblick.sync_pending";
+const BANK_TX_KEY = "klarblick.bank_transactions.v1";
 
 function isBrowser() {
   return typeof window !== "undefined";
@@ -151,6 +152,69 @@ export function markPaid(ids: string[], date: string) {
 
 export function resetToDemo() {
   saveReceipts(generateDemoReceipts());
+}
+
+// ─────────────────────────────────────────────────────────
+// Kontoauszug-Abgleich: Bank-Transaktionen (localStorage)
+// ─────────────────────────────────────────────────────────
+
+export function loadBankTransactions(): BankTransaction[] {
+  if (!isBrowser()) return [];
+  try {
+    const raw = localStorage.getItem(BANK_TX_KEY);
+    return raw ? (JSON.parse(raw) as BankTransaction[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveBankTransactions(txs: BankTransaction[]) {
+  if (!isBrowser()) return;
+  localStorage.setItem(BANK_TX_KEY, JSON.stringify(txs));
+}
+
+/** Importiert neue Transaktionen, überspringt bereits vorhandene (gleicher Fingerprint). */
+export function importBankTransactions(newTxs: BankTransaction[]): number {
+  const existing = loadBankTransactions();
+  const seen = new Set(
+    existing.map((t) => `${t.booking_date}|${t.amount.toFixed(2)}|${t.counterparty.toLowerCase()}`),
+  );
+  let added = 0;
+  for (const tx of newTxs) {
+    const fp = `${tx.booking_date}|${tx.amount.toFixed(2)}|${tx.counterparty.toLowerCase()}`;
+    if (seen.has(fp)) continue;
+    seen.add(fp);
+    existing.unshift(tx);
+    added++;
+  }
+  saveBankTransactions(existing);
+  return added;
+}
+
+/** Weist eine Transaktion einem Beleg zu (oder hebt die Zuweisung auf bei receiptId=null) und markiert den Beleg als bezahlt. */
+export function assignTransaction(txId: string, receiptId: string | null, confidence: number | null = null) {
+  const txs = loadBankTransactions();
+  const tx = txs.find((t) => t.id === txId);
+  if (!tx) return;
+  tx.matched_receipt_id = receiptId;
+  tx.match_confidence = confidence;
+  saveBankTransactions(txs);
+  if (receiptId) {
+    markPaid([receiptId], tx.booking_date);
+  }
+}
+
+export function dismissTransaction(txId: string, dismissed: boolean) {
+  const txs = loadBankTransactions();
+  const tx = txs.find((t) => t.id === txId);
+  if (!tx) return;
+  tx.dismissed = dismissed;
+  saveBankTransactions(txs);
+}
+
+export function deleteBankTransactions(ids: string[]) {
+  const txs = loadBankTransactions().filter((t) => !ids.includes(t.id));
+  saveBankTransactions(txs);
 }
 
 // ─────────────────────────────────────────────────────────

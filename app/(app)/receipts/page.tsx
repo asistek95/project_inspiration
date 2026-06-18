@@ -19,11 +19,13 @@ import { loadReceipts, deleteReceipts, setStatusBulk, upsertReceipt, initFromSup
 import { CATEGORIES, STATUS_LABEL, DIRECTION_SHORT } from "@/lib/types";
 import type { Receipt, ReceiptStatus, ReceiptDirection } from "@/lib/types";
 import { StatusBadge, ConfidenceBadge } from "@/components/Badges";
-import { formatDate, formatEUR } from "@/lib/utils";
+import { formatDate, formatEUR, computeDueDate, isOverdue } from "@/lib/utils";
 import { exportCSV } from "@/lib/pdf";
 import { buildReceiptsZip, downloadBlob } from "@/lib/zip-export";
-import { extractReceiptData, findDuplicate } from "@/lib/ocr";
+import { extractReceiptData, findDuplicate, findDuplicateGroups } from "@/lib/ocr";
 import { previewNext } from "@/lib/numbering";
+
+type PipelineTab = "all" | "neu" | "in_pruefung" | "gebucht" | "bezahlt" | "duplikate";
 
 export default function ReceiptsListPage() {
   const [all, setAll] = useState<Receipt[]>([]);
@@ -36,6 +38,7 @@ export default function ReceiptsListPage() {
   const [onlyUnpaid, setOnlyUnpaid] = useState(false);
   const [onlyMissingCat, setOnlyMissingCat] = useState(false);
   const [filterDirection, setFilterDirection] = useState<"all" | ReceiptDirection>("all");
+  const [pipelineTab, setPipelineTab] = useState<PipelineTab>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState<{ total: number; done: number } | null>(null);
   const [zipping, setZipping] = useState(false);
@@ -163,8 +166,24 @@ export default function ReceiptsListPage() {
     multiple: true,
   });
 
+  const duplicateIds = useMemo(() => findDuplicateGroups(all), [all]);
+
+  const pipelineCounts = useMemo(() => ({
+    all: all.length,
+    neu: all.filter((r) => r.status === "ungeprueft").length,
+    in_pruefung: all.filter((r) => r.status === "unsicher").length,
+    gebucht: all.filter((r) => r.status === "geprueft" || r.status === "freigegeben").length,
+    bezahlt: all.filter((r) => !!r.paid_at).length,
+    duplikate: all.filter((r) => duplicateIds.has(r.id)).length,
+  }), [all, duplicateIds]);
+
   const filtered = useMemo(() => {
     return all.filter((r) => {
+      if (pipelineTab === "neu" && r.status !== "ungeprueft") return false;
+      if (pipelineTab === "in_pruefung" && r.status !== "unsicher") return false;
+      if (pipelineTab === "gebucht" && r.status !== "geprueft" && r.status !== "freigegeben") return false;
+      if (pipelineTab === "bezahlt" && !r.paid_at) return false;
+      if (pipelineTab === "duplikate" && !duplicateIds.has(r.id)) return false;
       if (filterCat !== "all" && r.category !== filterCat) return false;
       if (filterStatus !== "all" && r.status !== filterStatus) return false;
       if (filterDirection !== "all" && (r.direction || "eingang") !== filterDirection) return false;
@@ -183,7 +202,7 @@ export default function ReceiptsListPage() {
       }
       return true;
     });
-  }, [all, search, filterCat, filterStatus, from, to, onlyUnpaid, onlyMissingCat, filterDirection]);
+  }, [all, search, filterCat, filterStatus, from, to, onlyUnpaid, onlyMissingCat, filterDirection, pipelineTab, duplicateIds]);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -306,6 +325,33 @@ export default function ReceiptsListPage() {
           </button>
         </div>
       )}
+
+      {/* Pipeline-Tabs — Bearbeitungsstatus auf einen Blick */}
+      <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl w-full sm:w-fit overflow-x-auto">
+        {([
+          { id: "all" as const, label: "Alle" },
+          { id: "neu" as const, label: "Neu" },
+          { id: "in_pruefung" as const, label: "In Prüfung" },
+          { id: "gebucht" as const, label: "Gebucht" },
+          { id: "bezahlt" as const, label: "Bezahlt" },
+          { id: "duplikate" as const, label: "Duplikate" },
+        ]).map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setPipelineTab(t.id)}
+            className={`px-3.5 py-2.5 min-h-[40px] rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1.5 whitespace-nowrap ${
+              pipelineTab === t.id
+                ? t.id === "duplikate"
+                  ? "bg-amber-100 text-amber-800 shadow-sm"
+                  : "bg-white shadow-sm text-foreground"
+                : "text-slate-600 hover:text-foreground"
+            }`}
+          >
+            {t.label}
+            <span className="text-xs text-slate-400 font-normal">({pipelineCounts[t.id]})</span>
+          </button>
+        ))}
+      </div>
 
       {/* Direction-Tabs — nur Eingang/Ausgang, Material ist immer Eingang */}
       <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl w-full sm:w-fit">
@@ -510,8 +556,8 @@ export default function ReceiptsListPage() {
       ) : null}
 
       {/* Tabelle (Desktop) */}
-      <div className="card overflow-hidden hidden md:block">
-        <div className="grid grid-cols-[40px_110px_1fr_160px_120px_100px_120px_140px_80px] items-center gap-3 px-5 py-3 bg-slate-50/60 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+      <div className="card overflow-hidden hidden md:block overflow-x-auto">
+        <div className="grid grid-cols-[40px_100px_1fr_150px_100px_90px_110px_110px_120px_70px] items-center gap-3 px-5 py-3 bg-slate-50/60 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground font-semibold min-w-[1100px]">
           <input
             type="checkbox"
             checked={filtered.length > 0 && selected.size === filtered.length}
@@ -523,15 +569,19 @@ export default function ReceiptsListPage() {
           <span>Kategorie</span>
           <span className="text-right">Brutto</span>
           <span className="text-right">MwSt.</span>
+          <span>Fälligkeit</span>
           <span>Status</span>
           <span>Confidence</span>
           <span></span>
         </div>
         <div className="divide-y divide-border">
-          {filtered.map((r) => (
+          {filtered.map((r) => {
+            const due = r.receipt_type === "Rechnung" ? computeDueDate(r) : null;
+            const overdue = due ? isOverdue(due, r.paid_at) : false;
+            return (
             <div
               key={r.id}
-              className={`grid grid-cols-[40px_110px_1fr_160px_120px_100px_120px_140px_80px] items-center gap-3 px-5 py-4 transition group ${
+              className={`grid grid-cols-[40px_100px_1fr_150px_100px_90px_110px_110px_120px_70px] items-center gap-3 px-5 py-4 transition group min-w-[1100px] ${
                 selected.has(r.id) ? "bg-brand-50/40" : "hover:bg-slate-50/60"
               }`}
             >
@@ -558,6 +608,9 @@ export default function ReceiptsListPage() {
               </span>
               <span className="text-right font-semibold text-sm">{formatEUR(r.gross_amount)}</span>
               <span className="text-right text-sm text-slate-500">{formatEUR(r.vat_amount)}</span>
+              <span className={`text-xs whitespace-nowrap ${overdue ? "text-red-600 font-semibold" : r.paid_at ? "text-emerald-600" : "text-slate-500"}`}>
+                {r.paid_at ? "bezahlt" : due ? `${formatDate(due)}${overdue ? " ⚠" : ""}` : "—"}
+              </span>
               <span><StatusBadge status={r.status} /></span>
               <span><ConfidenceBadge value={r.confidence_score} /></span>
               <Link
@@ -567,7 +620,8 @@ export default function ReceiptsListPage() {
                 Öffnen →
               </Link>
             </div>
-          ))}
+            );
+          })}
           {filtered.length === 0 ? (
             <div className="p-14 text-center text-muted-foreground space-y-3">
               {all.length === 0 ? (
@@ -588,7 +642,10 @@ export default function ReceiptsListPage() {
 
       {/* Karten (Mobile) */}
       <div className="space-y-2 md:hidden">
-        {filtered.map((r) => (
+        {filtered.map((r) => {
+          const due = r.receipt_type === "Rechnung" ? computeDueDate(r) : null;
+          const overdue = due ? isOverdue(due, r.paid_at) : false;
+          return (
           <Link
             key={r.id}
             href={`/receipts/${r.id}`}
@@ -602,8 +659,11 @@ export default function ReceiptsListPage() {
               <p className="text-xs text-muted-foreground">
                 {formatDate(r.receipt_date)} · {r.category}
               </p>
-              <div className="mt-1">
+              <div className="mt-1 flex items-center gap-2">
                 <StatusBadge status={r.status} />
+                {overdue && (
+                  <span className="text-[10px] font-semibold text-red-600">Überfällig seit {formatDate(due!)}</span>
+                )}
               </div>
             </div>
             <div className="text-right shrink-0">
@@ -611,7 +671,8 @@ export default function ReceiptsListPage() {
               <p className="text-xs text-muted-foreground">MwSt. {formatEUR(r.vat_amount)}</p>
             </div>
           </Link>
-        ))}
+          );
+        })}
         {filtered.length === 0 ? (
           <div className="card p-10 text-center text-muted-foreground space-y-3">
             {all.length === 0 ? (
