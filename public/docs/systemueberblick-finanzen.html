@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<title>Klarblick — Systemüberblick &amp; Finanzen</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    margin: 0;
+    font-size: 10.5pt;
+    line-height: 1.55;
+  }
+  .page { page-break-after: always; display: flex; flex-direction: column; min-height: 259mm; }
+  .page:last-child { page-break-after: auto; }
+
+  /* Cover page */
+  .cover {
+    background: linear-gradient(160deg, #0b1220 0%, #1e3a8a 100%);
+    color: white;
+    height: 277mm;
+    margin: -18mm -16mm -20mm -16mm;
+    padding: 22mm 18mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .cover .logo { display: flex; align-items: center; gap: 12px; }
+  .cover .logo-box {
+    width: 40px; height: 40px; background: #2563eb; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 20px; color: white;
+  }
+  .cover .brand { font-size: 20px; font-weight: 800; }
+  .cover .brand-sub { font-size: 9px; letter-spacing: 2px; color: #93c5fd; margin-top: 2px; }
+  .cover .pill-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 20px; padding: 5px 14px; font-size: 10px; font-weight: 700;
+    letter-spacing: 1px; color: #bfdbfe; margin-bottom: 14px;
+  }
+  .cover h1 { font-size: 38px; font-weight: 800; line-height: 1.15; margin: 0 0 14px 0; }
+  .cover h1 span { color: #60a5fa; }
+  .cover p.lead { font-size: 13px; color: #cbd5e1; max-width: 480px; line-height: 1.6; }
+  .cover .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+  .cover .tag {
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px; padding: 6px 12px; font-size: 10px; color: #e2e8f0;
+  }
+  .cover .footer-row { display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 14px; }
+
+  /* TOC */
+  .toc-label { font-size: 9.5px; font-weight: 800; letter-spacing: 2px; color: #2563eb; text-transform: uppercase; }
+  .toc h1 { font-size: 26px; font-weight: 800; margin: 4px 0 6px 0; }
+  .toc .sub { color: #64748b; font-size: 10.5px; margin-bottom: 18px; }
+  .toc-item { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; border-bottom: 1px solid #e5e9f0; }
+  .toc-num {
+    width: 24px; height: 24px; border-radius: 6px; background: #eff6ff; color: #2563eb;
+    font-weight: 800; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .toc-item .ti-title { font-weight: 700; font-size: 11.5px; }
+  .toc-item .ti-sub { color: #64748b; font-size: 9.5px; margin-top: 1px; }
+  .toc-item .ti-page { color: #94a3b8; font-size: 10px; margin-left: auto; padding-left: 10px; }
+  .stack-box {
+    margin-top: 20px; border: 1px solid #dbeafe; background: #eff6ff; border-radius: 10px; padding: 14px 16px;
+  }
+  .stack-box .sb-label { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; color: #2563eb; margin-bottom: 10px; }
+  .stack-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px 16px; }
+  .stack-grid .sg-title { font-weight: 700; font-size: 10px; }
+  .stack-grid .sg-val { font-size: 9.5px; color: #475569; }
+
+  /* Section header */
+  .sec-tag { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; color: #2563eb; text-transform: uppercase; }
+  .sec-head { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px 0; }
+  .sec-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .sec-head h1 { font-size: 22px; font-weight: 800; margin: 0; }
+  hr.div { border: none; border-top: 1px solid #e5e9f0; margin: 10px 0 16px 0; }
+
+  h2 { font-size: 13.5px; font-weight: 800; margin: 18px 0 8px 0; }
+  h3 { font-size: 11.5px; font-weight: 700; margin: 14px 0 6px 0; }
+  p { margin: 6px 0; }
+  strong { font-weight: 700; }
+
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 14px 0; font-size: 9.5px; }
+  th { background: #f1f5f9; text-align: left; padding: 7px 9px; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 8.5px; letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; }
+  td { padding: 7px 9px; border-bottom: 1px solid #eef1f5; vertical-align: top; }
+  tr.total td { font-weight: 800; background: #eff6ff; }
+  td.num, th.num { text-align: right; }
+
+  .code-block {
+    background: #0f172a; color: #93c5fd; border-radius: 8px; padding: 12px 14px;
+    font-family: "Consolas", "SF Mono", monospace; font-size: 9px; line-height: 1.6;
+    white-space: pre-wrap; margin: 10px 0;
+  }
+  .code-block .key { color: #93c5fd; }
+  .code-block .str { color: #86efac; }
+  .code-block .num { color: #fbbf24; }
+  .code-block .com { color: #64748b; }
+
+  .info-box { border-radius: 9px; padding: 12px 14px; margin: 10px 0; font-size: 9.5px; }
+  .info-box.blue { background: #eff6ff; border: 1px solid #dbeafe; color: #1e40af; }
+  .info-box.green { background: #ecfdf5; border: 1px solid #bbf7d0; color: #166534; }
+  .info-box.amber { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+  .info-box b { font-weight: 800; }
+
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
+  .card { border: 1px solid #e5e9f0; border-radius: 9px; padding: 12px 14px; }
+  .card .ct { font-weight: 700; font-size: 10.5px; margin-bottom: 4px; }
+  .card .cd { font-size: 9.5px; color: #475569; }
+
+  .flow-row { display: flex; align-items: center; gap: 6px; margin: 14px 0; }
+  .flow-step { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center; }
+  .flow-step .fnum { font-size: 8px; color: #94a3b8; font-weight: 700; }
+  .flow-step .ftitle { font-size: 9.5px; font-weight: 700; margin: 3px 0 2px; }
+  .flow-step .fsub { font-size: 8px; color: #64748b; }
+  .flow-arrow { color: #94a3b8; font-size: 13px; }
+
+  .pagef { margin-top: auto; display: flex; justify-content: space-between; border-top: 1px solid #e5e9f0; padding-top: 6px; font-size: 8.5px; color: #94a3b8; }
+
+  .kpi-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 10px 0 16px; }
+  .kpi { border: 1px solid #e5e9f0; border-radius: 9px; padding: 12px; text-align: center; }
+  .kpi .kv { font-size: 18px; font-weight: 800; color: #2563eb; }
+  .kpi .kl { font-size: 8.5px; color: #64748b; margin-top: 2px; }
+
+  .badge { display: inline-block; font-size: 8px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+  .badge.new { background: #dcfce7; color: #166534; }
+  .badge.upd { background: #dbeafe; color: #1e40af; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="page">
+  <div class="cover">
+    <div>
+      <div class="logo">
+        <div class="logo-box">K</div>
+        <div>
+          <div class="brand">Klarblick</div>
+          <div class="brand-sub">MONATSABSCHLUSS-ASSISTENT</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="pill-tag">📄 SYSTEMÜBERBLICK &amp; FINANZEN</div>
+      <h1>Architektur, Datenfluss<br/>&amp; <span>Kostenkalkulation</span></h1>
+      <p class="lead">Vollständige technische Dokumentation der Klarblick-Plattform — OCR/Klassifikations-Engine,
+      Multi-Tenant-Architektur, WhatsApp-/E-Mail-Integration — sowie Preismodell und Unit-Economics je Tarif.</p>
+      <div class="tags">
+        <span class="tag">Next.js 14 App Router</span>
+        <span class="tag">Supabase + RLS</span>
+        <span class="tag">Claude Sonnet 4.6 Vision</span>
+        <span class="tag">Twilio WhatsApp</span>
+        <span class="tag">Postmark Inbound</span>
+      </div>
+    </div>
+    <div class="footer-row">
+      <span>Klarblick · Amin Sistek · Wien, Österreich</span>
+      <span>Version 2.0 · Juni 2026 · Vertraulich</span>
+    </div>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="page">
+  <div class="toc-label">INHALTSVERZEICHNIS</div>
+  <h1>Überblick</h1>
+  <p class="sub">Alle Themen dieser technischen Dokumentation auf einen Blick.</p>
+
+  <div class="toc-item">
+    <div class="toc-num">1</div>
+    <div><div class="ti-title">Systemarchitektur</div><div class="ti-sub">Überblick über alle Komponenten und ihre Interaktion</div></div>
+    <div class="ti-page">3</div>
+  </div>
+  <div class="toc-item">
+    <div class="toc-num">2</div>
+    <div><div class="ti-title">OCR &amp; Klassifikations-Engine <span class="badge upd">aktualisiert</span></div><div class="ti-sub">Belegerkennung, Eingang/Ausgang-Klassifikation, richtungsabhängige Kategorien</div></div>
+    <div class="ti-page">4</div>
+  </div>
+  <div class="toc-item">
+    <div class="toc-num">3</div>
+    <div><div class="ti-title">Multi-Tenant-Architektur</div><div class="ti-sub">Datentrennung, Rollen und Row Level Security</div></div>
+    <div class="ti-page">7</div>
+  </div>
+  <div class="toc-item">
+    <div class="toc-num">4</div>
+    <div><div class="ti-title">WhatsApp-Integration</div><div class="ti-sub">Twilio Webhook, Beleg-Upload und Bot-Antworten</div></div>
+    <div class="ti-page">9</div>
+  </div>
+  <div class="toc-item">
+    <div class="toc-num">5</div>
+    <div><div class="ti-title">E-Mail-Integration</div><div class="ti-sub">Postmark Inbound, Anhang-Parsing und Inbox-Flow</div></div>
+    <div class="ti-page">10</div>
+  </div>
+  <div class="toc-item">
+    <div class="toc-num">6</div>
+    <div><div class="ti-title">Datensicherheit &amp; DSGVO</div><div class="ti-sub">Verschlüsselung, GoBD, RLS-Policies und Audit-Log</div></div>
+    <div class="ti-page">12</div>
+  </div>
+  <div class="toc-item">
+    <div class="toc-num">7</div>
+    <div><div class="ti-title">Preismodell &amp; Kostenkalkulation <span class="badge new">neu</span></div><div class="ti-sub">Unit-Economics je Tarif: OCR-Kosten, Infrastruktur, Marge</div></div>
+    <div class="ti-page">13</div>
+  </div>
+
+  <div class="stack-box">
+    <div class="sb-label">TECHNOLOGIE-STACK</div>
+    <div class="stack-grid">
+      <div><div class="sg-title">Frontend</div><div class="sg-val">Next.js 14, React 18, Tailwind CSS</div></div>
+      <div><div class="sg-title">Backend</div><div class="sg-val">Next.js API Routes, Node.js Runtime</div></div>
+      <div><div class="sg-title">Datenbank</div><div class="sg-val">Supabase (PostgreSQL) + RLS + Storage</div></div>
+      <div><div class="sg-title">KI / OCR</div><div class="sg-val">Anthropic Claude Sonnet 4.6 (Vision)</div></div>
+      <div><div class="sg-title">WhatsApp</div><div class="sg-val">Twilio Business API + Webhook</div></div>
+      <div><div class="sg-title">E-Mail</div><div class="sg-val">Postmark Inbound Parsing</div></div>
+    </div>
+  </div>
+  <div class="pagef"><span>Klarblick — Systemüberblick &amp; Finanzen v2.0</span><span>Seite 2</span></div>
+</div>
+
+<!-- 01 SYSTEMARCHITEKTUR -->
+<div class="page">
+  <div class="sec-tag">01 — SYSTEMARCHITEKTUR</div>
+  <div class="sec-head">
+    <div class="sec-icon" style="background:#eff6ff;">🏗</div>
+    <h1>Gesamtüberblick</h1>
+  </div>
+  <hr class="div"/>
+  <p>Klarblick ist eine <strong>Multi-Tenant SaaS-Plattform</strong> auf Basis von Next.js 14 (App Router) und Supabase.
+  Alle Komponenten kommunizieren über definierte API-Routes — kein direkter Datenbank-Zugriff vom Frontend.
+  Architektur-Prinzip: <strong>localStorage-first, Cloud im Hintergrund</strong> — jede Schreibaktion landet sofort
+  lokal, Supabase-Sync läuft asynchron (bgSync) und blockiert nie das Speichern.</p>
+
+  <div class="twocol">
+    <div class="card">
+      <div class="ct">Eingangskanäle</div>
+      <div class="cd">📁 Datei-Upload (PDF/JPG/PNG/HEIC)<br/>📷 Kamera/Foto (Browser MediaDevices)<br/>💬 WhatsApp-Foto (Twilio Webhook)<br/>✉️ E-Mail-Anhang (Postmark Webhook)<br/>🌐 Web-Interface (Next.js UI)</div>
+    </div>
+    <div class="card">
+      <div class="ct">Next.js Backend-Routen</div>
+      <div class="cd">/api/ocr — Claude Vision Extraktion<br/>/api/whatsapp — Webhook, HMAC-Validierung<br/>/api/email/webhook — Postmark JSON Parser<br/>/api/ai/chat — Steuerberater-Assistent<br/>Middleware — Auth-Guard, Supabase JWT</div>
+    </div>
+  </div>
+  <div class="twocol">
+    <div class="card">
+      <div class="ct">Daten &amp; Dienste</div>
+      <div class="cd">🤖 Claude Vision API (claude-sonnet-4-6)<br/>🗄 Supabase DB (PostgreSQL, RLS)<br/>🔐 Supabase Auth (JWT, Email OTP)<br/>📦 Supabase Storage (Belegdateien, 7 Jahre)<br/>📋 Audit-Log (GoBD, §132 BAO)</div>
+    </div>
+    <div class="card">
+      <div class="ct">Sync-Architektur <span class="badge new">neu</span></div>
+      <div class="cd">localStorage = Source of Truth (sofort)<br/>bgSync() nach jedem Upsert/Update/Delete<br/>Pending-Queue bei Offline-Zustand<br/>initFromSupabase() beim ersten Login</div>
+    </div>
+  </div>
+
+  <div class="info-box blue"><b>Designentscheidung:</b> Kein Datenverlust durch Netzwerkausfälle — der kritische
+  Pfad (Beleg speichern) hängt nie von Supabase-Erreichbarkeit ab. Storage-Upload und Cloud-Sync laufen strikt
+  im Hintergrund (.then/.catch), niemals blockierend.</div>
+
+  <div class="pagef"><span>Klarblick — Systemüberblick &amp; Finanzen v2.0</span><span>Seite 3</span></div>
+</div>
+
+<!-- 02 OCR & KLASSIFIKATION -->
+<div class="page">
+  <div class="sec-tag">02 — OCR &amp; KLASSIFIKATIONS-ENGINE</div>
+  <div class="sec-head">
+    <div class="sec-icon" style="background:#f3e8ff;">🔍</div>
+    <h1>Belegerkennung &amp; Steuerlogik</h1>
+  </div>
+  <hr class="div"/>
+  <p>Klarblick nutzt <strong>Claude Sonnet 4.6 Vision</strong> (Modell-ID <code>claude-sonnet-4-6</code>) von Anthropic
+  für die optische Zeichenerkennung. Jede Bilddatei oder PDF wird als Base64 direkt an die Claude API übergeben.</p>
+
+  <div class="flow-row">
+    <div class="flow-step"><div class="fnum">①</div><div class="ftitle">Upload</div><div class="fsub">JPG/PNG/PDF</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="fnum">②</div><div class="ftitle">Encoding</div><div class="fsub">Base64</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="fnum">③</div><div class="ftitle">KI-Analyse</div><div class="fsub">Claude Vision API</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="fnum">④</div><div class="ftitle">Klassifikation</div><div class="fsub">4-Stufen-Logik</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="fnum">⑤</div><div class="ftitle">Speicherung</div><div class="fsub">localStorage + Supabase</div></div>
+  </div>
+
+  <h2>4-Stufen-Klassifikation: Eingang vs. Ausgang <span class="badge new">neu dokumentiert</span></h2>
+  <p>Statt einer einfachen ATU-Prüfung läuft die Erkennung über vier Stufen mit fallender Konfidenz:</p>
+  <table>
+    <tr><th>Stufe</th><th>Bedingung</th><th>Ergebnis</th><th class="num">Confidence</th></tr>
+    <tr><td>1a</td><td>ATU des Ausstellers = Unternehmens-ATU</td><td>Ausgang</td><td class="num">0,97</td></tr>
+    <tr><td>1b</td><td>ATU des Empfängers = Unternehmens-ATU</td><td>Eingang</td><td class="num">0,97</td></tr>
+    <tr><td>2a</td><td>Firmenname Aussteller ≈ Unternehmensname (Fuzzy)</td><td>Ausgang</td><td class="num">0,90</td></tr>
+    <tr><td>2b</td><td>Firmenname Empfänger ≈ Unternehmensname (Fuzzy)</td><td>Eingang</td><td class="num">0,90</td></tr>
+    <tr><td>3</td><td>Belegart-Heuristik (Kassenbon, Tankbeleg → immer Eingang)</td><td>Eingang/neutral</td><td class="num">0,85</td></tr>
+    <tr><td>4</td><td>OCR-Rateversuch ohne klaren Treffer</td><td>unknown</td><td class="num">0,60</td></tr>
+  </table>
+  <p>Das Ergebnis wird inkl. Begründungstext (<code>invoice_type_reason</code>) gespeichert und in der UI für den
+  Steuerberater transparent angezeigt — z. B. „Kassenbon → immer Einkaufsbeleg (Eingang)".</p>
+
+  <h2>Richtungsabhängige Kategorien <span class="badge new">neu</span></h2>
+  <p>Seit Juni 2026 gibt es zwei getrennte Kategorienlisten statt einer gemeinsamen — ein Ausgangsbeleg kann keine
+  Kostenkategorie mehr bekommen und umgekehrt:</p>
+  <div class="twocol">
+    <div class="card">
+      <div class="ct">EINGANGSKATEGORIEN (Kosten)</div>
+      <div class="cd">Wareneinkauf, Lebensmittel/Supermarkt, Werkzeug &amp; Material, Fahrtkosten, Treibstoff,
+      Bewirtung, Werbung &amp; Marketing, Bürobedarf, Telefon &amp; Internet, Software, Miete, Versicherungen,
+      Personal/Lohn, Reise &amp; Diäten, Bau &amp; Instandhaltung, Anlagegut, Sonstiges</div>
+    </div>
+    <div class="card">
+      <div class="ct">AUSGANGSKATEGORIEN (Erlöse)</div>
+      <div class="cd">Erlöse Bauleistung, Erlöse Personalüberlassung, Erlöse Dienstleistung,
+      Erlöse Wartung &amp; Service, Erlöse Warenverkauf, Erlöse Sonstiges</div>
+    </div>
+  </div>
+
+  <h2>Belegnummerierung — GoBD-konform <span class="badge new">Bug behoben</span></h2>
+  <table>
+    <tr><th>Belegart</th><th>Richtung</th><th>Präfix</th><th>Beispiel</th></tr>
+    <tr><td>Kassenbon</td><td>Eingang</td><td>KB-YYYY-</td><td>KB-2026-0001</td></tr>
+    <tr><td>Rechnung</td><td>Eingang</td><td>ER-YYYY-</td><td>ER-2026-0001</td></tr>
+    <tr><td>Rechnung</td><td>Ausgang</td><td>AR-YYYY-</td><td>AR-2026-0001</td></tr>
+    <tr><td>Tankbeleg</td><td>—</td><td>TB-YYYY-</td><td>TB-2026-0001</td></tr>
+  </table>
+  <div class="info-box amber"><b>Fix Juni 2026:</b> Der Zähler verglich die Belegnummer-Vorschau ohne Berücksichtigung
+  von Belegart und Richtung — dadurch wurde der Zähler nie erhöht und alle Kassenbons erhielten „KB-2026-0001".
+  Behoben durch konsistente Übergabe von <code>receipt_type</code> + <code>direction</code> an
+  <code>previewNext()</code> und <code>reserveNextNumber()</code>.</div>
+
+  <div class="pagef"><span>Klarblick — Systemüberblick &amp; Finanzen v2.0</span><span>Seite 4</span></div>
+</div>
+
+<div class="page">
+  <p style="margin-top:0;">Extrahierte Felder (Auszug aus der OCR-Antwort, vollständige Liste siehe API-Route
+  <code>/api/ocr</code>):</p>
+  <div class="code-block">{
+  <span class="key">"vendor"</span>: <span class="str">"N&amp;Z KFZ Reparatur KG"</span>,
+  <span class="key">"vendor_uid"</span>: <span class="str">"ATU73773749"</span>,
+  <span class="key">"date"</span>: <span class="str">"2026-05-07"</span>,
+  <span class="key">"gross_amount"</span>: <span class="num">90.00</span>,
+  <span class="key">"vat_amount"</span>: <span class="num">0.00</span>,
+  <span class="key">"direction"</span>: <span class="str">"eingang"</span>,
+  <span class="key">"category"</span>: <span class="str">"Fahrtkosten"</span>,
+  <span class="key">"receipt_type"</span>: <span class="str">"Kassenbon"</span>,
+  <span class="key">"receipt_number"</span>: <span class="str">"KB-2026-0002"</span>,
+  <span class="key">"invoice_type_reason"</span>: <span class="str">"Kassenbon → immer Einkaufsbeleg (Eingang)"</span>,
+  <span class="key">"vorsteuerabzug"</span>: <span class="num">false</span>,
+  <span class="key">"warnings"</span>: [<span class="str">"MwSt-Satz 0% ungewöhnlich für KFZ-Reparatur"</span>]
+}</div>
+
+  <h2>Zwei-Ebenen-Kategoriesystem <span class="badge new">neu</span></h2>
+  <p>Ebene 1 (<strong>Steuerkategorie</strong>) wird automatisch erkannt, ist für die Steuerlogik maßgeblich und
+  read-only in der UI (Schloss-Symbol). Ebene 2 (<strong>Interne Kategorie</strong>) ist frei vom Nutzer definierbar
+  (z. B. „Subunternehmer", „Projekt Wien Nord") und merkt sich Zuordnungen pro Lieferant
+  (<code>klarblick.supplier_cats.v1</code> in localStorage) für künftige automatische Vorschläge.</p>
+
+  <h2>Confidence Score &amp; Warnings</h2>
+  <table>
+    <tr><th>Status</th><th>Bedingung</th><th>Darstellung in App</th></tr>
+    <tr><td>✓ geprüft</td><td>Alle Pflichtfelder vorhanden, keine Warnungen</td><td>Grüner Punkt, sofort verwendbar</td></tr>
+    <tr><td>⚠ unsicher</td><td>Claude hat Warnungen gesetzt</td><td>Gelber Punkt, manuelle Prüfung — Block einklappbar</td></tr>
+    <tr><td>✗ fehlgeschlagen</td><td>Kein JSON extrahierbar</td><td>Roter Punkt, manuell erfassen</td></tr>
+  </table>
+
+  <div class="info-box blue"><b>Datenschutz:</b> Beleg-Bilder werden ausschließlich für den OCR-Aufruf an Anthropic
+  übermittelt und nicht über den API-Call hinaus gespeichert (Zero-Retention API). Alle extrahierten Textdaten liegen
+  ausschließlich in der EU-gehosteten Supabase-Instanz (Frankfurt).</div>
+
+  <div class="pagef"><span>Klarblick — Systemüberblick &amp; Finanzen v2.0</span><span>Seite 5</span></div>
+</div>
+
+<!-- 03 MULTI-TENANT -->
+<div class="page">
+  <div class="sec-tag">03 — MULTI-TENANT</div>
+  <div class="sec-head">
+    <div class="sec-icon" style="background:#ecfdf5;">🏢</div>
+    <h1>Datentrennung &amp; Rollen</h1>
+  </div>
+  <hr class="div"/>
+  <p>Klarblick ist eine <strong>Multi-Tenant-Plattform</strong> — jeder Betrieb (Tenant) sieht ausschließlich seine
+  eigenen Daten. Die Trennung erfolgt auf Datenbankebene über <strong>Row Level Security (RLS)</strong> in
+  Supabase/PostgreSQL. Kein Code im Frontend entscheidet über Datenzugriff.</p>
+
+  <div class="info-box blue"><b>Row Level Security (RLS):</b> PostgreSQL Policy <code>WHERE user_id = auth.uid()</code>
+  — automatisch für ALLE Queries erzwungen. Tabellen: <code>receipts</code>, <code>profiles</code>,
+  <code>whatsapp_messages</code>, <code>email_inbox</code>, <code>receipt_audit</code>.</p></div>
+
+  <h2>Rollensystem</h2>
+  <table>
+    <tr><th>Rolle</th><th>Beschreibung</th><th>Bearbeiten</th><th>Löschen</th><th>Übergabe</th><th>Team</th><th>Export</th></tr>
+    <tr><td>sw_admin</td><td>System-Administrator (Amin Sistek)</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+    <tr><td>owner</td><td>Firmeninhaber — voller Zugriff auf eigenen Tenant</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+    <tr><td>member</td><td>Mitarbeiter — Belege erfassen &amp; prüfen</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>advisor</td><td>Steuerberater — ausschließlich Lesezugriff</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
+  </table>
+
+  <h2>Plan-Abgrenzung (Tarif-Gating) <span class="badge upd">aktualisiert</span></h2>
+  <p>Der Plan wird als <code>user_metadata.plan</code> im Supabase JWT gespeichert. Beim Login liest die App diesen
+  Wert und cached ihn in <code>localStorage</code>. Die Sidebar zeigt gesperrte Features mit einem Schloss-Icon.</p>
+  <table>
+    <tr><th>Plan</th><th>Preis/Monat</th><th>Belege/Monat</th><th>Freigeschaltete Module</th></tr>
+    <tr><td>🔵 Basic</td><td>20 €</td><td>bis 30</td><td>Dashboard, Sammelstelle, Belegliste, Einstellungen</td></tr>
+    <tr><td>⭐ Betrieb</td><td>35 €</td><td>bis 100</td><td>+ Beleg-Check (Inbox), Auswertung, UVA, Übergabe, WhatsApp &amp; E-Mail-Eingang</td></tr>
+    <tr><td>👑 Pro</td><td>50 €</td><td>unbegrenzt</td><td>+ KI Pro-Analyse, Steuerfälle, Rollen &amp; Team, Reverse Charge Engine</td></tr>
+  </table>
+
+  <div class="info-box amber"><b>Hinweis Admin-Steuerung:</b> Die Module „Aufgaben" und „Kanzlei" sind seit Juni 2026
+  aus der Sidebar ausgeblendet (<code>hidden: true</code> im NAV-Array) — sie werden künftig über ein noch zu
+  bauendes Admin-Panel als Zusatzfeature freigeschaltet. Die Routen selbst bleiben im Code erhalten.</div>
+
+  <div class="pagef"><span>Klarblick — Systemüberblick &amp; Finanzen v2.0</span><span>Seite 7</span></div>
+</div>
+
+<!-- 04 WHATSAPP -->
+<div class="page">
+  <div class="sec-tag">04 — WHATSAPP-INTEGRATION</div>
+  <div class="sec-head">
+    <div class="sec-icon" style="background:#ecfdf5;">💬</div>
+    <h1>Beleg-Upload per Foto</h1>
+  </div>
+  <hr class="div"/>
+  <p>Nutzer senden Belege per Foto an die Klarblick-WhatsApp-Nummer. Twilio empfängt die Nachricht, ruft den Webhook
+  auf, Klarblick liest das Bild per OCR aus und legt automatisch einen Beleg an.</p>
+
+  <div class="flow-row">
+    <div class="flow-step"><div class="fnum">①</div><div class="ftitle">Foto schicken</div><div class="fsub">per WhatsApp</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="fnum">②</div><div class="ftitle">Twilio empfängt</div><div class="fsub">HMAC-Signatur prüfen</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="fnum">③</div><div class="ftitle">/api/whatsapp</div><div class="fsub">Webhook</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="fnum">④</div><div class="ftitle">Claude Vision</div><div class="fsub">OCR</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="fnum">⑤</div><div class="ftitle">WA-Antwort</div><div class="fsub">"Beleg gespeichert!"</div></div>
+  </div>
+
+  <div class="twocol">
+    <div class="card"><div class="ct">🔒 Sicherheit — HMAC Validierung</div><div class="cd">Jeder Twilio-Webhook wird via HMAC-SHA1 Signatur verifiziert. Der <code>TWILIO_AUTH_TOKEN</code> signiert alle Parameter — gefälschte Requests werden mit HTTP 403 abgelehnt.</div></div>
+    <div class="card"><div class="ct">👥 Kollegen-Belege</div><div class="cd">Mitarbeiter die die Sandbox-Nummer gejoined haben, senden Belege an den Inhaber-Account. Unbekannte Nummern bekommen eine Registrierungs-Aufforderung zurück.</div></div>
+  </div>
+  <div class="pagef"><span>Klarblick — Systemüberblick &amp; Finanzen v2.0</span><span>Seite 9</span></div>
+</div>
+
+<!-- 05 EMAIL -->
+<div class="page">
+  <div class="sec-tag">05 — E-MAIL-INTEGRATION</div>
+  <div class="sec-head">
+    <div class="sec-icon" style="background:#eff6ff;">✉️</div>
+    <h1>Rechnungen per E-Mail</h1>
+  </div>
+  <hr class="div"/>
+  <p>Nutzer leiten Rechnungs-E-Mails an ihre persönliche Klarblick-Adresse weiter. Postmark verarbeitet den Eingang,
+  extrahiert Anhänge und sendet alles als JSON an den Webhook.</p>
+
+  <div class="code-block">// POST /api/email/webhook — Postmark JSON
+{
+  <span class="key">"From"</span>: <span class="str">"rechnungen@lieferant.at"</span>,
+  <span class="key">"Subject"</span>: <span class="str">"Ihre Rechnung Nr. 2026-1842"</span>,
+  <span class="key">"Attachments"</span>: [{
+    <span class="key">"Name"</span>: <span class="str">"rechnung-1842.pdf"</span>,
+    <span class="key">"ContentType"</span>: <span class="str">"application/pdf"</span>,
+    <span class="key">"Content"</span>: <span class="str">"JVBERi0xLjQK..."</span> <span class="com">// Base64</span>
+  }]
+}</div>
+  <p>Weiterleitung an: <code>bb56165d7679eb5edc7320bd5d1e5439@inbound.postmarkapp.com</code></p>
+
+  <div class="pagef"><span>Klarblick — Systemüberblick &amp; Finanzen v2.0</span><span>Seite 10</span></div>
+</div>
+
+<!-- 06 DSGVO -->
+<div class="page">
+  <div class="sec-tag">06 — DATENSICHERHEIT &amp; DSGVO</div>
+  <div class="sec-head">
+    <div class="sec-icon" style="background:#fef2f2;">🔐</div>
+    <h1>Compliance &amp; Datenschutz</h1>
+  </div>
+  <hr class="div"/>
+  <div class="twocol">
+    <div class="card"><div class="ct">🇪🇺 EU-Hosting &amp; DSGVO</div><div class="cd">Alle Daten in der EU (Frankfurt, AWS eu-central-1 via Supabase). Kein Drittland-Transfer. AV-Vertrag mit Supabase verfügbar.</div></div>
+    <div class="card"><div class="ct">🔒 Verschlüsselung</div><div class="cd">TLS 1.3 für alle API-Verbindungen. Supabase verschlüsselt Daten at-rest (AES-256).</div></div>
+  </div>
+  <div class="twocol">
+    <div class="card"><div class="ct">📋 GoBD &amp; §132 BAO</div><div class="cd">Jede Änderung erzeugt einen Eintrag im <code>receipt_audit</code>-Log. Unveränderlich, nicht löschbar.</div></div>
+    <div class="card"><div class="ct">🛡 Row Level Security</div><div class="cd">PostgreSQL RLS erzwingt Mandantentrennung auf Datenbankebene — nicht im Applikationscode.</div></div>
+  </div>
+
+  <div class="info-box amber"><b>Wichtiger Hinweis:</b> Klarblick ist ein Vorbereitungs-Tool, kein Ersatz für
+  Steuerberatung. Die finale Prüfung und Einreichung von UVA und Jahresabschluss obliegt dem Steuerberater des
+  Unternehmens.</div>
+
+  <div class="pagef"><span>Klarblick — Systemüberblick &amp; Finanzen v2.0</span><span>Seite 12</span></div>
+</div>
+
+<!-- 07 PREISMODELL & KOSTENKALKULATION -->
+<div class="page">
+  <div class="sec-tag">07 — PREISMODELL &amp; FINANZEN</div>
+  <div class="sec-head">
+    <div class="sec-icon" style="background:#fffbeb;">💰</div>
+    <h1>Kostenkalkulation je Tarif</h1>
+  </div>
+  <hr class="div"/>
+  <p>Unit-Economics für die drei aktiven Tarife. Alle Kosten in € (Umrechnung USD→EUR: 0,92).
+  Annahmen sind explizit ausgewiesen — bei Änderung der tatsächlichen Beleg-/Bildgröße oder des Prompt-Umfangs
+  verschieben sich die OCR-Kosten proportional.</p>
+
+  <h2>OCR-Kosten pro Beleg (Claude Sonnet 4.6)</h2>
+  <table>
+    <tr><th>Komponente</th><th class="num">Tokens (Ø)</th><th class="num">Preis/1M Tokens</th><th class="num">Kosten</th></tr>
+    <tr><td>Bild-Input (komprimiertes Beleg-Foto, ~1.000×1.350px)</td><td class="num">1.800</td><td class="num">$3,00</td><td class="num">$0,0054</td></tr>
+    <tr><td>System-Prompt (AT-Steuerrecht-Instruktion)</td><td class="num">700</td><td class="num">$3,00</td><td class="num">$0,0021</td></tr>
+    <tr><td>Output (strukturiertes JSON inkl. Begründung)</td><td class="num">400</td><td class="num">$15,00</td><td class="num">$0,0060</td></tr>
+    <tr class="total"><td colspan="3">Gesamt pro Beleg</td><td class="num">$0,0135 ≈ <strong>0,0125 €</strong></td></tr>
+  </table>
+
+  <h2>Variable Kosten je Plan (Vollauslastung des Belege-Kontingents)</h2>
+  <table>
+    <tr><th>Plan</th><th class="num">Preis</th><th class="num">Belege/Mon.</th><th class="num">OCR-Kosten</th><th class="num">Stripe-Gebühr*</th><th class="num">Var. Kosten gesamt</th><th class="num">Deckungsbeitrag</th><th class="num">DB-Marge</th></tr>
+    <tr><td>Basic</td><td class="num">20,00 €</td><td class="num">30</td><td class="num">0,38 €</td><td class="num">0,83 €</td><td class="num">1,21 €</td><td class="num">18,79 €</td><td class="num">94 %</td></tr>
+    <tr><td>Betrieb</td><td class="num">35,00 €</td><td class="num">100</td><td class="num">1,25 €</td><td class="num">1,27 €</td><td class="num">2,52 €</td><td class="num">32,48 €</td><td class="num">93 %</td></tr>
+    <tr><td>Pro</td><td class="num">50,00 €</td><td class="num">Ø 300 (unbegr.)</td><td class="num">3,75 €</td><td class="num">1,70 €</td><td class="num">5,45 €</td><td class="num">44,55 €</td><td class="num">89 %</td></tr>
+  </table>
+  <p style="font-size:8.5px;color:#64748b;">* Stripe: 2,9 % + 0,25 €/Transaktion. Pro-Plan ohne Beleglimit — Annahme
+  Ø 300 Belege/Monat (10/Tag) als Power-User-Schätzung; bei 1.000 Belegen/Monat steigen die OCR-Kosten auf 12,50 €
+  (DB-Marge sinkt auf 73 %, bleibt aber gesund).</p>
+
+  <h2>Fixkosten-Allokation (Infrastruktur je Kunde, skalenabhängig)</h2>
+  <p>Fixkosten gesamt: Supabase Pro (25 €) + Railway Pro (20 €) + Domain/Tools (10 €) = <strong>55 €/Monat</strong>
+  (ohne Steuerberater/Marketing — diese sind G&amp;A-Kosten, siehe separater Finanzplan).</p>
+  <table>
+    <tr><th>Kundenzahl</th><th class="num">Fixkosten gesamt</th><th class="num">Fixkosten je Kunde</th></tr>
+    <tr><td>10 (Pilotphase)</td><td class="num">55 €</td><td class="num">5,50 €</td></tr>
+    <tr><td>50</td><td class="num">55 €</td><td class="num">1,10 €</td></tr>
+    <tr><td>200</td><td class="num">55 €</td><td class="num">0,28 €</td></tr>
+  </table>
+
+  <div class="pagef"><span>Klarblick — Systemüberblick &amp; Finanzen v2.0</span><span>Seite 13</span></div>
+</div>
+
+<div class="page">
+  <h2>Nettomarge je Plan — Pilotphase (10 Kunden) vs. Skalierung (200 Kunden)</h2>
+  <table>
+    <tr><th>Plan</th><th class="num">Deckungsbeitrag</th><th class="num">Nettomarge @10 Kd.</th><th class="num">Marge %</th><th class="num">Nettomarge @200 Kd.</th><th class="num">Marge %</th></tr>
+    <tr><td>Basic</td><td class="num">18,79 €</td><td class="num">13,29 €</td><td class="num">66 %</td><td class="num">18,51 €</td><td class="num">93 %</td></tr>
+    <tr><td>Betrieb</td><td class="num">32,48 €</td><td class="num">26,98 €</td><td class="num">77 %</td><td class="num">32,20 €</td><td class="num">92 %</td></tr>
+    <tr><td>Pro</td><td class="num">44,55 €</td><td class="num">39,05 €</td><td class="num">78 %</td><td class="num">44,27 €</td><td class="num">89 %</td></tr>
+  </table>
+
+  <div class="info-box green"><b>Kernaussage:</b> Selbst in der Pilotphase mit nur 10 zahlenden Kunden bleibt die
+  Marge je Plan bei 66–78 % — die COGS (OCR + Stripe + Infra) sind strukturell niedrig. Ab ca. 50 Kunden nähert sich
+  die Marge dem strukturellen Maximum (89–94 %) an, weil die Fixkosten kaum noch ins Gewicht fallen.</div>
+
+  <h2>Zusatzkanäle (Betrieb &amp; Pro) — WhatsApp / E-Mail</h2>
+  <table>
+    <tr><th>Kanal</th><th>Kostenmodell</th><th class="num">Ø Kosten/Kunde/Monat</th></tr>
+    <tr><td>Twilio WhatsApp Business</td><td>~0,005–0,01 $/Konversation</td><td class="num">&lt; 0,40 €</td></tr>
+    <tr><td>Postmark Inbound E-Mail</td><td>Kostenlos bis 100/Monat, danach ~1,50 $/1.000</td><td class="num">&lt; 0,10 €</td></tr>
+  </table>
+  <p style="font-size:8.5px;color:#64748b;">Bei normaler Nutzung bleiben beide Zusatzkanäle zusammen unter
+  0,50 €/Kunde/Monat — bereits in der Pilot-Marge oben konservativ eingepreist nicht enthalten, aber vernachlässigbar
+  für das Gesamtbild.</p>
+
+  <h2>Was diese Kalkulation NICHT enthält</h2>
+  <p>Diese Tabelle zeigt <strong>Unit-Economics auf COGS-Ebene</strong> (Kosten direkt verursacht durch einen
+  einzelnen Kunden). Nicht enthalten: Steuerberater/Buchhaltung, Marketing/Vertrieb (CAC), Gründer-Gehalt,
+  Körperschaftsteuer. Die vollständige Gewinn- und Verlustrechnung mit allen Abzügen für eine FlexCo-Struktur
+  ist im separaten Dokument <code>07_PREISMODELL_FINANZEN.md</code> hinterlegt (Szenarien für 100/250/500 Kunden
+  mit KöSt 23 %, KESt 27,5 %, GF-Gehalt).</p>
+
+  <div class="info-box blue"><b>Hinweis zur Preisdiskrepanz:</b> Die öffentliche Preisseite (<code>/pricing</code>)
+  zeigt aktuell Pilot/Starter 49 €, Betrieb 99 €, Plus 199 € — abweichend von den hier dokumentierten internen
+  Tarifstufen-Preisen (Basic 20 €/Betrieb 35 €/Pro 50 €), die im Code als Feature-Gating-Schwellen
+  (<code>PLAN_LEVEL</code> in <code>components/AppShell.tsx</code>) verwendet werden. Vor dem Stripe-Go-Live sollten
+  beide Preislisten synchronisiert werden.</div>
+
+  <div class="pagef"><span>Klarblick — Systemüberblick &amp; Finanzen v2.0</span><span>Seite 14</span></div>
+</div>
+
+<!-- LAST PAGE -->
+<div class="page" style="justify-content:center; align-items:center;">
+  <div style="text-align:center;">
+    <div class="logo" style="justify-content:center;">
+      <div class="logo-box">K</div>
+    </div>
+    <h2 style="font-size:16px;margin-top:18px;">Klarblick GmbH</h2>
+    <p style="color:#64748b;">Wienerbergstraße 11 · 1100 Wien · cohub Coworking · 16. Stock<br/>
+    amin.sistek20@gmail.com · app.klarblick.at</p>
+    <p style="margin-top: 40px; font-size:9px; color:#94a3b8;">Systemüberblick &amp; Finanzen v2.0 · Juni 2026 ·
+    Vertraulich — nur für interne und Pilot-Zwecke</p>
+  </div>
+</div>
+
+</body>
+</html>
